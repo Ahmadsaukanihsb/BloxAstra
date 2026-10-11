@@ -14,8 +14,9 @@
 /coverage
 
 # next.js
-/.next/
-/.next-verify/
+# `.next*` covers the deployed tree plus any NEXT_DIST_DIR sibling
+# (.next-dev for the dev server, .next-verify for throwaway builds).
+/.next*/
 /out/
 
 # production
@@ -47,6 +48,10 @@ tmp-*
 # prisma / sqlite
 /prisma/bloxastra.db
 /prisma/bloxastra.db-journal
+# salinan DB untuk verifikasi (dibuat tools/prepare-verify-db.mjs, tidak pernah
+# dipakai aplikasi dan tidak boleh masuk repo)
+/prisma/verify.db
+/prisma/verify.db-journal
 
 # vercel
 .vercel

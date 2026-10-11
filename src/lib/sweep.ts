@@ -132,7 +132,7 @@ async function releaseDueOrders(now: Date): Promise<string[]> {
           data: {
             orderId: order.id,
             state: "completed",
-            label: "Auto-release — jendela konfirmasi habis, dana dilepas ke penjual",
+            label: "Jendela konfirmasi habis, dana dilepas ke penjual",
             actor: "system",
           },
         });
@@ -154,7 +154,7 @@ async function releaseDueOrders(now: Date): Promise<string[]> {
         userId: order.seller!.userId,
         kind: "order_completed",
         title: `Dana ${order.code} cair otomatis`,
-        body: "Jendela konfirmasi habis — dana dilepas ke dompetmu.",
+        body: "Jendela konfirmasi habis. Dana dilepas ke dompetmu.",
         link: `/pesanan/${order.code}`,
       });
     } catch (err) {
@@ -207,7 +207,7 @@ async function expireStalePayments(now: Date): Promise<string[]> {
           data: {
             orderId: order.id,
             state: "cancelled",
-            label: "Jendela pembayaran habis — pesanan dibatalkan otomatis",
+            label: "Jendela pembayaran habis, pesanan dibatalkan otomatis",
             actor: "system",
           },
         });
@@ -223,7 +223,7 @@ async function expireStalePayments(now: Date): Promise<string[]> {
         userId: order.buyerId,
         kind: "order_cancelled",
         title: `Pesanan ${order.code} kedaluwarsa`,
-        body: "Jendela pembayaran habis — pesanan dibatalkan otomatis.",
+        body: "Jendela pembayaran habis. Pesanan dibatalkan otomatis.",
         link: `/pesanan/${order.code}`,
       });
     } catch (err) {
@@ -321,7 +321,7 @@ async function refundStalePoolOrders(now: Date, poolHours: number): Promise<stri
           data: {
             orderId: order.id,
             state: "refunded",
-            label: "Tidak ada penjual yang mengambil — dana dikembalikan sebagai saldo",
+            label: "Tidak ada penjual yang mengambil, dana dikembalikan sebagai saldo",
             actor: "system",
           },
         });
@@ -344,7 +344,7 @@ async function refundStalePoolOrders(now: Date, poolHours: number): Promise<stri
         userId: order.buyerId,
         kind: "pool_refunded",
         title: `Dana ${order.code} dikembalikan`,
-        body: "Tak ada penjual yang mengambil — dana kembali sebagai saldo akun.",
+        body: "Tak ada penjual yang mengambil. Dana kembali sebagai saldo akun.",
         link: `/pesanan/${order.code}`,
       });
     } catch (err) {
@@ -408,7 +408,7 @@ async function refundStuckProcessingOrders(now: Date, processingDays: number): P
           data: {
             orderId: order.id,
             state: "refunded",
-            label: "Penjual tidak menyelesaikan — dana dikembalikan sebagai saldo",
+            label: "Penjual tidak menyelesaikan, dana dikembalikan sebagai saldo",
             actor: "system",
           },
         });
@@ -431,7 +431,7 @@ async function refundStuckProcessingOrders(now: Date, processingDays: number): P
         userId: order.buyerId,
         kind: "order_refunded",
         title: `Dana ${order.code} dikembalikan`,
-        body: "Penjual tidak menyelesaikan pesanan — dana kembali sebagai saldo akun.",
+        body: "Penjual tidak menyelesaikan pesanan. Dana kembali sebagai saldo akun.",
         link: `/pesanan/${order.code}`,
       });
       if (order.seller) {
@@ -439,7 +439,7 @@ async function refundStuckProcessingOrders(now: Date, processingDays: number): P
           userId: order.seller.userId,
           kind: "order_refunded",
           title: `${order.code} direfund otomatis`,
-          body: "Pesanan terlalu lama diproses — dana dikembalikan ke pembeli.",
+          body: "Pesanan terlalu lama diproses. Dana dikembalikan ke pembeli.",
           link: `/pesanan/${order.code}`,
         });
       }
@@ -504,7 +504,7 @@ async function refundIdleAssignedOrders(now: Date, assignedHours: number): Promi
           data: {
             orderId: order.id,
             state: "refunded",
-            label: "Penjual tidak kunjung memulai — dana dikembalikan sebagai saldo",
+            label: "Penjual tidak kunjung memulai, dana dikembalikan sebagai saldo",
             actor: "system",
           },
         });
@@ -527,7 +527,7 @@ async function refundIdleAssignedOrders(now: Date, assignedHours: number): Promi
         userId: order.buyerId,
         kind: "order_refunded",
         title: `Dana ${order.code} dikembalikan`,
-        body: "Penjual tidak memulai pesanan — dana kembali sebagai saldo akun.",
+        body: "Penjual tidak memulai pesanan. Dana kembali sebagai saldo akun.",
         link: `/pesanan/${order.code}`,
       });
       if (order.seller) {
@@ -535,7 +535,7 @@ async function refundIdleAssignedOrders(now: Date, assignedHours: number): Promi
           userId: order.seller.userId,
           kind: "order_refunded",
           title: `${order.code} direfund otomatis`,
-          body: "Pesanan tidak dimulai tepat waktu — dana dikembalikan ke pembeli.",
+          body: "Pesanan tidak dimulai tepat waktu. Dana dikembalikan ke pembeli.",
           link: `/pesanan/${order.code}`,
         });
       }

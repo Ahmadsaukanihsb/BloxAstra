@@ -103,7 +103,7 @@ export function BuyBox({
                 title="Robux Bersih (Cover Tax)"
                 description={`Pasang gamepass ${formatNumber(
                   unitQuote.gamepassPrice,
-                )} Robux — kamu terima ${formatNumber(unitQuote.netRobux)} Robux.`}
+                )} Robux, kamu terima ${formatNumber(unitQuote.netRobux)} Robux.`}
               />
               <OptionCard
                 selected={mode === "no_cover"}
@@ -111,13 +111,13 @@ export function BuyBox({
                 title="Robux Kotor (No Cover Tax)"
                 description={`Pasang gamepass seharga ${formatNumber(
                   unitQuote.gamepassPrice,
-                )} Robux — kamu terima ${formatNumber(
+                )} Robux, kamu terima ${formatNumber(
                   unitQuote.netRobux,
                 )} Robux setelah pajak Roblox.`}
               />
             </div>
 
-            <div className="flex flex-col gap-2 rounded-2xl bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line">
+            <div className="flex flex-col gap-2 rounded-well bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line">
               <div className="flex items-center justify-between text-[11px]">
                 <span className="text-ink-mute">Nominal gamepass yang dipasang</span>
                 <RobuxAmount value={formatNumber(unitQuote.gamepassPrice)} glyphSize={14} />
@@ -134,7 +134,7 @@ export function BuyBox({
           </div>
         ) : null}
 
-        <div className="flex items-center justify-between gap-4 border-t border-hairline pt-5">
+        <div className="flex items-center justify-between gap-4 border-t border-line pt-5">
           <span className="text-[11px] uppercase tracking-[0.16em] text-ink-mute">Jumlah</span>
           <div className="flex items-center gap-3">
             <button
@@ -162,13 +162,13 @@ export function BuyBox({
           </div>
         </div>
 
-        <div className="flex flex-col gap-1.5 rounded-2xl bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line">
+        <div className="flex flex-col gap-1.5 rounded-well bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line">
           <Row label="Subtotal" value={formatIDR(subtotal)} />
           <Row
             label={`Komisi platform (${category.commissionPercent.toFixed(1).replace(".", ",")}%)`}
             value={formatIDR(platformFee)}
           />
-          <div className="mt-1.5 flex items-center justify-between border-t border-hairline pt-2.5">
+          <div className="mt-1.5 flex items-center justify-between border-t border-line pt-2.5">
             <span className="text-[11px] uppercase tracking-[0.16em] text-ink-mute">
               Ditahan platform
             </span>
@@ -187,7 +187,7 @@ export function BuyBox({
               size="lg"
               fullWidth
               trailingIcon={<IconArrowRight size={16} />}
-              iconCircleClassName="bg-white/20"
+              iconCircleClassName="bg-paper/20"
             >
               Checkout aman
             </ButtonLink>
@@ -200,7 +200,7 @@ export function BuyBox({
           />
         </div>
 
-        <ul className="flex flex-col gap-2.5 border-t border-hairline pt-4">
+        <ul className="flex flex-col gap-2.5 border-t border-line pt-4">
           {[
             { icon: IconShieldCheck, text: "Dana ditahan sampai kamu menekan konfirmasi." },
             { icon: IconTimer, text: `Auto-release setelah ${product.autoReleaseHours} jam tanpa sengketa.` },
@@ -228,7 +228,7 @@ export function BuyBox({
         {product.category === "premium" || product.category === "akun" ? (
           <Notice tone="warn" icon={<IconInfo size={15} />}>
             Produk ini butuh serah terima kredensial. Nyalakan Parental PIN Roblox sebelum
-            menyerahkan akun — PIN akan mengunci email, nomor HP, dan kata sandi dari perubahan.
+            menyerahkan akun. PIN akan mengunci email, nomor HP, dan kata sandi dari perubahan.
           </Notice>
         ) : null}
       </div>

@@ -76,7 +76,7 @@ export function UserDropdown({
       </button>
 
       {open ? (
-        <div className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-60 origin-top-right rounded-2xl border border-line bg-paper p-1.5 shadow-[0_18px_44px_-24px_rgba(15,23,42,0.22)]">
+        <div className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-60 origin-top-right rounded-well border border-line bg-paper p-1.5 shadow-[0_18px_44px_-24px_rgba(23,21,46,0.22)]">
           <div className="flex flex-col">
             {items.map((item) => {
               const Icon = item.icon;
@@ -85,18 +85,18 @@ export function UserDropdown({
                   key={item.href}
                   href={item.href}
                   onClick={() => setOpen(false)}
-                  className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-bold text-ink transition-colors duration-300 hover:bg-canvas"
+                  className="flex items-center gap-2.5 rounded-control px-3 py-2.5 text-[13px] font-bold text-ink transition-colors duration-300 hover:bg-canvas"
                 >
                   <Icon size={16} className="text-ink-dim" />
                   {item.label}
                 </Link>
               );
             })}
-            <div className="my-1 h-px bg-hairline" />
+            <div className="my-1 h-px bg-line" />
             <a
               href="/api/auth/logout"
               onClick={() => setOpen(false)}
-              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-bold text-danger transition-colors duration-300 hover:bg-danger/[0.07]"
+              className="flex w-full items-center gap-2.5 rounded-control px-3 py-2.5 text-[13px] font-bold text-danger transition-colors duration-300 hover:bg-danger/[0.07]"
             >
               <IconLogout size={16} />
               Keluar

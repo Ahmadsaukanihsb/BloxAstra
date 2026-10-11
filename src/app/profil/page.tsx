@@ -17,9 +17,9 @@ export default function ProfilePage(props: PageProps<"/profil">) {
   return (
     <Suspense
       fallback={
-        <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-12 md:px-8 md:pt-16">
+        <div className="shell pb-24 pt-10 md:pt-14">
           <Skeleton className="h-9 w-64" />
-          <Skeleton className="mt-6 h-80 w-full rounded-3xl" />
+          <Skeleton className="mt-6 h-80 w-full rounded-card" />
         </div>
       }
     >

@@ -22,7 +22,8 @@ const nextConfig: NextConfig = {
   // Overwriting it under a live process leaves the two out of sync (stale RSC
   // chunks, "resumable slots" replay errors). Set NEXT_DIST_DIR to build a
   // throwaway tree — e.g. `NEXT_DIST_DIR=.next-verify npm run build` — without
-  // touching the deployed one.
+  // touching the deployed one. Dev needs no such flag: Next 16 writes dev
+  // output to `.next/dev` already (see node_modules/next/dist/docs, next dev).
   distDir: process.env.NEXT_DIST_DIR ?? ".next",
   // Next 16 blocks dev-only assets (HMR, chunks) from origins other than the
   // one the server started on. Opening the app over the LAN IP or 127.0.0.1

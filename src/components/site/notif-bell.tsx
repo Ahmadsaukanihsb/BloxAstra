@@ -119,7 +119,7 @@ export function NotifBell() {
           <div
             role="dialog"
             aria-label="Notifikasi terbaru"
-            className="absolute right-0 top-[calc(100%+10px)] z-50 flex max-h-[min(70vh,480px)] w-[min(92vw,380px)] flex-col overflow-hidden rounded-3xl bg-paper shadow-[0_24px_60px_-12px_rgba(0,0,0,0.35)] outline outline-1 -outline-offset-1 outline-line"
+            className="absolute right-0 top-[calc(100%+10px)] z-50 flex max-h-[min(70vh,480px)] w-[min(92vw,380px)] flex-col overflow-hidden rounded-card bg-paper shadow-[0_24px_60px_-12px_rgba(0,0,0,0.35)] outline outline-1 -outline-offset-1 outline-line"
           >
             <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
               <span className="text-[13px] font-extrabold text-ink">
@@ -147,7 +147,7 @@ export function NotifBell() {
                   {[0, 1, 2].map((index) => (
                     <div
                       key={index}
-                      className="h-16 animate-pulse rounded-2xl bg-canvas"
+                      className="h-16 animate-pulse rounded-well bg-canvas"
                     />
                   ))}
                 </div>
@@ -185,7 +185,7 @@ export function NotifBell() {
                     </>
                   );
                   const cardClass =
-                    "flex items-start gap-3 rounded-2xl p-3 transition-colors duration-200 hover:bg-canvas";
+                    "flex items-start gap-3 rounded-well p-3 transition-colors duration-200 hover:bg-canvas";
                   return item.link ? (
                     <Link
                       key={item.id}

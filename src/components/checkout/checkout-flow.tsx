@@ -59,7 +59,7 @@ const PAYMENTS = [
   {
     id: "saldo",
     title: "Saldo Akun Blox Astra",
-    description: "Potong langsung dari dompetmu — tanpa biaya gateway, pesanan langsung lunas.",
+    description: "Potong langsung dari dompetmu, tanpa biaya gateway. Pesanan langsung lunas.",
     icon: IconWallet,
   },
 ];
@@ -216,11 +216,11 @@ export function CheckoutFlow({
     <div className="mx-auto grid max-w-[1180px] grid-cols-1 gap-8 px-4 pb-24 pt-28 md:px-8 md:pt-36 lg:grid-cols-[1fr_400px] lg:items-start">
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-3">
-          <h1 className="font-display text-3xl font-extrabold tracking-tight text-ink md:text-[2.2rem]">
+ <h1 className="font-display text-page font-extrabold text-ink md:text-page">
             Checkout aman
           </h1>
           <p className="max-w-[60ch] text-[13px] leading-relaxed text-ink-dim">
-            Tiga langkah, dan dana kamu langsung ditahan di rekening penampungan platform — bukan di
+            Tiga langkah, dan dana kamu langsung ditahan di rekening penampungan platform, bukan di
             saldo penjual.
           </p>
         </div>
@@ -233,7 +233,7 @@ export function CheckoutFlow({
               <li
                 key={label}
                 className={cx(
-                  "flex flex-col gap-2 rounded-2xl p-3.5 outline outline-1 -outline-offset-1 transition-colors duration-500",
+                  "flex flex-col gap-2 rounded-well p-3.5 outline outline-1 -outline-offset-1 transition-colors duration-500",
                   active
                     ? "bg-astra/[0.06] outline-astra/30"
                     : "bg-canvas outline-line",
@@ -277,7 +277,7 @@ export function CheckoutFlow({
                 <>
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="flex flex-col gap-1">
-                      <h2 className="text-base font-bold text-ink">Akun Roblox tujuan</h2>
+ <h2 className="text-base font-bold text-ink">Akun Roblox tujuan</h2>
                       <p className="text-[12px] text-ink-mute">
                         Pastikan username Roblox tujuan sudah benar sebelum lanjut.
                       </p>
@@ -325,7 +325,7 @@ export function CheckoutFlow({
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                      className="flex items-center gap-4 rounded-2xl bg-canvas p-4 outline outline-1 -outline-offset-1 outline-astra/25"
+                      className="flex items-center gap-4 rounded-well bg-canvas p-4 outline outline-1 -outline-offset-1 outline-astra/25"
                     >
                       <div className="flex min-w-0 flex-col gap-1">
                         <span className="flex items-center gap-2 text-[13px] font-bold text-ink">
@@ -335,7 +335,7 @@ export function CheckoutFlow({
                           </Badge>
                         </span>
                         <span className="text-[11px] text-ink-mute">
-                          Nama ini dicek langsung ke server Roblox. Cek ulang sebelum bayar — barang
+                          Nama ini dicek langsung ke server Roblox. Cek ulang sebelum bayar; barang
                           dikirim ke username ini.
                         </span>
                       </div>
@@ -355,7 +355,7 @@ export function CheckoutFlow({
               {step === 1 ? (
                 <>
                   <div className="flex flex-col gap-1">
-                    <h2 className="text-base font-bold text-ink">Metode pembayaran</h2>
+ <h2 className="text-base font-bold text-ink">Metode pembayaran</h2>
                     <p className="text-[12px] text-ink-mute">
                       Semua dana masuk ke rekening penampungan platform, bukan ke rekening
                       penjual.
@@ -387,20 +387,20 @@ export function CheckoutFlow({
                       title={`Saldo kamu ${formatIDR(walletBalance)}`}
                     >
                       {walletBalance >= total
-                        ? "Cukup untuk pesanan ini — dana langsung ditahan platform tanpa menunggu gateway."
+                        ? "Cukup untuk pesanan ini. Dana langsung ditahan platform tanpa menunggu gateway."
                         : "Belum cukup untuk total ini. Pilih metode lain, atau selesaikan setelah refund masuk."}
                     </Notice>
                   ) : null}
 
                   {isGamepass ? (
-                    <div className="flex flex-col gap-3 border-t border-hairline pt-5">
-                      <span className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-ink-mute">
+                    <div className="flex flex-col gap-3 border-t border-line pt-5">
+                      <span className="eyebrow text-ink-mute">
                         Instruksi gamepass
                       </span>
                       <OptionCard
                         selected={mode === "cover"}
                         onSelect={() => setMode("cover")}
-                        title={`Cover Tax — pasang ${formatNumber(coverQuote.gamepassPrice)} Robux`}
+                        title={`Cover Tax: pasang ${formatNumber(coverQuote.gamepassPrice)} Robux`}
                         description={`Bayar ${formatIDR(
                           coverQuote.totalIdr,
                         )} untuk menerima ${formatNumber(coverQuote.netRobux)} Robux bersih.`}
@@ -408,7 +408,7 @@ export function CheckoutFlow({
                       <OptionCard
                         selected={mode === "no_cover"}
                         onSelect={() => setMode("no_cover")}
-                        title={`No Cover Tax — pasang ${formatNumber(
+                        title={`No Cover Tax: pasang ${formatNumber(
                           noCoverQuote.gamepassPrice,
                         )} Robux`}
                         description={`Pajak 30% dipotong dari sisimu: terima ${formatNumber(
@@ -418,7 +418,7 @@ export function CheckoutFlow({
                     </div>
                   ) : null}
 
-                  <div className="flex flex-col gap-2.5 border-t border-hairline pt-5 sm:flex-row sm:items-end">
+                  <div className="flex flex-col gap-2.5 border-t border-line pt-5 sm:flex-row sm:items-end">
                     <Field
                       label="Kode promo"
                       htmlFor="promo"
@@ -456,7 +456,7 @@ export function CheckoutFlow({
               {step === 2 ? (
                 <>
                   <div className="flex flex-col gap-1">
-                    <h2 className="text-base font-bold text-ink">Tinjau pesanan</h2>
+ <h2 className="text-base font-bold text-ink">Tinjau pesanan</h2>
                     <p className="text-[12px] text-ink-mute">
                       Periksa sekali lagi. Setelah dibayar, dana terkunci di rekening penampungan
                       platform sampai barang kamu terima.
@@ -469,7 +469,7 @@ export function CheckoutFlow({
                     </Notice>
                   ) : null}
 
-                  <div className="flex flex-col gap-2.5 rounded-2xl bg-canvas p-5 outline outline-1 -outline-offset-1 outline-line">
+                  <div className="flex flex-col gap-2.5 rounded-well bg-canvas p-5 outline outline-1 -outline-offset-1 outline-line">
                     {[
                       { label: "Produk", value: product.title },
                       { label: "Penjual", value: `${seller.storeName} · Tier ${seller.tier}` },
@@ -490,7 +490,7 @@ export function CheckoutFlow({
                     ].map((row) => (
                       <div
                         key={row.label}
-                        className="flex items-start justify-between gap-6 border-b border-hairline pb-2.5 last:border-b-0 last:pb-0"
+                        className="flex items-start justify-between gap-6 border-b border-line pb-2.5 last:border-b-0 last:pb-0"
                       >
                         <span className="text-[11px] text-ink-mute">{row.label}</span>
                         <span className="text-right text-[12px] text-ink">{row.value}</span>
@@ -498,14 +498,14 @@ export function CheckoutFlow({
                     ))}
                   </div>
                   <p className="text-[11px] leading-relaxed text-ink-mute">
-                    Total final mengikuti rate card yang aktif saat kamu menekan bayar — angka di
+                    Total final mengikuti rate card yang aktif saat kamu menekan bayar. Angka di
                     atas dihitung ulang server sebelum tagihan dibuat.
                   </p>
 
                   {payment === "saldo" ? (
                     <Notice tone="astra" icon={<IconWallet size={15} />} title="Bayar instan tanpa kedaluwarsa">
                       Saldo langsung dipotong dan pesanan berstatus lunas begitu kamu menekan tombol
-                      bayar — tidak ada tagihan 15 menit.
+                      bayar. Tidak ada tagihan 15 menit.
                     </Notice>
                   ) : (
                     <Notice tone="warn" icon={<IconClock size={15} />} title="Tagihan kedaluwarsa 15 menit">
@@ -530,7 +530,7 @@ export function CheckoutFlow({
                 </>
               ) : null}
 
-              <div className="flex flex-col gap-2.5 border-t border-hairline pt-5 sm:flex-row sm:justify-between">
+              <div className="flex flex-col gap-2.5 border-t border-line pt-5 sm:flex-row sm:justify-between">
                 {step > 0 ? (
                   <Button
                     variant="ghost"
@@ -551,7 +551,7 @@ export function CheckoutFlow({
                     disabled={step === 0 ? !stepOneReady : !stepTwoReady}
                     onClick={() => setStep((value) => value + 1)}
                     trailingIcon={<IconArrowRight size={16} />}
-                    iconCircleClassName="bg-white/20"
+                    iconCircleClassName="bg-paper/20"
                   >
                     {step === 0 ? "Lanjut ke pembayaran" : "Lanjut ke tinjauan"}
                   </Button>
@@ -567,12 +567,12 @@ export function CheckoutFlow({
                         <IconLock size={15} />
                       )
                     }
-                    iconCircleClassName="bg-white/20"
+                    iconCircleClassName="bg-paper/20"
                   >
                     {!isLoggedIn
                       ? "Login untuk bayar"
                       : expired
-                        ? "Tagihan kedaluwarsa — muat ulang"
+                        ? "Tagihan kedaluwarsa, muat ulang"
                         : paying
                           ? payment === "saldo"
                             ? "Memotong saldo…"
@@ -589,7 +589,7 @@ export function CheckoutFlow({
       <aside className="flex flex-col gap-4 lg:sticky lg:top-28">
         <div className="bezel-shell p-1.5">
           <div className="bezel-core flex flex-col gap-4 p-5">
-            <span className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-ink-mute">
+            <span className="eyebrow text-ink-mute">
               Ringkasan pesanan
             </span>
 
@@ -597,7 +597,7 @@ export function CheckoutFlow({
               <ProductArt
                 seed={product.slug}
                 category={product.category}
-                className="size-16 shrink-0 rounded-2xl outline outline-1 -outline-offset-1 outline-line-strong"
+                className="size-16 shrink-0 rounded-well outline outline-1 -outline-offset-1 outline-line-strong"
               />
               <div className="flex min-w-0 flex-col gap-1">
                 <span className="text-[13px] font-bold leading-snug text-ink">
@@ -607,7 +607,7 @@ export function CheckoutFlow({
               </div>
             </div>
 
-            <div className="flex flex-col gap-1.5 border-t border-hairline pt-4">
+            <div className="flex flex-col gap-1.5 border-t border-line pt-4">
               <SummaryRow label={`Subtotal${quantityLabel}`} value={formatIDR(subtotal)} />
               <SummaryRow
                 label={`Komisi platform ${category.commissionPercent.toFixed(1).replace(".", ",")}%`}
@@ -622,14 +622,14 @@ export function CheckoutFlow({
               ) : null}
             </div>
 
-            <div className="flex items-end justify-between border-t border-hairline pt-4">
+            <div className="flex items-end justify-between border-t border-line pt-4">
               <span className="text-[11px] uppercase tracking-[0.16em] text-ink-mute">
                 Total ditahan
               </span>
               <span className="num text-xl font-extrabold text-astra-ink">{formatIDR(total)}</span>
             </div>
 
-            <div className="flex flex-col gap-2.5 border-t border-hairline pt-4">
+            <div className="flex flex-col gap-2.5 border-t border-line pt-4">
               <div className="flex items-center gap-2.5">
                 <SellerAvatar name={seller.storeName} size={30} online={seller.isOnline} />
                 <div className="flex min-w-0 flex-1 flex-col">
@@ -651,7 +651,7 @@ export function CheckoutFlow({
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 rounded-[1.5rem] bg-canvas p-5 outline outline-1 -outline-offset-1 outline-line">
+        <div className="flex flex-col gap-3 rounded-card bg-canvas p-5 outline outline-1 -outline-offset-1 outline-line">
           {[
             { icon: IconShieldCheck, text: "Dana kembali 100% kalau penjual gagal kirim." },
             { icon: IconInfo, text: "Robux gamepass berstatus pending 3–7 hari di sisi Roblox." },
@@ -685,7 +685,7 @@ function SummaryRow({ label, value, tone }: { label: string; value: string; tone
 
 function Timer({ expirySeconds, onExpire }: { expirySeconds: number; onExpire?: () => void }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl bg-robux/[0.06] px-3.5 py-2.5 outline outline-1 -outline-offset-1 outline-robux/20">
+    <div className="flex items-center justify-between rounded-well bg-robux/[0.06] px-3.5 py-2.5 outline outline-1 -outline-offset-1 outline-robux/20">
       <span className="text-[11px] text-ink-dim">Tagihan kedaluwarsa dalam</span>
       <Countdown seconds={expirySeconds} onExpire={onExpire} />
     </div>

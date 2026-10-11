@@ -25,8 +25,8 @@ export function EvidenceGallery({ items }: { items: string[] }) {
           href={src}
           target="_blank"
           rel="noreferrer"
-          title={`Bukti ${index + 1} — klik untuk ukuran penuh`}
-          className="block size-20 shrink-0 overflow-hidden rounded-xl outline outline-1 -outline-offset-1 outline-line transition-transform duration-200 hover:scale-[1.04]"
+          title={`Bukti ${index + 1}, klik untuk ukuran penuh`}
+          className="block size-20 shrink-0 overflow-hidden rounded-control outline outline-1 -outline-offset-1 outline-line transition-transform duration-200 hover:scale-[1.04]"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={src} alt={`Bukti sengketa ${index + 1}`} className="size-full object-cover" />
@@ -102,14 +102,14 @@ export function EvidencePicker({
         type="button"
         disabled={reading || items.length >= MAX_FILES}
         onClick={() => inputRef.current?.click()}
-        className="flex items-center gap-2.5 rounded-2xl bg-canvas p-4 text-left text-[12px] text-ink-dim outline outline-1 -outline-offset-1 outline-line transition-colors duration-300 hover:bg-canvas disabled:opacity-50"
+        className="flex items-center gap-2.5 rounded-well bg-canvas p-4 text-left text-[12px] text-ink-dim outline outline-1 -outline-offset-1 outline-line transition-colors duration-300 hover:bg-canvas disabled:opacity-50"
       >
         <IconUpload size={16} className={items.length > 0 ? "text-astra-ink" : "text-ink-mute"} />
         {reading
           ? "Membaca gambar…"
           : items.length > 0
-            ? `${items.length}/${MAX_FILES} gambar dilampirkan — klik untuk tambah`
-            : "Lampirkan bukti (maks 3 gambar @1,5MB — screenshot, surat Roblox, dll.)"}
+            ? `${items.length}/${MAX_FILES} gambar dilampirkan, klik untuk tambah`
+            : "Lampirkan bukti (maks 3 gambar @1,5MB): screenshot, surat Roblox, dll.)"}
       </button>
       {error ? (
         <p className="text-xs font-bold text-danger">{error}</p>
@@ -122,7 +122,7 @@ export function EvidencePicker({
               <img
                 src={src}
                 alt={`Lampiran ${index + 1}`}
-                className="size-full rounded-xl object-cover outline outline-1 -outline-offset-1 outline-line"
+                className="size-full rounded-control object-cover outline outline-1 -outline-offset-1 outline-line"
               />
               <button
                 type="button"
@@ -162,7 +162,7 @@ export function DisputeThread({
   function submitReply() {
     const text = reply.trim();
     if (text.length < 12) {
-      setError("Balasan minimal 12 karakter — jelaskan versimu dengan bukti.");
+      setError("Balasan minimal 12 karakter. Jelaskan versimu dengan bukti.");
       return;
     }
     setError(null);
@@ -179,7 +179,7 @@ export function DisputeThread({
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-2xl bg-danger/[0.04] p-5 outline outline-1 -outline-offset-1 outline-danger/20">
+    <div className="flex flex-col gap-4 rounded-well bg-danger/[0.04] p-5 outline outline-1 -outline-offset-1 outline-danger/20">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-[13px] font-bold text-ink">Sengketa #{dispute.ref} dibuka</span>
         <span className="num rounded-full bg-danger/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-danger">
@@ -188,7 +188,7 @@ export function DisputeThread({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-ink-mute">
+        <span className="eyebrow text-ink-mute">
           Klaim pembeli · {dispute.reasonLabel}
         </span>
         <p className="text-[12px] leading-relaxed text-ink-dim">{dispute.buyerNote}</p>
@@ -196,7 +196,7 @@ export function DisputeThread({
       </div>
 
       <div className="flex flex-col gap-2 border-t border-danger/15 pt-4">
-        <span className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-ink-mute">
+        <span className="eyebrow text-ink-mute">
           Balasan penjual
         </span>
         {isSeller && !locked ? (
@@ -219,7 +219,7 @@ export function DisputeThread({
             ) : null}
             {saved ? (
               <Notice tone="astra" icon={<IconCheck size={15} />}>
-                Balasan terkirim — admin dan pembeli bisa melihatnya.
+                Balasan terkirim. Admin dan pembeli bisa melihatnya.
               </Notice>
             ) : null}
             <Button

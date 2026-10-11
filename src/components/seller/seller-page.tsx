@@ -24,7 +24,7 @@ export function SellerPageHeader({
   meta?: ReactNode;
 }) {
   return (
-    <header className="flex flex-col gap-7 border-b border-hairline pb-8 md:flex-row md:items-end md:justify-between md:gap-10">
+    <header className="flex flex-col gap-7 border-b border-line pb-8 md:flex-row md:items-end md:justify-between md:gap-10">
       <div className="flex min-w-0 flex-col gap-3.5">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-ink-mute">
@@ -32,7 +32,7 @@ export function SellerPageHeader({
           </span>
           {meta}
         </div>
-        <h1 className="font-display text-[2.1rem] font-extrabold leading-[1.04] tracking-[-0.035em] text-ink md:text-[3rem]">
+ <h1 className="font-display text-page font-extrabold text-ink md:text-page">
           {title}
         </h1>
         {lede ? (
@@ -74,7 +74,7 @@ export function SellerSection({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex min-w-0 flex-col gap-1">
               {title ? (
-                <h2 className="font-display text-[15px] font-extrabold tracking-[-0.01em] text-ink">
+ <h2 className="font-display text-[15px] font-extrabold text-ink">
                   {title}
                 </h2>
               ) : null}

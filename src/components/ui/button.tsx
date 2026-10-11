@@ -6,11 +6,12 @@ type Variant = "primary" | "secondary" | "ghost" | "danger" | "robux";
 type Size = "sm" | "md" | "lg";
 
 const base =
-  "group relative inline-flex select-none items-center justify-center gap-2.5 rounded-full font-bold whitespace-nowrap transition-[transform,translate,scale,rotate,background-color,box-shadow,color,border-color] duration-300 ease-[var(--ease-astra)] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-45";
+  "group relative inline-flex select-none items-center justify-center gap-2.5 rounded-control font-bold whitespace-nowrap transition duration-200 ease-[var(--ease-astra)] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-45";
 
 const variants: Record<Variant, string> = {
-  primary:
-    "accent-gradient text-white shadow-[0_10px_24px_-12px_rgba(225,29,72,0.55)] hover:brightness-[1.07]",
+  // `sheen` (globals.css) sweeps one light pass across the fill on hover; it is
+  // transform-only and honours prefers-reduced-motion like the rest of the app.
+  primary: "sheen bg-astra text-white hover:bg-astra-deep",
   secondary:
     "bg-paper text-ink outline outline-1 -outline-offset-1 outline-line hover:bg-canvas",
   ghost: "bg-transparent text-ink-dim hover:bg-canvas hover:text-ink",
@@ -55,7 +56,7 @@ function inner(
           className={cx(
             "grid shrink-0 place-items-center rounded-full transition-transform duration-300 ease-[var(--ease-astra)] group-hover:translate-x-0.5 group-hover:-translate-y-px",
             iconCircle[size],
-            props.iconCircleClassName ?? "bg-white/20",
+            props.iconCircleClassName ?? "bg-paper/20",
           )}
         >
           {trailingIcon}

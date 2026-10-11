@@ -36,10 +36,10 @@ type Tab = "sengketa" | "escrow" | "tarik" | "rate" | "audit";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "sengketa", label: "Antrean sengketa" },
-  { id: "escrow", label: "Escrow & payout" },
+  { id: "escrow", label: "Escrow & pencairan" },
   { id: "tarik", label: "Penarikan" },
   { id: "rate", label: "Rate Robux" },
-  { id: "audit", label: "Log audit" },
+  { id: "audit", label: "Jejak audit" },
 ];
 
 const RBAC: { action: string; allowed: boolean }[] = [
@@ -103,8 +103,8 @@ export function AdminShell({
     setEscrow((prev) => prev.filter((e) => e.code !== orderCode));
     setFlash(
       outcome === "refund"
-        ? `Sengketa ${orderCode} diterima — refund dikirim ke pembeli.`
-        : `Sengketa ${orderCode} ditolak — dana dicairkan ke penjual.`,
+        ? `Sengketa ${orderCode} diterima. Refund dikirim ke pembeli.`
+        : `Sengketa ${orderCode} ditolak. Dana dicairkan ke penjual.`,
     );
     router.refresh();
   }
@@ -127,7 +127,7 @@ export function AdminShell({
       return;
     }
     setWithdrawals((prev) => prev.filter((w) => w.ref !== ref));
-    setFlash(`Penarikan ${ref} disetujui — dana dicairkan ke rekening penjual.`);
+    setFlash(`Penarikan ${ref} disetujui. Dana dicairkan ke rekening penjual.`);
     router.refresh();
   }
 
@@ -138,7 +138,7 @@ export function AdminShell({
       return;
     }
     setWithdrawals((prev) => prev.filter((w) => w.ref !== ref));
-    setFlash(`Penarikan ${ref} ditolak — dana dikembalikan ke dompet penjual.`);
+    setFlash(`Penarikan ${ref} ditolak. Dana dikembalikan ke dompet penjual.`);
     router.refresh();
   }
 
@@ -156,7 +156,7 @@ export function AdminShell({
       value: String(totals.pendingWithdrawalCount),
       tone: totals.pendingWithdrawalCount > 0 ? ("warn" as const) : ("neutral" as const),
     },
-    { label: "Entri log audit", value: String(logs.length), tone: "neutral" as const },
+    { label: "Entri jejak audit", value: String(logs.length), tone: "neutral" as const },
   ];
 
   return (
@@ -164,7 +164,7 @@ export function AdminShell({
       <SectionHeading
         eyebrow="Ruang kontrol"
         title="Panel admin Blox Astra"
-        description="Arbitrase sengketa, pencairan manual, dan jejak audit — semuanya tercatat seperti skema admin_audit_logs pada PRD."
+        description="Arbitrase sengketa, pencairan manual, dan jejak audit tercatat di tabel admin_audit_logs."
       />
 
       <div className="flex items-center flex-wrap gap-2.5">
@@ -177,7 +177,7 @@ export function AdminShell({
         {stats.map((stat) => (
           <div
             key={stat.label}
-            className="flex flex-col gap-1.5 rounded-[1.4rem] bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line"
+            className="flex flex-col gap-1.5 rounded-card bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line"
           >
             <span className="text-[10px] uppercase tracking-[0.16em] text-ink-mute">
               {stat.label}
@@ -212,17 +212,31 @@ export function AdminShell({
               "flex-1 rounded-full px-4 py-2 text-[12px] font-bold transition-colors duration-300",
               tab === item.id
                 ? "bg-astra text-white"
-                : "text-ink-dim hover:bg-surface-2 hover:text-ink",
+                : "text-ink-dim hover:bg-canvas-2 hover:text-ink",
             )}
           >
             {item.label}
             {item.id === "sengketa" && disputes.length > 0 ? (
-              <span className="num ml-2 rounded-full bg-danger/15 px-1.5 py-0.5 text-[10px] text-danger">
+              <span
+                className={cx(
+                  "num ml-2 rounded-full px-1.5 py-0.5 text-[10px]",
+                  // The active tab is solid crimson, so the tone-coloured badge
+                  // would sink into it. On crimson, invert to a light chip.
+                  tab === item.id
+                    ? "bg-paper/25 text-white"
+                    : "bg-danger/15 text-danger",
+                )}
+              >
                 {disputes.length}
               </span>
             ) : null}
             {item.id === "tarik" && withdrawals.length > 0 ? (
-              <span className="num ml-2 rounded-full bg-warn/15 px-1.5 py-0.5 text-[10px] text-warn">
+              <span
+                className={cx(
+                  "num ml-2 rounded-full px-1.5 py-0.5 text-[10px]",
+                  tab === item.id ? "bg-paper/25 text-white" : "bg-warn/15 text-warn",
+                )}
+              >
                 {withdrawals.length}
               </span>
             ) : null}
@@ -278,7 +292,7 @@ function DisputeQueue({
       {orders.map((order) => (
         <article
           key={order.orderId}
-          className="flex flex-col gap-5 rounded-[1.5rem] bg-canvas p-5 outline outline-1 -outline-offset-1 outline-line md:p-6"
+          className="flex flex-col gap-5 rounded-card bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line md:p-6"
         >
           <div className="flex flex-wrap items-center gap-2.5">
             <StatusPill state={order.state} />
@@ -295,7 +309,7 @@ function DisputeQueue({
             <ProductArt
               seed={order.productSlug || order.code}
               category="item"
-              className="size-14 shrink-0 rounded-2xl"
+              className="size-14 shrink-0 rounded-well"
             />
             <div className="flex min-w-0 flex-col gap-1">
               <span className="truncate text-sm font-extrabold text-ink">{order.productTitle}</span>
@@ -306,14 +320,14 @@ function DisputeQueue({
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="flex flex-col gap-2 rounded-2xl bg-surface-2 p-4">
-              <span className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-ink-mute">
+            <div className="flex flex-col gap-2 rounded-well bg-canvas-2 p-4">
+              <span className="eyebrow text-ink-mute">
                 Keluhan pembeli
               </span>
               <p className="text-[13px] leading-relaxed text-ink-dim">{order.dispute.buyerNote}</p>
             </div>
-            <div className="flex flex-col gap-2 rounded-2xl bg-surface-2 p-4">
-              <span className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-ink-mute">
+            <div className="flex flex-col gap-2 rounded-well bg-canvas-2 p-4">
+              <span className="eyebrow text-ink-mute">
                 Tanggapan penjual
               </span>
               <p className="text-[13px] leading-relaxed text-ink-dim">
@@ -324,7 +338,7 @@ function DisputeQueue({
 
           {order.dispute.evidence.length > 0 ? (
             <div className="flex flex-col gap-2">
-              <span className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.14em] text-ink-mute">
+              <span className="flex items-center gap-2 eyebrow text-ink-mute">
                 <IconFileText size={13} /> Bukti terlampir
               </span>
               <ul className="flex flex-col gap-1.5">
@@ -338,7 +352,7 @@ function DisputeQueue({
             </div>
           ) : null}
 
-          <div className="flex flex-col gap-3 border-t border-hairline pt-4">
+          <div className="flex flex-col gap-3 border-t border-line pt-4">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <StatRow label="Nilai pesanan" value={formatIDR(order.total)} tone="astra" />
               <StatRow label="Biaya platform" value={formatIDR(order.platformFee)} />
@@ -351,14 +365,14 @@ function DisputeQueue({
                 leadingIcon={<IconScale size={16} />}
                 onClick={() => onResolve(order.code, "refund")}
               >
-                Terima sengketa — refund pembeli
+                Terima sengketa, refund ke pembeli
               </Button>
               <Button
                 variant="secondary"
                 leadingIcon={<IconWallet size={16} />}
                 onClick={() => onResolve(order.code, "release")}
               >
-                Tolak sengketa — cairkan ke penjual
+                Tolak sengketa, cairkan ke penjual
               </Button>
             </div>
           </div>
@@ -380,13 +394,13 @@ function EscrowLedger({
       {orders.map((order) => (
         <div
           key={order.orderId}
-          className="flex flex-col gap-4 rounded-[1.4rem] bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line md:flex-row md:items-center md:justify-between"
+          className="flex flex-col gap-4 rounded-card bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line md:flex-row md:items-center md:justify-between"
         >
           <div className="flex min-w-0 items-center gap-4">
             <ProductArt
               seed={order.productSlug || order.code}
               category="item"
-              className="size-11 shrink-0 rounded-xl"
+              className="size-11 shrink-0 rounded-control"
             />
             <div className="flex min-w-0 flex-col gap-1">
               <div className="flex flex-wrap items-center gap-2">
@@ -491,7 +505,7 @@ function WithdrawalRow({
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-[1.4rem] bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line md:p-5">
+    <div className="flex flex-col gap-4 rounded-card bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line md:p-4">
       <div className="flex flex-wrap items-center gap-3">
         <Badge tone="warn" icon={<IconWallet size={13} />}>
           {row.ref}
@@ -503,7 +517,7 @@ function WithdrawalRow({
         <span className="num ml-auto text-[11px] text-ink-mute">{formatDateTime(row.createdAt)}</span>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-surface-2 px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-well bg-canvas-2 px-4 py-3">
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className="truncate text-[13px] font-bold text-ink">{row.storeName}</span>
           <span className="num text-[11px] text-ink-mute">
@@ -567,7 +581,7 @@ function AuditLog({ logs }: { logs: AdminAuditRow[] }) {
         {logs.map((entry) => (
           <div
             key={entry.id}
-            className="flex flex-col gap-3 rounded-[1.4rem] bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line"
+            className="flex flex-col gap-3 rounded-card bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line"
           >
             <div className="flex flex-wrap items-center gap-2.5">
               <Badge tone={entry.actor.startsWith("admin") ? "astra" : "neutral"}>
@@ -580,7 +594,7 @@ function AuditLog({ logs }: { logs: AdminAuditRow[] }) {
                 {formatDateTime(entry.createdAt)}
               </span>
             </div>
-            <code className="num block overflow-x-auto rounded-xl bg-surface-2 px-3 py-2 text-[11px] leading-relaxed text-ink-dim">
+            <code className="num block overflow-x-auto rounded-control bg-canvas-2 px-3 py-2 text-[11px] leading-relaxed text-ink-dim">
               {entry.diffPayload}
             </code>
             <div className="flex flex-wrap gap-3 text-[11px] text-ink-mute">
@@ -592,14 +606,14 @@ function AuditLog({ logs }: { logs: AdminAuditRow[] }) {
         ))}
       </div>
 
-      <div className="flex flex-col gap-3 rounded-[1.5rem] bg-canvas p-5 outline outline-1 -outline-offset-1 outline-line">
+      <div className="flex flex-col gap-3 rounded-card bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line">
         <span className="text-[12px] font-extrabold uppercase tracking-[0.06em] text-ink">
           Matriks hak akses admin (PRD §10)
         </span>
         {RBAC.map((row) => (
           <div
             key={row.action}
-            className="flex items-center justify-between gap-4 border-b border-hairline py-2 last:border-b-0"
+            className="flex items-center justify-between gap-4 border-b border-line py-2 last:border-b-0"
           >
             <span className="text-xs text-ink-dim">{row.action}</span>
             <Badge
@@ -810,7 +824,7 @@ function RateRobuxEditor({ initialRates }: { initialRates: InitialRates }) {
       ) : null}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <section className="flex flex-col gap-4 rounded-[1.5rem] bg-canvas p-5 outline outline-1 -outline-offset-1 outline-line">
+        <section className="flex flex-col gap-4 rounded-card bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line">
           <span className="text-[12px] font-extrabold uppercase tracking-[0.06em] text-ink">
             Katalog Robux · Rp per Robux bersih
           </span>
@@ -861,9 +875,9 @@ function RateRobuxEditor({ initialRates }: { initialRates: InitialRates }) {
           </div>
         </section>
 
-        <section className="flex flex-col gap-4 rounded-[1.5rem] bg-canvas p-5 outline outline-1 -outline-offset-1 outline-line">
+        <section className="flex flex-col gap-4 rounded-card bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line">
           <span className="text-[12px] font-extrabold uppercase tracking-[0.06em] text-ink">
-            Flows /beli/robux-* · Rp per Robux
+Alur beli Robux · Rp per Robux
           </span>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <RateInput
@@ -898,7 +912,7 @@ function RateRobuxEditor({ initialRates }: { initialRates: InitialRates }) {
           </div>
         </section>
 
-        <section className="flex flex-col gap-4 rounded-[1.5rem] bg-canvas p-5 outline outline-1 -outline-offset-1 outline-line">
+        <section className="flex flex-col gap-4 rounded-card bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line">
           <span className="text-[12px] font-extrabold uppercase tracking-[0.06em] text-ink">
             Roblox Premium · Rp per bulan
           </span>

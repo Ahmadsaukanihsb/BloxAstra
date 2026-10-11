@@ -70,7 +70,7 @@ export function ListingManager({ items: initial }: { items: SellerInventoryItem[
       <EmptyState
         icon={<IconPackage size={22} />}
         title="Belum ada listing"
-        description="Buat listing pertamamu lewat form di atas — langsung tayang di katalog selama toko online."
+        description="Buat listing pertamamu lewat form di atas. Langsung tayang di katalog selama toko online."
       />
     );
   }
@@ -83,7 +83,7 @@ export function ListingManager({ items: initial }: { items: SellerInventoryItem[
         </Notice>
       ) : null}
 
-      <div className="flex flex-col divide-y divide-hairline rounded-[1.4rem] bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line">
+      <div className="flex flex-col divide-y divide-line rounded-card bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line">
         {items.map((item) => (
           <div key={item.id} className="flex flex-col gap-3 py-3.5 first:pt-0 last:pb-0">
             <div className="flex flex-wrap items-center gap-3">
@@ -210,7 +210,7 @@ function ListingEditor({
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-2xl bg-paper p-4 outline outline-1 -outline-offset-1 outline-line">
+    <div className="flex flex-col gap-4 rounded-well bg-paper p-4 outline outline-1 -outline-offset-1 outline-line">
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <Field label="Judul" htmlFor={`edit-title-${item.id}`} className="md:col-span-2">
           <TextInput

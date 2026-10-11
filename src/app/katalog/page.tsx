@@ -43,7 +43,7 @@ function parsePage(value: string | string[] | undefined): number {
 
 function CatalogFallback() {
   return (
-      <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-12 md:px-8 md:pt-16">
+      <div className="shell pb-24 pt-10 md:pt-14">
       <div className="flex flex-col gap-6">
         <Skeleton className="h-9 w-64" />
         <Skeleton className="h-4 w-full max-w-xl" />
@@ -52,9 +52,9 @@ function CatalogFallback() {
           {Array.from({ length: 6 }).map((_, index) => (
             <div
               key={index}
-              className="flex flex-col gap-3 rounded-[1.65rem] bg-canvas p-2.5 outline outline-1 -outline-offset-1 outline-line"
+              className="flex flex-col gap-3 rounded-card bg-canvas p-2.5 outline outline-1 -outline-offset-1 outline-line"
             >
-              <Skeleton className="aspect-[4/3] w-full rounded-[1.35rem]" />
+              <Skeleton className="aspect-[4/3] w-full rounded-card" />
               <Skeleton className="h-3 w-2/3" />
               <Skeleton className="h-3 w-1/2" />
             </div>

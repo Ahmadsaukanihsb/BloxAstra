@@ -75,7 +75,7 @@ export function RobuxPacks({ products }: { products: Product[] }) {
         >
           {/* custom nominal */}
           <RevealItem className="h-full">
-            <div className="relative flex h-full flex-col items-center gap-3 rounded-3xl border-2 border-astra bg-paper px-4 pb-4 pt-6 text-center shadow-[0_18px_40px_-30px_rgba(225,29,72,0.6)]">
+            <div className="relative flex h-full flex-col items-center gap-3 rounded-card border-2 border-astra bg-paper px-4 pb-4 pt-6 text-center">
               <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-astra px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-[0.06em] text-white">
                 Bebas
               </span>
@@ -85,7 +85,7 @@ export function RobuxPacks({ products }: { products: Product[] }) {
                   Nominal
                 </span>
               </span>
-              <label className="flex w-full items-center gap-2 rounded-2xl border border-line bg-paper px-3 py-2">
+              <label className="flex w-full items-center gap-2 rounded-well border border-line bg-paper px-3 py-2">
                 <input
                   value={custom}
                   onChange={(event) => setCustom(event.target.value.replace(/\D/g, "").slice(0, 6))}
@@ -102,7 +102,7 @@ export function RobuxPacks({ products }: { products: Product[] }) {
               </span>
               <Link
                 href="/katalog?kategori=gamepass"
-                className="accent-gradient flex h-10 w-full items-center justify-center rounded-full text-[11px] font-extrabold uppercase tracking-[0.06em] text-white transition-[filter] duration-300 hover:brightness-[1.08]"
+                className="accent-fill flex h-10 w-full items-center justify-center rounded-control text-[11px] font-extrabold uppercase tracking-[0.06em] text-white transition-[filter] duration-300 hover:brightness-[1.08]"
               >
                 Beli sekarang
               </Link>
@@ -111,7 +111,7 @@ export function RobuxPacks({ products }: { products: Product[] }) {
 
           {packs.map((pack) => (
             <RevealItem key={pack.slug} className="h-full">
-              <div className="relative flex h-full flex-col items-center gap-3 rounded-3xl border border-line bg-paper px-4 pb-4 pt-6 text-center">
+              <div className="relative flex h-full flex-col items-center gap-3 rounded-card border border-line bg-paper px-4 pb-4 pt-6 text-center">
                 <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-astra px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-[0.06em] text-white">
                   {pack.badge}
                 </span>
@@ -123,7 +123,7 @@ export function RobuxPacks({ products }: { products: Product[] }) {
                     Robux
                   </span>
                 </span>
-                <span className="grid size-11 place-items-center rounded-xl bg-canvas-2 text-robux">
+                <span className="grid size-11 place-items-center rounded-control bg-canvas-2 text-robux">
                   <RobuxGlyph size={22} />
                 </span>
                 <span className="num mt-auto text-[15px] font-extrabold text-astra">
@@ -131,7 +131,7 @@ export function RobuxPacks({ products }: { products: Product[] }) {
                 </span>
                 <Link
                   href={`/produk/${pack.slug}`}
-                  className="accent-gradient flex h-10 w-full items-center justify-center rounded-full text-[11px] font-extrabold uppercase tracking-[0.06em] text-white transition-[filter] duration-300 hover:brightness-[1.08]"
+                  className="accent-fill flex h-10 w-full items-center justify-center rounded-control text-[11px] font-extrabold uppercase tracking-[0.06em] text-white transition-[filter] duration-300 hover:brightness-[1.08]"
                 >
                   Beli sekarang
                 </Link>

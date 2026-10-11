@@ -16,9 +16,9 @@ export default function RobuxUsernamePage() {
   return (
     <Suspense
       fallback={
-        <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-28 md:px-8 md:pt-36">
+        <div className="shell pb-24 pt-24 md:pt-28">
           <Skeleton className="h-9 w-64" />
-          <Skeleton className="mt-6 h-80 w-full rounded-3xl" />
+          <Skeleton className="mt-6 h-80 w-full rounded-card" />
         </div>
       }
     >

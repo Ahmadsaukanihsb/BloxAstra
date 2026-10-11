@@ -41,7 +41,7 @@ export async function lookupRobloxUsers(
       cache: "no-store",
     });
     if (response.status === 429) {
-      throw new RobloxApiError("Rate limit Roblox tercapai — coba lagi sebentar.");
+      throw new RobloxApiError("Rate limit Roblox tercapai. Coba lagi sebentar.");
     }
     if (!response.ok) {
       throw new RobloxApiError(`Roblox ${response.status}`);

@@ -26,7 +26,7 @@ export const orderStates: Record<
   },
   paid: {
     label: "Dibayar · Dana Ditahan",
-    buyerHint: "Dana ditahan sistem. Penjual diminta segera memulai — pesanan yang terlalu lama tak tersentuh dikembalikan otomatis.",
+    buyerHint: "Dana ditahan sistem. Penjual diminta segera memulai. Pesanan yang terlalu lama tak tersentuh dikembalikan otomatis.",
     tone: "astra",
   },
   processing: {

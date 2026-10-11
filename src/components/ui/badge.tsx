@@ -11,7 +11,7 @@ const tones: Record<Tone, string> = {
   danger: "bg-danger/10 text-danger outline-danger/25",
   warn: "bg-warn/10 text-warn outline-warn/25",
   muted: "bg-transparent text-ink-mute outline-line",
-  success: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 outline-emerald-500/25",
+  success: "bg-success/10 text-success outline-success/25",
 };
 
 export function Badge({

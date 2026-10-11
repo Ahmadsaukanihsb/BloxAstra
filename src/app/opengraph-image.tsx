@@ -16,7 +16,7 @@ export default function OpengraphImage() {
           justifyContent: "center",
           gap: 18,
           padding: 80,
-          background: "linear-gradient(135deg, #160409 0%, #3d0a1e 55%, #0b0b10 100%)",
+          background: "linear-gradient(135deg, #2a0605 0%, #6d1009 55%, #121216 100%)",
           color: "#fff",
           fontFamily: "sans-serif",
         }}
@@ -27,7 +27,7 @@ export default function OpengraphImage() {
               width: 54,
               height: 54,
               borderRadius: 16,
-              background: "#E11D48",
+              background: "#e2231a",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -42,7 +42,7 @@ export default function OpengraphImage() {
         <div style={{ fontSize: 58, fontWeight: 800, lineHeight: 1.05, letterSpacing: -2 }}>
           Top Up Robux &amp; Gamepass Roblox Murah
         </div>
-        <div style={{ fontSize: 26, color: "#fda4af" }}>
+        <div style={{ fontSize: 26, color: "#fbdcd9" }}>
           Dana ditahan sampai barang diterima · Penjual terverifikasi
         </div>
       </div>

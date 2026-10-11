@@ -215,7 +215,7 @@ export function OrderRoom({
       if (result.paid) {
         setReconcileNote({
           tone: "astra",
-          text: "Pembayaran lunas — dana ditahan platform, halaman dimuat ulang.",
+          text: "Pembayaran lunas. Dana ditahan platform; halaman dimuat ulang.",
         });
       } else {
         setReconcileNote({
@@ -238,7 +238,7 @@ export function OrderRoom({
   return (
     <div className="flex flex-col gap-4">
       {order.slaRemainingSeconds !== null && order.slaLabel ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.4rem] bg-robux/[0.06] px-5 py-3.5 outline outline-1 -outline-offset-1 outline-robux/20">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-card bg-robux/[0.06] px-5 py-3.5 outline outline-1 -outline-offset-1 outline-robux/20">
           <span className="flex items-center gap-2.5 text-[12px] text-ink-dim">
             <IconTimer size={16} className="text-robux" />
             {order.slaLabel}
@@ -267,7 +267,7 @@ export function OrderRoom({
       {/* Chat room */}
       <div className="bezel-shell p-1.5">
         <div className="bezel-core flex flex-col">
-          <div className="flex items-center justify-between gap-3 border-b border-hairline px-5 py-3.5">
+          <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3.5">
             <span className="flex items-center gap-2.5 text-[13px] font-bold text-ink">
               <IconChat size={16} className="text-astra-ink" />
               Ruang pesanan
@@ -297,7 +297,7 @@ export function OrderRoom({
                   </span>
                   <div
                     className={cx(
-                      "max-w-[88%] rounded-2xl px-4 py-2.5 text-[12px] leading-relaxed",
+                      "max-w-[88%] rounded-well px-4 py-2.5 text-[12px] leading-relaxed",
                       system
                         ? "bg-astra/[0.07] text-astra-ink outline outline-1 -outline-offset-1 outline-astra/20"
                         : mine
@@ -312,7 +312,7 @@ export function OrderRoom({
             })}
           </div>
 
-          <div className="flex flex-col gap-2.5 border-t border-hairline p-4 sm:flex-row sm:items-end">
+          <div className="flex flex-col gap-2.5 border-t border-line p-4 sm:flex-row sm:items-end">
             <Field label="Pesan" htmlFor="chat-input" className="flex-1">
               <TextArea
                 id="chat-input"
@@ -433,7 +433,7 @@ export function OrderRoom({
                   onClick={() => toggleStep(step.id)}
                   aria-pressed={step.done}
                   className={cx(
-                    "flex items-start gap-3.5 rounded-2xl p-4 text-left transition-colors duration-300 ease-[var(--ease-astra)]",
+                    "flex items-start gap-3.5 rounded-well p-4 text-left transition-colors duration-300 ease-[var(--ease-astra)]",
                     step.done
                       ? "bg-astra/[0.06] outline outline-1 -outline-offset-1 outline-astra/25"
                       : "bg-canvas outline outline-1 -outline-offset-1 outline-line hover:bg-canvas",
@@ -457,7 +457,7 @@ export function OrderRoom({
               ))}
             </div>
 
-            <div className="flex flex-col gap-3 rounded-2xl bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line">
+            <div className="flex flex-col gap-3 rounded-well bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line">
               <div className="flex items-center justify-between gap-4">
                 <span className="text-[11px] text-ink-mute">Username</span>
                 <span className="num text-[12px] text-ink">{order.credentials.username}</span>
@@ -548,7 +548,7 @@ export function OrderRoom({
                   </span>
                 </div>
               ) : null}
-              <div className="flex flex-wrap items-center gap-2 border-t border-hairline pt-3">
+              <div className="flex flex-wrap items-center gap-2 border-t border-line pt-3">
                 <Button
                   variant="secondary"
                   size="sm"
@@ -600,7 +600,7 @@ export function OrderRoom({
 
             <div className="flex flex-col gap-3">
               {order.state === "pending_payment" ? (
-                <div className="flex flex-col gap-3 rounded-2xl bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line">
+                <div className="flex flex-col gap-3 rounded-well bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-[12px] font-bold text-ink">Menunggu pembayaran</span>
                     {order.slaRemainingSeconds !== null && !slaExpired ? (
@@ -612,8 +612,8 @@ export function OrderRoom({
                   </div>
                   <p className="text-[11px] leading-relaxed text-ink-mute">
                     {slaExpired
-                      ? "Tagihan kedaluwarsa — pesanan akan dibatalkan otomatis. Bila kamu sudah membayar, tekan cek status di bawah."
-                      : "Selesaikan pembayaran sebelum tagihan kedaluwarsa. Sudah bayar tapi status macet? Tekan cek status — sistem tanya langsung ke Midtrans."}
+                      ? "Tagihan kedaluwarsa. Pesanan akan dibatalkan otomatis. Bila kamu sudah membayar, tekan cek status di bawah."
+                      : "Selesaikan pembayaran sebelum tagihan kedaluwarsa. Sudah bayar tapi status macet? Tekan cek status, sistem tanya langsung ke Midtrans."}
                   </p>
                   {reconcileNote ? (
                     <Notice tone={reconcileNote.tone}>{reconcileNote.text}</Notice>
@@ -623,7 +623,7 @@ export function OrderRoom({
                       <ButtonLink
                         href={order.paymentCheckoutUrl}
                         trailingIcon={<IconArrowRight size={15} />}
-                        iconCircleClassName="bg-white/20"
+                        iconCircleClassName="bg-paper/20"
                       >
                         Lanjutkan pembayaran
                       </ButtonLink>
@@ -634,7 +634,7 @@ export function OrderRoom({
                       onClick={checkPaymentStatus}
                       leadingIcon={<IconRefresh size={15} />}
                     >
-                      {isPending ? "Mengecek…" : "Saya sudah bayar — cek status"}
+                      {isPending ? "Mengecek…" : "Saya sudah bayar, cek status"}
                     </Button>
                   </div>
                 </div>
@@ -647,9 +647,9 @@ export function OrderRoom({
                   onClick={confirmReceived}
                   disabled={isPending}
                   trailingIcon={<IconShieldCheck size={16} />}
-                  iconCircleClassName="bg-white/20"
+                  iconCircleClassName="bg-paper/20"
                 >
-                  Barang diterima — lepas dana ke penjual
+                  Barang diterima, lepas dana ke penjual
                 </Button>
               ) : null}
 
@@ -676,7 +676,7 @@ export function OrderRoom({
               ) : null}
 
               {order.state === "refunded" ? (
-                <Notice tone="danger" title="Pesanan dibatalkan — refund dikirim">
+                <Notice tone="danger" title="Pesanan dibatalkan, refund dikirim">
                   Dana dikembalikan ke dompetmu. Skor performa penjual diturunkan otomatis.
                 </Notice>
               ) : null}
@@ -685,7 +685,7 @@ export function OrderRoom({
                 <button
                   type="button"
                   onClick={() => setDisputeOpen((open) => !open)}
-                  className="flex items-center justify-between rounded-2xl bg-canvas px-4 py-3 text-left text-[12px] text-ink-dim outline outline-1 -outline-offset-1 outline-line transition-colors duration-300 hover:bg-canvas"
+                  className="flex items-center justify-between rounded-well bg-canvas px-4 py-3 text-left text-[12px] text-ink-dim outline outline-1 -outline-offset-1 outline-line transition-colors duration-300 hover:bg-canvas"
                 >
                   <span className="flex items-center gap-2.5">
                     <IconScale size={16} className="text-danger" />
@@ -711,7 +711,7 @@ export function OrderRoom({
                   transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                   className="overflow-hidden"
                 >
-                  <div className="flex flex-col gap-4 rounded-2xl bg-danger/[0.04] p-5 outline outline-1 -outline-offset-1 outline-danger/20">
+                  <div className="flex flex-col gap-4 rounded-well bg-danger/[0.04] p-5 outline outline-1 -outline-offset-1 outline-danger/20">
                     <div className="flex flex-col gap-1">
                       <span className="text-[13px] font-bold text-ink">Alasan sengketa</span>
                       <span className="text-[11px] text-ink-mute">
@@ -764,7 +764,7 @@ export function OrderRoom({
               ) : null}
             </AnimatePresence>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline pt-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
               <span className="text-[11px] text-ink-mute">
                 Butuh bantuan? Tim mediasi menjawab lewat ruang ini, bukan lewat WhatsApp.
               </span>
@@ -780,7 +780,7 @@ export function OrderRoom({
       ) : null}
 
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-        <div className="flex flex-col gap-2.5 rounded-[1.5rem] bg-canvas p-5 outline outline-1 -outline-offset-1 outline-line">
+        <div className="flex flex-col gap-2.5 rounded-card bg-canvas p-5 outline outline-1 -outline-offset-1 outline-line">
           <span className="flex items-center gap-2 text-[12px] font-bold text-ink">
             <IconShieldCheck size={15} className="text-astra-ink" />
             Ditahan platform
@@ -792,7 +792,7 @@ export function OrderRoom({
             Auto-release berjalan otomatis bila kamu tidak mengajukan sengketa dalam masa tunggu.
           </span>
         </div>
-        <div className="flex flex-col gap-2.5 rounded-[1.5rem] bg-canvas p-5 outline outline-1 -outline-offset-1 outline-line">
+        <div className="flex flex-col gap-2.5 rounded-card bg-canvas p-5 outline outline-1 -outline-offset-1 outline-line">
           <span className="flex items-center gap-2 text-[12px] font-bold text-ink">
             <IconLock size={15} className="text-info" />
             Bukti ter-watermark

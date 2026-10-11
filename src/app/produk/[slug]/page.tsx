@@ -61,16 +61,16 @@ export async function generateMetadata(props: PageProps<"/produk/[slug]">): Prom
 
 function ProductDetailsFallback() {
   return (
-    <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-28 md:px-8 md:pt-36">
+    <div className="shell pb-24 pt-24 md:pt-28">
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.35fr_1fr] lg:items-start">
         <div className="flex flex-col gap-8">
-          <div className="bezel-shell aspect-[16/10] w-full animate-pulse rounded-[1.6rem]" />
+          <div className="bezel-shell aspect-[16/10] w-full animate-pulse rounded-card" />
           <div className="flex flex-col gap-4">
-            <div className="h-8 w-2/3 animate-pulse rounded-xl bg-canvas" />
-            <div className="h-4 w-1/2 animate-pulse rounded-lg bg-canvas" />
+            <div className="h-8 w-2/3 animate-pulse rounded-control bg-canvas" />
+            <div className="h-4 w-1/2 animate-pulse rounded-control bg-canvas" />
           </div>
         </div>
-        <div className="bezel-shell h-96 animate-pulse rounded-[1.6rem]" />
+        <div className="bezel-shell h-96 animate-pulse rounded-card" />
       </div>
     </div>
   );
@@ -104,7 +104,7 @@ async function ProductDetails({ params }: { params: Promise<{ slug: string }> })
     .slice(0, 3);
 
   return (
-    <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-28 md:px-8 md:pt-36">
+    <div className="shell pb-24 pt-24 md:pt-28">
       <script
         type="application/ld+json"
         nonce={nonce}
@@ -164,7 +164,7 @@ async function ProductDetails({ params }: { params: Promise<{ slug: string }> })
               <div className="bezel-core overflow-hidden p-1.5">
                 <ProductImage
                   product={product}
-                  className="aspect-[16/10] w-full rounded-[1.3rem]"
+                  className="aspect-[16/10] w-full rounded-card"
                 />
               </div>
             </div>
@@ -189,7 +189,7 @@ async function ProductDetails({ params }: { params: Promise<{ slug: string }> })
               />
             </div>
 
-            <h1 className="max-w-[30ch] font-display text-[1.9rem] font-extrabold leading-[1.06] tracking-tight text-ink md:text-[2.4rem]">
+ <h1 className="max-w-[30ch] font-display text-display font-extrabold text-ink md:text-display">
               {product.title}
             </h1>
 
@@ -239,7 +239,7 @@ async function ProductDetails({ params }: { params: Promise<{ slug: string }> })
 
           <div className="bezel-shell p-1.5">
             <div className="bezel-core flex flex-col gap-5 p-6">
-              <h2 className="text-base font-bold text-ink">Cara pemenuhan kategori ini</h2>
+ <h2 className="text-base font-bold text-ink">Cara pemenuhan kategori ini</h2>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {[
                   { label: "Metode", value: category.fulfillment },
@@ -252,7 +252,7 @@ async function ProductDetails({ params }: { params: Promise<{ slug: string }> })
                 ].map((row) => (
                   <div
                     key={row.label}
-                    className="flex flex-col gap-1 rounded-2xl bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line"
+                    className="flex flex-col gap-1 rounded-well bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line"
                   >
                     <span className="text-[10px] uppercase tracking-[0.16em] text-ink-mute">
                       {row.label}
@@ -264,7 +264,7 @@ async function ProductDetails({ params }: { params: Promise<{ slug: string }> })
 
               <Notice tone="info" icon={<IconInfo size={15} />} title="Username dicek ke Roblox">
                 Saat checkout, username tujuan diverifikasi langsung ke server Roblox. Kalau
-                endpoint-nya sedang 429 atau 500, tombol cek username akan bilang — pesanan tetap
+                endpoint-nya sedang 429 atau 500, tombol cek username akan menampilkan pesan gagal. Pesanan tetap
                 harus memakai username asli supaya barang tidak salah kirim.
               </Notice>
             </div>
@@ -273,7 +273,7 @@ async function ProductDetails({ params }: { params: Promise<{ slug: string }> })
           <div className="bezel-shell p-1.5">
             <div className="bezel-core flex flex-col gap-6 p-6">
               <div className="flex flex-wrap items-center justify-between gap-4">
-                <h2 className="text-base font-bold text-ink">Penilaian pembeli</h2>
+ <h2 className="text-base font-bold text-ink">Penilaian pembeli</h2>
                 <div className="flex items-center gap-3">
                   <span className="num text-2xl font-extrabold text-ink">
                     {seller.rating.toFixed(2).replace(".", ",")}
@@ -295,7 +295,7 @@ async function ProductDetails({ params }: { params: Promise<{ slug: string }> })
                 ].map((stat) => (
                   <div
                     key={stat.label}
-                    className="flex flex-col gap-1 rounded-2xl bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line"
+                    className="flex flex-col gap-1 rounded-well bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line"
                   >
                     <span className="text-[10px] uppercase tracking-[0.16em] text-ink-mute">
                       {stat.label}
@@ -331,9 +331,9 @@ async function ProductDetails({ params }: { params: Promise<{ slug: string }> })
             ].map((item) => (
               <div
                 key={item.title}
-                className="flex flex-col gap-2.5 rounded-[1.5rem] bg-canvas p-5 outline outline-1 -outline-offset-1 outline-line"
+                className="flex flex-col gap-2.5 rounded-card bg-canvas p-5 outline outline-1 -outline-offset-1 outline-line"
               >
-                <span className="grid size-9 place-items-center rounded-xl bg-astra/[0.09] text-astra-ink">
+                <span className="grid size-9 place-items-center rounded-control bg-astra/[0.09] text-astra-ink">
                   <item.icon size={17} />
                 </span>
                 <span className="text-[13px] font-bold text-ink">{item.title}</span>
@@ -389,7 +389,7 @@ async function ProductDetails({ params }: { params: Promise<{ slug: string }> })
         <Reveal className="mt-20">
           <div className="flex flex-col gap-6">
             <div className="flex flex-wrap items-end justify-between gap-4">
-              <h2 className="font-display text-2xl font-extrabold text-ink">
+ <h2 className="font-display text-title font-extrabold text-ink">
                 Listing {category.name} lainnya
               </h2>
               <ButtonLink

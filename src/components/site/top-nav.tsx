@@ -150,7 +150,7 @@ export function TopNav({
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 6, scale: 0.99 }}
                     transition={spring}
-                    className="absolute left-0 top-[calc(100%+0.5rem)] w-[34rem] origin-top-left rounded-3xl border border-line bg-paper p-2 shadow-[0_18px_44px_-24px_rgba(15,23,42,0.22)]"
+                    className="absolute left-0 top-[calc(100%+0.5rem)] w-[34rem] origin-top-left rounded-card border border-line bg-paper p-2 shadow-[0_18px_44px_-24px_rgba(23,21,46,0.22)]"
                   >
                     <div className="grid grid-cols-2 gap-1">
                       {categories.map((category) => {
@@ -162,9 +162,9 @@ export function TopNav({
                             href={
                               CATEGORY_HREF[category.slug] ?? `/katalog?kategori=${category.slug}`
                             }
-                            className="group/item flex items-start gap-3 rounded-2xl p-3 transition-colors duration-300 hover:bg-canvas"
+                            className="group/item flex items-start gap-3 rounded-well p-3 transition-colors duration-300 hover:bg-canvas"
                           >
-                            <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-xl bg-canvas text-ink-dim transition-colors duration-300 group-hover/item:bg-astra/15 group-hover/item:text-astra-ink">
+                            <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-control bg-canvas text-ink-dim transition-colors duration-300 group-hover/item:bg-astra/15 group-hover/item:text-astra-ink">
                               <Icon size={18} />
                             </span>
                             <span className="flex flex-col gap-0.5">
@@ -182,7 +182,7 @@ export function TopNav({
                     <Link
                       href="/katalog"
                       onClick={closeMenus}
-                      className="mt-1 flex items-center justify-between rounded-2xl bg-astra/[0.07] px-4 py-3 text-[13px] font-bold text-astra-ink outline outline-1 -outline-offset-1 outline-astra/20 transition-colors duration-300 hover:bg-astra/[0.12]"
+                      className="mt-1 flex items-center justify-between rounded-well bg-astra/[0.07] px-4 py-3 text-[13px] font-bold text-astra-ink outline outline-1 -outline-offset-1 outline-astra/20 transition-colors duration-300 hover:bg-astra/[0.12]"
                     >
                       Lihat semua listing aktif
                       <IconArrowRight size={16} />
@@ -242,7 +242,7 @@ export function TopNav({
               <Link
                 href="/dompet"
                 onClick={closeMenus}
-                title="Saldo akun — buka dompet"
+                title="Saldo akun, buka dompet"
                 className="num flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-astra/[0.07] px-3 text-[12px] font-extrabold text-astra-ink outline outline-1 -outline-offset-1 outline-astra/20 transition-colors duration-300 hover:bg-astra/[0.12]"
               >
                 <IconHexCoin size={14} />
@@ -333,7 +333,7 @@ export function TopNav({
                   <Link
                     href={item.href}
                     onClick={closeMenus}
-                    className="flex items-center justify-between border-b border-hairline py-4 font-display text-2xl font-bold text-ink"
+                    className="flex items-center justify-between border-b border-line py-4 font-display text-2xl font-bold text-ink"
                   >
                     {item.label}
                     <IconArrowRight size={20} className="text-ink-mute" />
@@ -365,7 +365,7 @@ export function TopNav({
                     Masuk ke akun
                   </Link>
                 )}
-                <div className="flex items-start gap-2.5 rounded-2xl bg-warn/[0.07] p-4 outline outline-1 -outline-offset-1 outline-warn/20">
+                <div className="flex items-start gap-2.5 rounded-well bg-warn/[0.07] p-4 outline outline-1 -outline-offset-1 outline-warn/20">
                   <IconAlert size={16} className="mt-0.5 shrink-0 text-warn" />
                   <p className="text-[11px] leading-relaxed text-ink-dim">
                     Jangan pernah bertransaksi Roblox lewat transfer langsung. Semua pembayaran

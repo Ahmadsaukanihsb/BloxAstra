@@ -67,12 +67,12 @@ export function StateStepper({
 
       {terminal ? (
         <p className="text-[11px] text-ink-mute">
-          Alur berhenti di status <span className="text-ink-dim">{orderStates[state].label}</span> —
-          dana {state === "refunded" ? "dikembalikan ke pembeli" : state === "disputed" ? "dibekukan" : "dibatalkan"}.
+          Alur berhenti di status <span className="text-ink-dim">{orderStates[state].label}</span>.
+          Dana {state === "refunded" ? "dikembalikan ke pembeli" : state === "disputed" ? "dibekukan" : "dibatalkan"}.
         </p>
       ) : null}
 
-      <ol className="flex flex-col divide-y divide-hairline border-t border-hairline">
+      <ol className="flex flex-col divide-y divide-line border-t border-line">
         {timeline.map((entry, index) => (
           <li key={`${entry.state}-${index}`} className="flex gap-3.5 py-3.5">
             <span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-astra/12 text-astra-ink outline outline-1 -outline-offset-1 outline-astra/25">

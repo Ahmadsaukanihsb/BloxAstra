@@ -26,7 +26,7 @@ export function Surface({
     return (
       <Tag
         className={cx(
-          "bezel-core rounded-3xl outline outline-1 -outline-offset-1 outline-line",
+          "bezel-core rounded-card outline outline-1 -outline-offset-1 outline-line",
           coreClassName,
           className,
         )}
@@ -65,12 +65,12 @@ export function SectionHeading({
     >
       <div className="flex max-w-2xl flex-col gap-3">
         {eyebrow ? (
-          <span className="flex w-fit items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.14em] text-astra-ink">
+          <span className="flex w-fit items-center gap-2 eyebrow text-astra-ink">
             <span aria-hidden className="h-0.5 w-4 rounded-full bg-current" />
             {eyebrow}
           </span>
         ) : null}
-        <h2 className="text-[1.6rem] font-extrabold leading-[1.12] tracking-[-0.03em] text-ink md:text-[2rem]">
+        <h2 className="text-title font-extrabold   text-ink md:text-title">
           {title}
         </h2>
         {description ? (
@@ -85,7 +85,7 @@ export function SectionHeading({
 }
 
 export function Hairline({ className }: { className?: string }) {
-  return <div className={cx("h-px w-full bg-hairline", className)} />;
+  return <div className={cx("h-px w-full bg-line", className)} />;
 }
 
 export function StatRow({
@@ -106,7 +106,9 @@ export function StatRow({
   }[tone];
 
   return (
-    <div className="flex items-baseline justify-between gap-4 border-b border-hairline py-2.5 last:border-b-0">
+    // Label sits above its value: in a multi-column grid a label-left/value-right
+    // row pushes every value next to the following label, so the pairs stop reading.
+    <div className="flex flex-col gap-0.5 py-1">
       <span className="text-xs text-ink-mute">{label}</span>
       <span className={cx("num text-sm font-bold", toneClass)}>{value}</span>
     </div>

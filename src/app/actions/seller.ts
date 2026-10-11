@@ -47,7 +47,7 @@ export async function sendSellerChatMessage(rawInput: unknown): Promise<SellerAc
   const parsed = chatSchema.safeParse(rawInput);
   if (!parsed.success) return { ok: false, code: "STATE", error: "Pesan tidak valid." };
   if (!checkThrottle(`seller-chat:${user.id}`, 5000)) {
-    return { ok: false, code: "STATE", error: "Terlalu cepat — tunggu 5 detik sebelum mengirim lagi." };
+    return { ok: false, code: "STATE", error: "Terlalu cepat. Tunggu 5 detik sebelum mengirim lagi." };
   }
 
   // Any signed-in user who has ever been a seller (or an admin) may post.
@@ -96,7 +96,7 @@ export async function createSellerListing(rawInput: unknown): Promise<CreateList
     return {
       ok: false,
       code: "FORBIDDEN",
-      error: "KYC belum terverifikasi — listing hanya bisa dibuat setelah admin menyetujui identitasmu.",
+      error: "KYC belum terverifikasi. Listing hanya bisa dibuat setelah admin menyetujui identitasmu.",
     };
   }
 
@@ -221,7 +221,7 @@ export async function updateSellerListing(rawInput: unknown): Promise<SellerActi
     return {
       ok: false,
       code: "FORBIDDEN",
-      error: "KYC belum terverifikasi — perubahan listing dinonaktifkan sementara.",
+      error: "KYC belum terverifikasi. Perubahan listing dinonaktifkan sementara.",
     };
   }
   if (input.imageUrl !== undefined && input.imageUrl !== null && !validImageDataUrl(input.imageUrl, 1_500_000)) {
@@ -270,7 +270,7 @@ export async function setListingListed(rawInput: unknown): Promise<SellerActionR
     return {
       ok: false,
       code: "FORBIDDEN",
-      error: "KYC belum terverifikasi — listing tidak bisa ditayangkan.",
+      error: "KYC belum terverifikasi. Listing tidak bisa ditayangkan.",
     };
   }
 
@@ -337,7 +337,7 @@ export async function setSellerOnline(online: boolean): Promise<SellerActionResu
     return {
       ok: false,
       code: "FORBIDDEN",
-      error: "KYC belum terverifikasi — toko tidak bisa dibuka sebelum admin menyetujui identitasmu.",
+      error: "KYC belum terverifikasi. Toko tidak bisa dibuka sebelum admin menyetujui identitasmu.",
     };
   }
 
@@ -549,7 +549,7 @@ export async function setSellerWebhookEnabled(enabled: unknown): Promise<SellerA
 export async function testSellerWebhook(): Promise<SellerActionResult> {
   const user = await requireRole("seller");
   if (!checkThrottle(`webhook-test:${user.id}`, 15000)) {
-    return { ok: false, code: "STATE", error: "Terlalu cepat — tunggu 15 detik." };
+    return { ok: false, code: "STATE", error: "Terlalu cepat. Tunggu 15 detik." };
   }
 
   const profile = await db.sellerProfile.findUnique({
@@ -565,7 +565,7 @@ export async function testSellerWebhook(): Promise<SellerActionResult> {
     return {
       ok: false,
       code: "STATE",
-      error: "Gagal terkirim — periksa URL (mungkin terhapus di Discord), lalu simpan ulang.",
+      error: "Gagal terkirim. Periksa URL (mungkin terhapus di Discord), lalu simpan ulang.",
     };
   }
   return { ok: true };

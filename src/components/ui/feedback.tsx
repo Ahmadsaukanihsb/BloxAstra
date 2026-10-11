@@ -5,7 +5,7 @@ export function Skeleton({ className }: { className?: string }) {
   return (
     <span
       className={cx(
-        "relative block overflow-hidden rounded-xl bg-canvas",
+        "relative block overflow-hidden rounded-control bg-canvas",
         className,
       )}
     >
@@ -33,12 +33,12 @@ export function EmptyState({
   return (
     <div
       className={cx(
-        "flex flex-col items-center gap-4 rounded-2xl bg-canvas px-6 py-14 text-center outline outline-1 -outline-offset-1 outline-dashed outline-line-strong",
+        "flex flex-col items-center gap-4 rounded-card bg-canvas px-6 py-14 text-center outline outline-1 -outline-offset-1 outline-dashed outline-line-strong",
         className,
       )}
     >
       {icon ? (
-        <span className="grid size-12 place-items-center rounded-2xl bg-canvas text-ink-mute">
+        <span className="grid size-12 place-items-center rounded-well bg-canvas text-ink-mute">
           {icon}
         </span>
       ) : null}
@@ -75,8 +75,10 @@ export function Notice({
 
   return (
     <div
+      // Notices appear in response to an action, so they get the spring curve:
+      // they land with a small overshoot instead of fading into place.
       className={cx(
-        "flex gap-3 rounded-2xl p-4 outline outline-1 -outline-offset-1",
+        "animate-pop flex gap-3 rounded-well p-4 outline outline-1 -outline-offset-1",
         map,
         className,
       )}

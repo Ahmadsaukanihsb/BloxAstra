@@ -24,7 +24,9 @@ export function AdminSellerActivator() {
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    // items-start keeps the action at label width instead of stretching the
+    // button across the whole card.
+    <div className="flex flex-col items-start gap-2">
       {error ? <Notice tone="danger">{error}</Notice> : null}
       <Button onClick={activate} disabled={isPending}>
         {isPending ? "Mengaktifkan…" : "Aktifkan akun penjual"}

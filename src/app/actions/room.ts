@@ -127,7 +127,7 @@ export async function sendRoomMessage(rawInput: unknown): Promise<RoomActionResu
   // Each message pings the other side — throttle so a loop can't flood the
   // Message table and the recipient's inbox.
   if (!checkThrottle(`room-msg:${participant.user.id}`, 3000)) {
-    return fail("STATE", "Terlalu cepat — tunggu 3 detik sebelum mengirim lagi.");
+    return fail("STATE", "Terlalu cepat. Tunggu 3 detik sebelum mengirim lagi.");
   }
 
   const fromRole = participant.order.buyerId === participant.user.id ? "buyer" : "seller";
@@ -208,7 +208,7 @@ export async function confirmOrderReceived(orderCode: string): Promise<RoomActio
         data: {
           orderId: order.id,
           state: "completed",
-          label: "Pembeli mengonfirmasi barang diterima — dana dilepas",
+          label: "Pembeli mengonfirmasi barang diterima, dana dilepas",
           actor: "buyer",
         },
       });
@@ -235,7 +235,7 @@ export async function confirmOrderReceived(orderCode: string): Promise<RoomActio
     userId: seller.userId,
     kind: "order_completed",
     title: `Dana ${orderCode} cair ke dompetmu`,
-    body: `Pembeli mengonfirmasi penerimaan — ${order.code} selesai.`,
+    body: `Pembeli mengonfirmasi penerimaan. ${order.code} selesai.`,
     link: `/pesanan/${orderCode}`,
   });
 
@@ -267,7 +267,7 @@ export async function cancelOrderAfk(orderCode: string): Promise<RoomActionResul
     return fail("STATE", "Pembatalan AFK hanya untuk pesanan yang sedang diproses.");
   }
   if (order.dispute) {
-    return fail("STATE", "Pesanan sedang dalam sengketa — hubungi admin.");
+    return fail("STATE", "Pesanan sedang dalam sengketa. Hubungi admin.");
   }
 
   const processingEvent = order.events.find((event) => event.state === "processing");
@@ -300,7 +300,7 @@ export async function cancelOrderAfk(orderCode: string): Promise<RoomActionResul
         data: {
           orderId: order.id,
           state: "refunded",
-          label: "Pembeli membatalkan — refund penuh dikirim",
+          label: "Pembeli membatalkan, refund penuh dikirim",
           actor: "buyer",
         },
       });
@@ -331,7 +331,7 @@ export async function cancelOrderAfk(orderCode: string): Promise<RoomActionResul
       userId: order.seller.userId,
       kind: "order_refunded",
       title: `${orderCode} dibatalkan pembeli (AFK)`,
-      body: "Penjual tidak merespons 30 menit — dana dikembalikan ke pembeli.",
+      body: "Penjual tidak merespons 30 menit. Dana dikembalikan ke pembeli.",
       link: `/pesanan/${orderCode}`,
     });
   }
@@ -390,7 +390,7 @@ export async function fileOrderDispute(rawInput: unknown): Promise<RoomActionRes
       data: {
         orderId: order.id,
         state: "disputed",
-        label: `Sengketa ${ref} dibuka — dana dibekukan`,
+        label: `Sengketa ${ref} dibuka, dana dibekukan`,
         actor: "buyer",
       },
     }),
@@ -419,7 +419,7 @@ export async function fileOrderDispute(rawInput: unknown): Promise<RoomActionRes
   await notifyMany(await adminUserIds(), {
     kind: "dispute_opened",
     title: `Sengketa baru ${ref}`,
-    body: `${parsed.data.orderCode} — ${DISPUTE_REASON_LABELS[parsed.data.reasonId] ?? parsed.data.reasonId}`,
+    body: `${parsed.data.orderCode}: ${DISPUTE_REASON_LABELS[parsed.data.reasonId] ?? parsed.data.reasonId}`,
     link: `/pesanan/${parsed.data.orderCode}`,
   });
   return { ok: true };
@@ -435,7 +435,7 @@ export async function replyDispute(rawInput: unknown): Promise<RoomActionResult>
   const participant = await loadParticipant(parsed.data.orderCode);
   if (!participant) return fail("NOT_FOUND", "Pesanan tidak ditemukan.");
   if (!checkThrottle(`dispute-reply:${participant.user.id}`, 30000)) {
-    return fail("STATE", "Terlalu cepat — tunggu 30 detik sebelum memperbarui balasan.");
+    return fail("STATE", "Terlalu cepat. Tunggu 30 detik sebelum memperbarui balasan.");
   }
 
   const guard = await requireSellerOfOrder(
@@ -451,7 +451,7 @@ export async function replyDispute(rawInput: unknown): Promise<RoomActionResult>
   });
   if (!dispute) return fail("STATE", "Pesanan ini tidak dalam sengketa.");
   if (dispute.status !== "open" && dispute.status !== "under_review") {
-    return fail("STATE", "Sengketa sudah diputus admin — balasan dikunci.");
+    return fail("STATE", "Sengketa sudah diputus admin. Balasan dikunci.");
   }
 
   await db.$transaction([
@@ -550,7 +550,7 @@ export async function startOrderProcessing(orderCode: string): Promise<RoomActio
     });
     if (!profile) return fail("FORBIDDEN", "Akun ini bukan penjual.");
     if (!profile.kycVerified) {
-      return fail("FORBIDDEN", "KYC belum terverifikasi — rebutan pool baru terbuka setelah KYC disetujui.");
+      return fail("FORBIDDEN", "KYC belum terverifikasi. Rebutan pool baru terbuka setelah KYC disetujui.");
     }
 
     // Race-safe pool claim: only one seller can flip paid → processing on an
@@ -590,7 +590,7 @@ export async function startOrderProcessing(orderCode: string): Promise<RoomActio
       userId: order.buyerId,
       kind: "order_processing",
       title: `${profile.storeName} mengambil pesananmu`,
-      body: `${orderCode} mulai diproses — pantau progres di ruang pesanan.`,
+      body: `${orderCode} mulai diproses. Pantau progres di ruang pesanan.`,
       link: `/pesanan/${orderCode}`,
     });
   }
@@ -600,7 +600,7 @@ export async function startOrderProcessing(orderCode: string): Promise<RoomActio
       userId: order.buyerId,
       kind: "order_processing",
       title: `Pesananmu mulai diproses`,
-      body: `${orderCode} sedang dikerjakan penjual — pantau progres di ruang pesanan.`,
+      body: `${orderCode} sedang dikerjakan penjual. Pantau progres di ruang pesanan.`,
       link: `/pesanan/${orderCode}`,
     });
   }
@@ -673,7 +673,7 @@ export async function markOrderShipped(orderCode: string): Promise<RoomActionRes
     userId: participant.order.buyerId,
     kind: "order_shipped",
     title: `Pesananmu dikirim`,
-    body: `${orderCode} ditandai terkirim — cek barangnya lalu konfirmasi penerimaan.`,
+    body: `${orderCode} ditandai terkirim. Cek barangnya lalu konfirmasi penerimaan.`,
     link: `/pesanan/${orderCode}`,
   });
 

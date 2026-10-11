@@ -32,7 +32,7 @@ export function LimitedRedeem({ products }: { products: Product[] }) {
         <div className="flex flex-col gap-5">
           <Reveal>
             <ShelfHead
-              icon={<IconCrown size={20} className="text-[#f59e0b]" />}
+              icon={<IconCrown size={20} className="text-warn" />}
               title="Koleksi"
               accent="Limited"
               href="/katalog?kategori=item"
@@ -43,12 +43,12 @@ export function LimitedRedeem({ products }: { products: Product[] }) {
               <RevealItem key={product.slug} className="h-full">
                 <Link
                   href={`/produk/${product.slug}`}
-                  className="group flex h-full flex-col gap-2.5 rounded-3xl border border-astra/20 bg-paper p-2.5 transition-[transform,translate,scale,rotate,border-color] duration-500 ease-[var(--ease-astra)] hover:-translate-y-1 hover:border-astra/50"
+                  className="group flex h-full flex-col gap-2.5 rounded-card border border-astra/20 bg-paper p-2.5 transition-[transform,translate,scale,rotate,border-color] duration-500 ease-[var(--ease-astra)] hover:-translate-y-1 hover:border-astra/50"
                 >
                   <ProductArt
                     seed={product.slug}
                     category={product.category}
-                    className="aspect-square w-full rounded-2xl"
+                    className="aspect-square w-full rounded-well"
                   />
                   <span className="line-clamp-2 px-0.5 text-[11px] font-bold leading-snug text-ink">
                     {product.title}
@@ -76,13 +76,13 @@ export function LimitedRedeem({ products }: { products: Product[] }) {
               <RevealItem key={product.slug} className="h-full">
                 <Link
                   href={`/produk/${product.slug}`}
-                  className="group flex h-full flex-col gap-2.5 rounded-3xl border border-astra/20 bg-paper p-2.5 transition-[transform,translate,scale,rotate,border-color] duration-500 ease-[var(--ease-astra)] hover:-translate-y-1 hover:border-astra/50"
+                  className="group flex h-full flex-col gap-2.5 rounded-card border border-astra/20 bg-paper p-2.5 transition-[transform,translate,scale,rotate,border-color] duration-500 ease-[var(--ease-astra)] hover:-translate-y-1 hover:border-astra/50"
                 >
                   <ProductArt
                     seed={product.slug}
                     category={product.category}
                     label={product.title.match(/\$\d+/)?.[0]}
-                    className="aspect-square w-full rounded-2xl"
+                    className="aspect-square w-full rounded-well"
                   />
                   <span className="line-clamp-2 px-0.5 text-[11px] font-bold leading-snug text-ink">
                     {product.title}
@@ -113,7 +113,7 @@ function ShelfHead({
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <h2 className="flex items-center gap-2 text-[1.15rem] font-extrabold tracking-[-0.02em] text-ink md:text-[1.35rem]">
+ <h2 className="flex items-center gap-2 text-title font-extrabold text-ink md:text-title">
         {icon}
         {title} <span className="text-astra">{accent}</span>
       </h2>

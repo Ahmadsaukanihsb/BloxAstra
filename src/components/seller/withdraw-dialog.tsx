@@ -105,7 +105,7 @@ export function WithdrawDialog({
             exit={{ opacity: 0, y: 10, scale: 0.98 }}
             transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
             onClick={(event) => event.stopPropagation()}
-            className="w-full max-w-md rounded-[1.6rem] bg-paper p-6 outline outline-1 -outline-offset-1 outline-line shadow-[0_24px_60px_-20px_rgba(16,24,40,0.35)]"
+            className="w-full max-w-md rounded-card bg-paper p-6 outline outline-1 -outline-offset-1 outline-line shadow-[0_24px_60px_-20px_rgba(16,24,40,0.35)]"
           >
             {submittedRef ? (
               <div className="flex flex-col items-center gap-4 py-4 text-center">
@@ -116,7 +116,7 @@ export function WithdrawDialog({
                   <p className="text-base font-extrabold text-ink">Penarikan diajukan</p>
                   <p className="text-[12px] leading-relaxed text-ink-mute">
                     Referensi <span className="num font-bold text-ink">{submittedRef}</span> sudah
-                    masuk antrean. Admin akan memprosesnya — saldo sudah dipotong saat pengajuan.
+                    masuk antrean. Admin akan memprosesnya. Saldo sudah dipotong saat pengajuan.
                   </p>
                 </div>
                 <Button size="sm" onClick={reset}>

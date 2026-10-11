@@ -10,12 +10,12 @@ export default function CheckoutLoading() {
       <span className="sr-only">Memuat checkout…</span>
       <div className="flex flex-col gap-6">
         <Skeleton className="h-9 w-72" />
-        <Skeleton className="h-20 w-full rounded-2xl" />
-        <Skeleton className="h-64 w-full rounded-3xl" />
+        <Skeleton className="h-20 w-full rounded-well" />
+        <Skeleton className="h-64 w-full rounded-card" />
       </div>
       <div className="flex flex-col gap-4">
-        <Skeleton className="h-80 w-full rounded-3xl" />
-        <Skeleton className="h-32 w-full rounded-3xl" />
+        <Skeleton className="h-80 w-full rounded-card" />
+        <Skeleton className="h-32 w-full rounded-card" />
       </div>
     </div>
   );

@@ -17,8 +17,8 @@ export default function SimPayPage(props: PageProps<"/bayar/sim">) {
   return (
     <Suspense
       fallback={
-        <div className="mx-auto max-w-[560px] px-4 pb-24 pt-28 md:pt-36">
-          <div className="h-96 animate-pulse rounded-[1.6rem] bg-canvas" />
+        <div className="mx-auto max-w-[560px] px-4 pb-24 pt-24 md:pt-28">
+          <div className="h-96 animate-pulse rounded-card bg-canvas" />
         </div>
       }
     >
@@ -58,7 +58,7 @@ async function SimPayContent({
       expiresAt: null,
     };
     return (
-      <div className="mx-auto max-w-[560px] px-4 pb-24 pt-28 md:pt-36">
+      <div className="mx-auto max-w-[560px] px-4 pb-24 pt-24 md:pt-28">
         <SimPayCard order={summary} simMode={isSimMode()} />
       </div>
     );
@@ -85,7 +85,7 @@ async function SimPayContent({
   };
 
   return (
-    <div className="mx-auto max-w-[560px] px-4 pb-24 pt-28 md:pt-36">
+    <div className="mx-auto max-w-[560px] px-4 pb-24 pt-24 md:pt-28">
       <SimPayCard order={summary} simMode={isSimMode()} />
     </div>
   );

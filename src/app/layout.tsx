@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { connection } from "next/server";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Manrope, Montserrat } from "next/font/google";
 import "./globals.css";
 import { validateEnv } from "@/lib/env";
 import { getCurrentUser } from "@/lib/auth";
@@ -51,8 +51,19 @@ async function PromoStripWithAuth() {
 
 validateEnv();
 
-const jakarta = Plus_Jakarta_Sans({
-  variable: "--font-jakarta",
+// Montserrat carries headings: this is the face Roblox published as the
+// replacement for Gotham when they rebuilt their own UI, so the headings read
+// Roblox-adjacent without shipping Builder Sans. Real 800 weight keeps the
+// existing `font-extrabold` display type intact.
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
+  display: "swap",
+});
+
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
   display: "swap",
@@ -64,7 +75,7 @@ const DESCRIPTION =
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Blox Astra — Top Up Robux & Gamepass Roblox Murah",
+    default: "Blox Astra: Top Up Robux & Gamepass Roblox Murah",
     template: "%s · Blox Astra",
   },
   description: DESCRIPTION,
@@ -82,13 +93,13 @@ export const metadata: Metadata = {
     type: "website",
     locale: "id_ID",
     siteName: "Blox Astra",
-    title: "Blox Astra — Top Up Robux & Gamepass Roblox Murah",
+    title: "Blox Astra: Top Up Robux & Gamepass Roblox Murah",
     description: DESCRIPTION,
     images: [{ url: "/opengraph-image", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Blox Astra — Top Up Robux & Gamepass Roblox Murah",
+    title: "Blox Astra: Top Up Robux & Gamepass Roblox Murah",
     description: DESCRIPTION,
     images: ["/opengraph-image"],
   },
@@ -103,7 +114,11 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const [categories, rates] = await Promise.all([getCategories(), getCachedActiveRates()]);
   return (
-    <html lang="id" className={`${jakarta.variable} antialiased`} suppressHydrationWarning>
+    <html
+      lang="id"
+      className={`${montserrat.variable} ${manrope.variable} antialiased`}
+      suppressHydrationWarning
+    >
       <body className="min-h-[100dvh] bg-paper text-ink selection:bg-astra-mint" suppressHydrationWarning>
         <Suspense fallback={null}>
           <SiteJsonLd description={DESCRIPTION} />

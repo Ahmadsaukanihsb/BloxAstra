@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/icons";
 
 export async function generateMetadata(props: PageProps<"/pesanan/[code]">): Promise<Metadata> {
+  await connection();
   const { code } = await props.params;
   const user = await requireUser();
   const order = await getOrderRoom(code, { id: user.id, role: user.role });
@@ -40,8 +41,8 @@ export default function OrderDetailPage(props: PageProps<"/pesanan/[code]">) {
   return (
     <Suspense
       fallback={
-        <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-28 md:px-8 md:pt-36">
-          <div className="h-40 animate-pulse rounded-[1.5rem] bg-canvas" />
+        <div className="shell pb-24 pt-24 md:pt-28">
+          <div className="h-40 animate-pulse rounded-card bg-canvas" />
         </div>
       }
     >
@@ -51,11 +52,13 @@ export default function OrderDetailPage(props: PageProps<"/pesanan/[code]">) {
 }
 
 async function OrderDetailContent({ params }: { params: Promise<{ code: string }> }) {
+  // Read the request first: the session cookie is request-time data, and
+  // touching it before opting out of the prerender trips cacheComponents.
+  await connection();
   const { code } = await params;
   const user = await requireUser();
   const order = await getOrderRoom(code, { id: user.id, role: user.role });
   if (!order) notFound();
-  await connection();
   const messages = await getOrderMessages(order.id);
   const review = await getOrderReview(order.id);
 
@@ -72,7 +75,7 @@ async function OrderDetailContent({ params }: { params: Promise<{ code: string }
           : "neutral";
 
   return (
-    <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-28 md:px-8 md:pt-36">
+    <div className="shell pb-24 pt-24 md:pt-28">
       <nav className="mb-6 flex flex-wrap items-center gap-1.5 text-[11px] text-ink-mute">
         <Link href="/pesanan" className="transition-colors hover:text-ink">
           Pesanan
@@ -95,7 +98,7 @@ async function OrderDetailContent({ params }: { params: Promise<{ code: string }
               {order.isPoolOrder ? <Badge tone="info">Diklaim dari pool</Badge> : null}
             </div>
 
-            <h1 className="font-display text-[1.7rem] font-extrabold leading-tight tracking-tight text-ink md:text-[2.1rem]">
+ <h1 className="font-display text-page font-extrabold text-ink md:text-page">
               {order.productTitle}
             </h1>
 
@@ -114,7 +117,7 @@ async function OrderDetailContent({ params }: { params: Promise<{ code: string }
             </div>
           </div>
 
-          <Suspense fallback={<div className="h-40 animate-pulse rounded-[1.5rem] bg-canvas" />}>
+          <Suspense fallback={<div className="h-40 animate-pulse rounded-card bg-canvas" />}>
             <OrderRoom order={order} messages={messages} review={review} />
           </Suspense>
         </div>
@@ -122,14 +125,14 @@ async function OrderDetailContent({ params }: { params: Promise<{ code: string }
         <aside className="flex flex-col gap-4 lg:sticky lg:top-28">
           <div className="bezel-shell p-1.5">
             <div className="bezel-core flex flex-col gap-3.5 p-5">
-              <span className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-ink-mute">
+              <span className="eyebrow text-ink-mute">
                 Rincian dana
               </span>
               <div className="flex items-center gap-3.5">
                 <ProductArt
                   seed={order.productSlug ?? order.code}
                   category={order.categorySlug ?? "item"}
-                  className="size-16 shrink-0 rounded-2xl outline outline-1 -outline-offset-1 outline-line-strong"
+                  className="size-16 shrink-0 rounded-well outline outline-1 -outline-offset-1 outline-line-strong"
                 />
                 <div className="flex flex-col gap-1">
                   <span className="text-[12px] text-ink-dim">
@@ -141,7 +144,7 @@ async function OrderDetailContent({ params }: { params: Promise<{ code: string }
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2 border-t border-hairline pt-4">
+              <div className="flex flex-col gap-2 border-t border-line pt-4">
                 {[
                   { label: "Harga produk", value: formatIDR(order.unitPrice) },
                   { label: "Komisi platform", value: formatIDR(order.platformFee) },
@@ -151,7 +154,7 @@ async function OrderDetailContent({ params }: { params: Promise<{ code: string }
                     <span className="num text-ink-dim">{row.value}</span>
                   </div>
                 ))}
-                <div className="flex items-center justify-between border-t border-hairline pt-2.5">
+                <div className="flex items-center justify-between border-t border-line pt-2.5">
                   <span className="text-[11px] uppercase tracking-[0.16em] text-ink-mute">
                     Ditahan platform
                   </span>
@@ -161,7 +164,7 @@ async function OrderDetailContent({ params }: { params: Promise<{ code: string }
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2.5 border-t border-hairline pt-4">
+              <div className="flex flex-col gap-2.5 border-t border-line pt-4">
                 <span className="flex items-center justify-between text-[11px] text-ink-mute">
                   Pelepasan otomatis
                   <span className="num text-ink-dim">
@@ -196,7 +199,7 @@ async function OrderDetailContent({ params }: { params: Promise<{ code: string }
                 </div>
               </div>
               <TierBadge tier={order.sellerTier} />
-              <div className="flex flex-col gap-2 border-t border-hairline pt-4">
+              <div className="flex flex-col gap-2 border-t border-line pt-4">
                 {[
                   {
                     label: "Serah terima rata-rata",
@@ -220,7 +223,7 @@ async function OrderDetailContent({ params }: { params: Promise<{ code: string }
               {order.productSlug ? (
                 <Link
                   href={`/produk/${order.productSlug}`}
-                  className="flex items-center justify-between rounded-2xl bg-canvas px-4 py-3 text-[12px] text-ink-dim outline outline-1 -outline-offset-1 outline-line transition-colors duration-300 hover:text-ink"
+                  className="flex items-center justify-between rounded-well bg-canvas px-4 py-3 text-[12px] text-ink-dim outline outline-1 -outline-offset-1 outline-line transition-colors duration-300 hover:text-ink"
                 >
                   Lihat listing penjual
                   <IconArrowRight size={15} />
@@ -234,7 +237,7 @@ async function OrderDetailContent({ params }: { params: Promise<{ code: string }
             aplikasi lain saat proses mediasi.
           </Notice>
 
-          <div className="flex flex-col gap-3 rounded-[1.5rem] bg-canvas p-5 outline outline-1 -outline-offset-1 outline-line">
+          <div className="flex flex-col gap-3 rounded-card bg-canvas p-5 outline outline-1 -outline-offset-1 outline-line">
             <span className="flex items-center gap-2 text-[12px] font-bold text-ink">
               <IconPackage size={15} className="text-ink-dim" />
               Logistik kategori

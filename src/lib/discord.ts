@@ -63,7 +63,7 @@ function poolEmbed(order: PoolAlertOrder) {
     content: null as string | null,
     embeds: [
       {
-        title: "⚡ Order pool baru — siapa cepat dia dapat!",
+        title: "Order pool baru: siapa cepat dia dapat",
         description: `Order **${order.code}** baru saja lunas dan masuk papan rebutan.`,
         color: 0xe11d48,
         fields: [

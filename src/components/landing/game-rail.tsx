@@ -70,12 +70,12 @@ export function GameRail({ products }: { products: Product[] }) {
               <Link
                 key={game.name}
                 href={`/katalog?game=${encodeURIComponent(game.name)}`}
-                className="group flex w-[156px] shrink-0 snap-start flex-col gap-2.5 rounded-2xl bg-paper p-2.5 outline outline-1 -outline-offset-1 outline-line transition-[transform,translate,scale,rotate,box-shadow,outline-color] duration-500 ease-[var(--ease-astra)] hover:-translate-y-1 hover:shadow-[0_14px_30px_-20px_rgba(16,24,40,0.3)] hover:outline-astra/35 sm:w-[168px]"
+                className="group flex w-[156px] shrink-0 snap-start flex-col gap-2.5 rounded-well bg-paper p-2.5 outline outline-1 -outline-offset-1 outline-line transition-[transform,translate,scale,rotate,box-shadow,outline-color] duration-500 ease-[var(--ease-astra)] hover:-translate-y-1 hover:shadow-[0_14px_30px_-20px_rgba(16,24,40,0.3)] hover:outline-astra/35 sm:w-[168px]"
               >
                 <ProductArt
                   seed={game.name}
                   category={game.art}
-                  className="aspect-square w-full rounded-xl"
+                  className="aspect-square w-full rounded-control"
                   glyphClassName="opacity-90"
                 />
                 <div className="flex flex-col gap-1 px-0.5 pb-0.5">

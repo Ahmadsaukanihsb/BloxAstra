@@ -26,10 +26,10 @@ export default function SellerSettingsPage() {
 
 function SettingsSkeleton() {
   return (
-    <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-10 md:px-8 md:pt-14">
+    <div className="shell pb-20 pt-8 md:pt-10">
       <Skeleton className="h-3 w-24" />
       <Skeleton className="mt-5 h-12 w-64 max-w-full" />
-      <Skeleton className="mt-10 h-64 w-full rounded-3xl" />
+      <Skeleton className="mt-10 h-64 w-full rounded-card" />
     </div>
   );
 }
@@ -42,7 +42,7 @@ async function SettingsContent() {
   const identity = await getSellerIdentity(user.id);
   if (!identity) {
     return (
-      <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-10 md:px-8 md:pt-14">
+      <div className="shell pb-20 pt-8 md:pt-10">
         <Notice tone="danger" title="Profil penjual belum dibuat">
           Akun ini belum memiliki profil toko. Hubungi admin untuk aktivasi penjual.
         </Notice>
@@ -57,7 +57,7 @@ async function SettingsContent() {
       : "Menunggu review";
 
   return (
-    <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-10 md:px-8 md:pt-14">
+    <div className="shell pb-20 pt-8 md:pt-10">
       <SellerStack>
         <SellerPageHeader
           eyebrow="Pengaturan"
@@ -106,7 +106,7 @@ async function SettingsContent() {
               title="Menunggu review admin"
             >
               Pengajuanmu sedang di antrean verifikasi. Selama menunggu, listing dan toko online
-              dikunci — status di halaman ini berubah otomatis begitu diputus admin.
+              dikunci. Status di halaman ini berubah otomatis begitu diputus admin.
             </Notice>
           )}
         </SellerSection>

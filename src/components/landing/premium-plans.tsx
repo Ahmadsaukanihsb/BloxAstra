@@ -27,7 +27,7 @@ export async function PremiumPlans() {
       price: formatIDR(roundUpToThousand(MONTHLY_PRICE * 3 * (1 - QUARTER_DISCOUNT))),
       badge: {
         label: `Hemat ${Math.round(QUARTER_DISCOUNT * 100)}%`,
-        className: "bg-[#10b981] text-white",
+        className: "bg-success text-white",
       },
       href: "/katalog?kategori=premium",
     },
@@ -47,7 +47,7 @@ export async function PremiumPlans() {
       <div className="mx-auto grid max-w-[1180px] grid-cols-1 gap-8 lg:grid-cols-[300px_1fr] lg:items-center">
         <Reveal>
           <div className="flex flex-col gap-1.5">
-            <h2 className="text-[1.6rem] font-extrabold leading-tight tracking-[-0.03em] text-ink md:text-[2rem]">
+ <h2 className="text-title font-extrabold leading-tight text-ink md:text-title">
               Roblox <span className="text-astra">Premium</span>
             </h2>
             <p className="text-[13px] text-ink-dim md:text-sm">
@@ -59,7 +59,7 @@ export async function PremiumPlans() {
         <RevealGroup className="grid grid-cols-1 gap-3.5 sm:grid-cols-3" stagger={0.06}>
           {PLANS.map((plan) => (
             <RevealItem key={plan.term} className="h-full">
-              <div className="relative flex h-full flex-col gap-4 rounded-3xl border border-line bg-paper p-5">
+              <div className="relative flex h-full flex-col gap-4 rounded-card border border-line bg-paper p-5">
                 {plan.badge ? (
                   <span
                     className={cx(
@@ -83,7 +83,7 @@ export async function PremiumPlans() {
 
                 <Link
                   href={plan.href}
-                  className="accent-gradient mt-auto flex h-10 items-center justify-center rounded-full text-[11px] font-extrabold uppercase tracking-[0.06em] text-white transition-[filter] duration-300 hover:brightness-[1.08]"
+                  className="accent-fill mt-auto flex h-10 items-center justify-center rounded-control text-[11px] font-extrabold uppercase tracking-[0.06em] text-white transition-[filter] duration-300 hover:brightness-[1.08]"
                 >
                   Langganan sekarang
                 </Link>

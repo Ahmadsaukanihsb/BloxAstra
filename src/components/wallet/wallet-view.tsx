@@ -106,13 +106,13 @@ export function WalletView({
       className={
         embedded
           ? "flex flex-col gap-8"
-          : "mx-auto max-w-[1180px] px-4 pb-24 pt-28 md:px-8 md:pt-36"
+          : "shell pb-24 pt-24 md:pt-28"
       }
     >
       <div className="flex flex-col gap-8">
         {embedded ? null : (
           <div className="flex flex-col gap-3">
-            <h1 className="font-display text-3xl font-extrabold tracking-tight text-ink md:text-[2.3rem]">
+ <h1 className="font-display text-page font-extrabold text-ink md:text-page">
               Dompet & penarikan
             </h1>
             <p className="max-w-[66ch] text-[13px] leading-relaxed text-ink-dim">
@@ -132,7 +132,7 @@ export function WalletView({
                   {formatIDR(wallet.balanceAvailable)}
                 </span>
                 <span className="text-[11px] text-ink-mute">
-                  Diajukan kapan saja — admin mentransfer manual ke rekening yang kamu daftarkan
+                  Diajukan kapan saja. Admin mentransfer manual ke rekening yang kamu daftarkan
                 </span>
               </div>
             </div>
@@ -226,7 +226,7 @@ export function WalletView({
                   description="Pilih kategori lain atau mulai selesaikan pesanan supaya saldo dompet bertambah."
                 />
               ) : (
-                <div className="flex flex-col divide-y divide-hairline">
+                <div className="flex flex-col divide-y divide-line">
                   {entries.map((entry) => {
                     const meta = TYPE_META[entry.type] ?? { label: entry.type, tone: "info" as const };
                     const positive = entry.amount > 0;
@@ -234,7 +234,7 @@ export function WalletView({
                       <div key={entry.id} className="flex items-start gap-4 py-4 first:pt-0">
                         <span
                           className={cx(
-                            "mt-0.5 grid size-9 shrink-0 place-items-center rounded-xl",
+                            "mt-0.5 grid size-9 shrink-0 place-items-center rounded-control",
                             positive ? "bg-astra/10 text-astra-ink" : "bg-danger/10 text-danger",
                           )}
                         >
@@ -288,7 +288,7 @@ export function WalletView({
                 </span>
 
                 {submitted ? (
-                  <div className="flex flex-col gap-4 rounded-2xl bg-astra/[0.07] p-4 outline outline-1 -outline-offset-1 outline-astra/25">
+                  <div className="flex flex-col gap-4 rounded-well bg-astra/[0.07] p-4 outline outline-1 -outline-offset-1 outline-astra/25">
                     <div className="flex items-start gap-3">
                       <IconCheckCircle size={19} className="mt-0.5 shrink-0 text-astra-ink" />
                       <div className="flex flex-col gap-1">
@@ -370,7 +370,7 @@ export function WalletView({
                       />
                     </Field>
 
-                    <div className="flex flex-col gap-2 rounded-2xl bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line">
+                    <div className="flex flex-col gap-2 rounded-well bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line">
                       <div className="flex items-center justify-between text-[11px]">
                         <span className="text-ink-mute">Nominal</span>
                         <span className="num text-ink-dim">{formatIDR(numericAmount)}</span>
@@ -379,7 +379,7 @@ export function WalletView({
                         <span className="text-ink-mute">Biaya</span>
                         <span className="num text-ink-dim">{formatIDR(fee)}</span>
                       </div>
-                      <div className="flex items-center justify-between border-t border-hairline pt-2.5">
+                      <div className="flex items-center justify-between border-t border-line pt-2.5">
                         <span className="text-[11px] uppercase tracking-[0.16em] text-ink-mute">
                           Diterima
                         </span>
@@ -390,7 +390,7 @@ export function WalletView({
                     </div>
 
                     <Button size="lg" fullWidth onClick={submit} disabled={isPending || blocked}>
-                      {blocked ? "Dinonaktifkan — ada debit paksa" : "Ajukan penarikan"}
+                      {blocked ? "Dinonaktifkan: ada debit paksa" : "Ajukan penarikan"}
                     </Button>
 
                     <p className="text-[11px] leading-relaxed text-ink-mute">

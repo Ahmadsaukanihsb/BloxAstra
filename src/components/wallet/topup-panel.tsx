@@ -55,7 +55,9 @@ export function TopUpPanel({
         <div className="flex flex-col gap-1">
           <span className="text-[13px] font-bold text-ink">Isi ulang saldo</span>
           <span className="text-[11px] text-ink-mute">
-            Saldo {formatIDR(balanceAvailable)} siap dipakai untuk belanja dengan metode Saldo Akun.
+            {balanceAvailable > 0
+              ? `Saldo ${formatIDR(balanceAvailable)} siap dipakai belanja dengan metode Saldo Akun.`
+              : "Saldo belum cukup untuk checkout dengan metode Saldo Akun. Top-up dulu di bawah."}
           </span>
         </div>
         {!open ? (
@@ -80,7 +82,7 @@ export function TopUpPanel({
       ) : null}
 
       {open ? (
-        <div className="flex flex-col gap-4 rounded-2xl bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line">
+        <div className="flex flex-col gap-4 rounded-well bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line">
           {error ? (
             <Notice tone="danger" icon={<IconAlert size={15} />}>
               {error}
@@ -94,7 +96,7 @@ export function TopUpPanel({
                 type="button"
                 onClick={() => setAmount(String(value))}
                 className={cx(
-                  "num rounded-xl px-3 py-2.5 text-[12px] font-bold transition-colors duration-200",
+                  "num rounded-control px-3 py-2.5 text-[12px] font-bold transition-colors duration-200",
                   numeric === value
                     ? "bg-astra text-white"
                     : "bg-paper text-ink-dim outline outline-1 -outline-offset-1 outline-line hover:text-ink",
@@ -132,7 +134,7 @@ export function TopUpPanel({
             </Select>
           </Field>
 
-          <div className="flex items-center justify-between rounded-xl bg-paper px-3.5 py-2.5 text-[11px] outline outline-1 -outline-offset-1 outline-line">
+          <div className="flex items-center justify-between rounded-control bg-paper px-3.5 py-2.5 text-[11px] outline outline-1 -outline-offset-1 outline-line">
             <span className="text-ink-mute">
               Total bayar{" "}
               {numeric > 0 ? `(nominal ${formatIDR(numeric)} + biaya ${formatIDR(methodFee)})` : ""}

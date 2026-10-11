@@ -75,7 +75,7 @@ function PendingTopUpRow({ item }: { item: BuyerPendingTopUp }) {
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line">
+    <div className="flex flex-col gap-3 rounded-well bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
           <span className="flex flex-wrap items-center gap-2">
@@ -151,31 +151,38 @@ export function BuyerWalletView({
   });
 
   return (
-    <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-12 md:px-8 md:pt-16">
+    <div className="shell pb-24 pt-10 md:pt-14">
       <div className="flex flex-col gap-8">
         <div className="flex flex-col gap-3">
           <span className="flex items-center gap-2 text-[13px] text-ink-mute">
             <IconWallet size={16} className="text-astra-ink" />
             Saldo akun
           </span>
-          <h1 className="font-display text-3xl font-extrabold tracking-tight text-ink md:text-[2.3rem]">
+ <h1 className="font-display text-page font-extrabold text-ink md:text-page">
             Dompet saya
           </h1>
           <p className="max-w-[66ch] text-[13px] leading-relaxed text-ink-dim">
             Isi ulang sekali, pakai berkali-kali. Saldo terpotong otomatis saat checkout dengan
-            metode Saldo Akun — tanpa biaya tambahan dan tanpa menunggu.
+            metode Saldo Akun, tanpa biaya tambahan dan tanpa menunggu.
           </p>
         </div>
 
         <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-[1.4fr_1fr]">
-          <div className="bezel-shell bg-astra/[0.03] p-1.5">
-            <div className="bezel-core flex flex-col gap-4 p-5 md:p-6">
-              <span className="text-[10px] uppercase tracking-[0.16em] text-ink-mute">
-                Saldo tersedia
-              </span>
-              <span className="num text-[2rem] font-extrabold leading-none text-astra-ink md:text-[2.5rem]">
-                {formatIDR(balanceAvailable)}
-              </span>
+          <div className="bezel-shell h-full bg-astra/[0.03] p-1.5">
+            <div className="bezel-core flex h-full flex-col justify-between gap-5 p-5 md:p-6">
+              <div className="flex flex-col gap-3">
+                <span className="text-[10px] uppercase tracking-[0.16em] text-ink-mute">
+                  Saldo tersedia
+                </span>
+                <span className="num text-[2rem] font-extrabold leading-none text-astra-ink md:text-[2.5rem]">
+                  {formatIDR(balanceAvailable)}
+                </span>
+                {balanceAvailable < 0 ? (
+                  <Notice tone="warn" icon={<IconAlert size={15} />}>
+                    Saldo minus menahan checkout dengan Saldo Akun. Top-up untuk menutupnya.
+                  </Notice>
+                ) : null}
+              </div>
               <div className="flex flex-wrap items-center gap-2.5">
                 <ButtonLink
                   href="#topup"
@@ -199,7 +206,7 @@ export function BuyerWalletView({
           <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-1">
             <div className="bezel-shell p-1.5">
               <div className="bezel-core flex items-center gap-3 p-4">
-                <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-astra/10 text-astra-ink">
+                <span className="grid size-9 shrink-0 place-items-center rounded-control bg-astra/10 text-astra-ink">
                   <IconTrendUp size={16} />
                 </span>
                 <span className="flex min-w-0 flex-col">
@@ -214,7 +221,7 @@ export function BuyerWalletView({
             </div>
             <div className="bezel-shell p-1.5">
               <div className="bezel-core flex items-center gap-3 p-4">
-                <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-astra/10 text-astra-ink">
+                <span className="grid size-9 shrink-0 place-items-center rounded-control bg-astra/10 text-astra-ink">
                   <IconReceipt size={16} />
                 </span>
                 <span className="flex min-w-0 flex-col">
@@ -229,7 +236,7 @@ export function BuyerWalletView({
             </div>
             <div className="bezel-shell p-1.5">
               <div className="bezel-core flex items-center gap-3 p-4">
-                <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-robux/15 text-[#8a5a00]">
+                <span className="grid size-9 shrink-0 place-items-center rounded-control bg-robux/15 text-robux">
                   <IconCheckCircle size={16} />
                 </span>
                 <span className="flex min-w-0 flex-col">
@@ -308,10 +315,10 @@ export function BuyerWalletView({
               <EmptyState
                 icon={<IconReceipt size={22} />}
                 title="Belum ada transaksi di sini"
-                description="Top-up saldo dulu, lalu belanja Robux atau item favoritmu — semua tercatat di sini."
+                description="Top-up saldo dulu, lalu belanja Robux atau item favoritmu. Semua tercatat di sini."
               />
             ) : (
-              <div className="flex flex-col divide-y divide-hairline">
+              <div className="flex flex-col divide-y divide-line">
                 {entriesFiltered.map((entry) => {
                   const meta = TYPE_META[entry.type] ?? {
                     label: entry.type,
@@ -326,7 +333,7 @@ export function BuyerWalletView({
                     <div key={entry.id} className="flex items-start gap-4 py-4 first:pt-0">
                       <span
                         className={cx(
-                          "mt-0.5 grid size-9 shrink-0 place-items-center rounded-xl",
+                          "mt-0.5 grid size-9 shrink-0 place-items-center rounded-control",
                           positive ? "bg-astra/10 text-astra-ink" : "bg-canvas text-ink-dim outline outline-1 -outline-offset-1 outline-line",
                         )}
                       >

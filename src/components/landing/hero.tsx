@@ -39,13 +39,13 @@ export function Hero() {
 
   return (
     <section className="relative px-4 pt-4 md:px-8 md:pt-6">
-      <div className="relative mx-auto max-w-[1180px] overflow-hidden rounded-[2rem] border border-line bg-paper px-5 py-7 md:px-8 md:py-9">
+      <div className="relative mx-auto max-w-[1180px] overflow-hidden rounded-card border border-line bg-paper px-5 py-7 md:px-8 md:py-9">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(560px at 12% 6%, rgba(225,29,72,0.10), transparent 68%), radial-gradient(520px at 88% 4%, rgba(2,132,199,0.09), transparent 72%)",
+              "radial-gradient(620px at 14% 4%, rgba(226,35,26,0.07), transparent 70%)",
           }}
         />
         <div className="relative grid grid-cols-1 items-center gap-7 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
@@ -60,7 +60,7 @@ export function Hero() {
             </Reveal>
 
             <Reveal delay={0.05}>
-              <h1 className="max-w-[20ch] font-display text-[1.85rem] font-extrabold leading-[1.04] tracking-[-0.03em] text-ink sm:text-[2.15rem] lg:text-[2.45rem]">
+              <h1 className="max-w-[20ch] font-display text-display font-extrabold text-ink">
                 Robux masuk akunmu dalam{" "}
                 <span className="accent-text relative inline-block">
                   hitungan menit
@@ -84,7 +84,7 @@ export function Hero() {
 
             <Reveal delay={0.1}>
               <p className="max-w-[56ch] text-[13px] leading-relaxed text-ink-dim md:text-sm">
-                Pilih metode, tentukan nominal, bayar — dana ditahan platform dan baru cair ke
+                Pilih metode, tentukan nominal, bayar. Dana ditahan platform dan baru cair ke
                 penjual setelah Robux masuk. Tanpa transfer langsung, tanpa password akun melayang.
               </p>
             </Reveal>
@@ -94,7 +94,7 @@ export function Hero() {
                 <ButtonLink
                   href="/katalog"
                   trailingIcon={<IconArrowRight size={16} />}
-                  iconCircleClassName="bg-white/20"
+                  iconCircleClassName="bg-paper/20"
                   className="w-full sm:w-auto"
                 >
                   Jelajahi katalog
@@ -152,7 +152,7 @@ export function Hero() {
                         }}
                         aria-pressed={method === item.kind}
                         className={cx(
-                          "flex flex-col items-center gap-0.5 rounded-2xl px-2 py-2.5 outline outline-1 -outline-offset-1 transition-colors duration-300",
+                          "flex flex-col items-center gap-0.5 rounded-well px-2 py-2.5 outline outline-1 -outline-offset-1 transition-colors duration-300",
                           method === item.kind
                             ? "bg-astra/[0.07] outline-astra/30"
                             : "bg-canvas outline-line hover:outline-astra/30",
@@ -189,7 +189,7 @@ export function Hero() {
                         </button>
                       ))}
                     </div>
-                    <label className="flex items-center gap-2 rounded-2xl bg-canvas px-4 py-3 outline outline-1 -outline-offset-1 outline-line focus-within:outline-2 focus-within:outline-astra/60">
+                    <label className="flex items-center gap-2 rounded-well bg-canvas px-4 py-3 outline outline-1 -outline-offset-1 outline-line focus-within:outline-2 focus-within:outline-astra/60">
                       <input
                         value={amount}
                         onChange={(event) => {
@@ -208,7 +208,7 @@ export function Hero() {
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between rounded-2xl bg-canvas px-4 py-3.5 outline outline-1 -outline-offset-1 outline-line">
+                  <div className="flex items-center justify-between rounded-well bg-canvas px-4 py-3.5 outline outline-1 -outline-offset-1 outline-line">
                     <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-mute">
                       Total bayar
                     </span>
@@ -219,7 +219,7 @@ export function Hero() {
 
                   <Link
                     href={config.href}
-                    className="accent-gradient flex h-11 w-full items-center justify-center gap-2 rounded-full text-sm font-extrabold text-white transition-[filter] duration-300 hover:brightness-[1.08]"
+                    className="accent-fill flex h-11 w-full items-center justify-center gap-2 rounded-control text-sm font-extrabold text-white transition-[filter] duration-300 hover:brightness-[1.08]"
                   >
                     Lanjut beli via {config.via.replace("Via ", "")}
                     <IconArrowRight size={16} />

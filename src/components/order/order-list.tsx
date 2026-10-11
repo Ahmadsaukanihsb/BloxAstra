@@ -60,14 +60,14 @@ export function OrderList({
   ];
 
   return (
-    <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-12 md:px-8 md:pt-16">
+    <div className="shell pb-24 pt-10 md:pt-14">
       <div className="flex flex-col gap-8">
         <div className="flex flex-col gap-3">
           <span className="flex items-center gap-2 text-[13px] text-ink-mute">
             <IconReceipt size={16} className="text-astra-ink" />
             Transaksi
           </span>
-          <h1 className="font-display text-3xl font-extrabold tracking-tight text-ink md:text-[2.3rem]">
+ <h1 className="font-display text-page font-extrabold text-ink md:text-page">
             Pesanan saya
           </h1>
           <p className="max-w-[62ch] text-[13px] leading-relaxed text-ink-dim">
@@ -79,7 +79,7 @@ export function OrderList({
         <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
           <div className="bezel-shell p-1.5">
             <div className="bezel-core flex items-center gap-3 p-4">
-              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-astra/10 text-astra-ink">
+              <span className="grid size-9 shrink-0 place-items-center rounded-control bg-astra/10 text-astra-ink">
                 <IconShieldCheck size={16} />
               </span>
               <span className="flex min-w-0 flex-col">
@@ -97,7 +97,7 @@ export function OrderList({
           </div>
           <div className="bezel-shell p-1.5">
             <div className="bezel-core flex items-center gap-3 p-4">
-              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-astra/10 text-astra-ink">
+              <span className="grid size-9 shrink-0 place-items-center rounded-control bg-astra/10 text-astra-ink">
                 <IconTimer size={16} />
               </span>
               <span className="flex min-w-0 flex-col">
@@ -108,14 +108,14 @@ export function OrderList({
                   {activeOrders.length} pesanan
                 </span>
                 <span className="truncate text-[10px] text-ink-mute">
-                  Belum selesai — pantau SLA-nya
+                  Belum selesai, pantau SLA-nya
                 </span>
               </span>
             </div>
           </div>
           <div className="bezel-shell p-1.5">
             <div className="bezel-core flex items-center gap-3 p-4">
-              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-astra/10 text-astra-ink">
+              <span className="grid size-9 shrink-0 place-items-center rounded-control bg-astra/10 text-astra-ink">
                 <IconHexCoin size={16} />
               </span>
               <span className="flex min-w-0 flex-col">
@@ -220,7 +220,7 @@ function OrderRow({
   return (
     <Link
       href={`/pesanan/${order.code}`}
-      className="group block rounded-[1.6rem] transition-transform duration-500 ease-[var(--ease-astra)] hover:-translate-y-0.5"
+      className="group block rounded-card transition-transform duration-500 ease-[var(--ease-astra)] hover:-translate-y-0.5"
     >
       <div className="bezel-shell p-1.5">
         <div className="bezel-core flex flex-col gap-4 p-4 md:p-5">
@@ -242,7 +242,7 @@ function OrderRow({
             <ProductArt
               seed={order.productSlug ?? order.code}
               category={(order.category ?? "item") as CategorySlug}
-              className="size-[62px] shrink-0 rounded-2xl outline outline-1 -outline-offset-1 outline-line-strong"
+              className="size-[62px] shrink-0 rounded-well outline outline-1 -outline-offset-1 outline-line-strong"
             />
             <div className="flex min-w-0 flex-1 flex-col gap-1.5">
               <span className="truncate text-[14px] font-bold text-ink">

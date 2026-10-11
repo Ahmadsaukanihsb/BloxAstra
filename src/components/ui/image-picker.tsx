@@ -30,7 +30,7 @@ export function ImagePicker({
       return;
     }
     if (file.size > 1_500_000) {
-      setError(`"${file.name}" melebihi 1,5MB — kompres dulu.`);
+      setError(`"${file.name}" melebihi 1,5MB. Kompres dulu.`);
       return;
     }
     setReading(true);
@@ -52,7 +52,7 @@ export function ImagePicker({
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-ink-mute">
+      <span className="eyebrow text-ink-mute">
         {label}
       </span>
       <input
@@ -70,7 +70,7 @@ export function ImagePicker({
             <img
               src={value}
               alt="Pratinjau foto produk"
-              className="size-full rounded-2xl object-cover outline outline-1 -outline-offset-1 outline-line-strong"
+              className="size-full rounded-well object-cover outline outline-1 -outline-offset-1 outline-line-strong"
             />
             <button
               type="button"
@@ -87,7 +87,7 @@ export function ImagePicker({
           disabled={reading}
           onClick={() => inputRef.current?.click()}
           className={cx(
-            "flex flex-1 items-center gap-2.5 rounded-2xl border border-dashed p-4 text-left transition-colors duration-200",
+            "flex flex-1 items-center gap-2.5 rounded-well border border-dashed p-4 text-left transition-colors duration-200",
             value
               ? "border-astra/40 bg-astra/[0.06]"
               : "border-line-strong bg-canvas hover:bg-canvas",
@@ -101,7 +101,7 @@ export function ImagePicker({
           )}
           <span className="flex flex-col gap-0.5">
             <span className="text-[12px] font-bold text-ink">
-              {reading ? "Membaca…" : value ? "Foto terpasang — klik untuk ganti" : "Pilih foto produk"}
+              {reading ? "Membaca…" : value ? "Foto terpasang, klik untuk ganti" : "Pilih foto produk"}
             </span>
             <span className="text-[11px] text-ink-mute">{hint}</span>
           </span>

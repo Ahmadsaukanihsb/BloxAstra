@@ -73,7 +73,7 @@ export async function notifyTopUpCredited(userId: string, code: string, amount: 
     userId,
     kind: "order_paid",
     title: `Saldo bertambah ${amount.toLocaleString("id-ID")} IDR`,
-    body: `Top-up ${code} berhasil — saldo siap dipakai untuk belanja.`,
+    body: `Top-up ${code} berhasil. Saldo siap dipakai untuk belanja.`,
     link: "/dompet",
   });
 }

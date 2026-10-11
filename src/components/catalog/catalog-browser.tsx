@@ -188,6 +188,15 @@ export function CatalogBrowser({
   // effective ceiling during render instead of syncing state in an effect.
   const effectiveMaxPrice = Math.min(maxPrice, priceCap);
 
+  // Fill share for the price slider track. The cap can move after mount, so
+  // clamp both ends and guard the zero-width range instead of dividing by it.
+  const pricePercent =
+    priceCap > priceFloor
+      ? ((Math.min(Math.max(effectiveMaxPrice, priceFloor), priceCap) - priceFloor) /
+          (priceCap - priceFloor)) *
+        100
+      : 100;
+
   const filters: Filters = {
     category,
     game,
@@ -314,7 +323,7 @@ export function CatalogBrowser({
   const filterPanel = (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
-        <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-ink-mute">
+        <p className="eyebrow text-ink-mute">
           Kategori
         </p>
         <div className="flex flex-wrap gap-1.5">
@@ -324,7 +333,7 @@ export function CatalogBrowser({
               type="button"
               onClick={() => setCategory(item.slug as CategorySlug | "semua")}
               className={cx(
-                "rounded-full px-3.5 py-1.5 text-[12px] transition-[background-color,color,transform,translate,scale,rotate] duration-300 ease-[var(--ease-astra)] active:scale-95",
+                "rounded-control px-3.5 py-1.5 text-[12px] transition duration-200 ease-[var(--ease-astra)] active:scale-95",
                 category === item.slug
                   ? "bg-astra text-white"
                   : "bg-canvas text-ink-dim outline outline-1 -outline-offset-1 outline-line hover:bg-canvas hover:text-ink",
@@ -336,8 +345,8 @@ export function CatalogBrowser({
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 border-t border-hairline pt-5">
-        <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-ink-mute">
+      <div className="flex flex-col gap-3 border-t border-line pt-5">
+        <p className="eyebrow text-ink-mute">
           Harga maksimum
         </p>
         <input
@@ -348,7 +357,10 @@ export function CatalogBrowser({
           value={Math.min(Math.max(effectiveMaxPrice, priceFloor), priceCap)}
           onChange={(event) => setMaxPrice(Number(event.target.value))}
           aria-label="Harga maksimum"
-          className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-canvas accent-astra"
+          className="smooth-range-slider my-1"
+          style={{
+            background: `linear-gradient(to right, var(--color-astra) 0%, var(--color-astra) ${pricePercent}%, var(--color-line-strong) ${pricePercent}%, var(--color-line-strong) 100%)`,
+          }}
         />
         <div className="flex items-center justify-between text-[11px]">
           <span className="num text-ink-mute">{formatIDR(priceFloor)}</span>
@@ -356,8 +368,8 @@ export function CatalogBrowser({
         </div>
       </div>
 
-      <div className="flex flex-col gap-2.5 border-t border-hairline pt-5">
-        <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-ink-mute">
+      <div className="flex flex-col gap-2.5 border-t border-line pt-5">
+        <p className="eyebrow text-ink-mute">
           Kualitas layanan
         </p>
         {[
@@ -370,7 +382,7 @@ export function CatalogBrowser({
             type="button"
             aria-pressed={toggle.value}
             onClick={() => toggle.set(!toggle.value)}
-            className="flex items-center justify-between gap-3 rounded-2xl bg-canvas px-3.5 py-3 text-left text-[12px] text-ink-dim outline outline-1 -outline-offset-1 outline-line transition-colors duration-300 ease-[var(--ease-astra)] hover:bg-canvas"
+            className="flex items-center justify-between gap-3 rounded-well bg-canvas px-3.5 py-3 text-left text-[12px] text-ink-dim outline outline-1 -outline-offset-1 outline-line transition-colors duration-300 ease-[var(--ease-astra)] hover:bg-canvas"
           >
             <span className="flex items-center gap-2.5">
               <toggle.icon size={15} className={toggle.value ? "text-astra-ink" : "text-ink-mute"} />
@@ -384,7 +396,7 @@ export function CatalogBrowser({
             >
               <span
                 className={cx(
-                  "absolute top-0.5 size-4 rounded-full bg-white transition-transform duration-300 ease-[var(--ease-astra)]",
+                  "absolute top-0.5 size-4 rounded-full bg-paper transition-transform duration-300 ease-[var(--ease-astra)]",
                   toggle.value ? "translate-x-4" : "translate-x-0.5",
                 )}
               />
@@ -419,7 +431,7 @@ export function CatalogBrowser({
               <IconCompass size={16} className="text-astra-ink" />
               Jelajah listing
             </span>
-            <h1 className="font-display text-3xl font-extrabold tracking-tight text-ink md:text-[2.4rem]">
+ <h1 className="font-display text-page font-extrabold text-ink md:text-page">
               Katalog Blox Astra
             </h1>
             <p className="max-w-[60ch] text-[13px] leading-relaxed text-ink-dim md:text-sm">
@@ -430,7 +442,7 @@ export function CatalogBrowser({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <div className="relative flex min-w-[220px] flex-1 items-center">
+            <div className="relative flex min-w-[180px] flex-1 items-center">
               <IconSearch
                 size={17}
                 className="pointer-events-none absolute left-3.5 text-ink-mute"
@@ -440,14 +452,14 @@ export function CatalogBrowser({
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Cari Robux, item, atau nama toko"
                 aria-label="Cari listing"
-                className="h-11 w-full rounded-full bg-canvas pl-11 pr-4 text-[13px] text-ink outline outline-1 -outline-offset-1 outline-line placeholder:text-ink-mute focus:outline-2 focus:-outline-offset-2 focus:outline-astra/70"
+                className="h-11 w-full rounded-control bg-canvas pl-11 pr-4 text-[13px] text-ink outline outline-1 -outline-offset-1 outline-line placeholder:text-ink-mute focus:outline-2 focus:-outline-offset-2 focus:outline-astra/70"
               />
             </div>
 
             <button
               type="button"
               onClick={() => setFiltersOpen((open) => !open)}
-              className="flex h-11 items-center gap-2 rounded-full bg-canvas px-4 text-[13px] text-ink-dim outline outline-1 -outline-offset-1 outline-line lg:hidden"
+              className="flex h-11 items-center gap-2 rounded-control bg-canvas px-4 text-[13px] text-ink-dim outline outline-1 -outline-offset-1 outline-line lg:hidden"
             >
               <IconSliders size={16} />
               Filter
@@ -458,20 +470,22 @@ export function CatalogBrowser({
               ) : null}
             </button>
 
-            <Select
-              value={sort}
-              onChange={(event) => setSort(event.target.value as SortKey)}
-              aria-label="Urutkan"
-              className="h-11 w-auto rounded-full"
-            >
-              {SORTS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
+            <div className="w-[9.5rem] shrink-0">
+              <Select
+                value={sort}
+                onChange={(event) => setSort(event.target.value as SortKey)}
+                aria-label="Urutkan"
+                className="h-11 rounded-control"
+              >
+                {SORTS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
 
-            <div className="hidden items-center gap-0.5 rounded-full bg-canvas p-1 outline outline-1 -outline-offset-1 outline-line sm:flex">
+            <div className="hidden shrink-0 items-center gap-0.5 rounded-control bg-canvas p-1 outline outline-1 -outline-offset-1 outline-line sm:flex">
               {(
                 [
                   { id: "grid" as View, icon: IconGrid, label: "Tampilan grid" },
@@ -485,7 +499,7 @@ export function CatalogBrowser({
                   aria-pressed={view === option.id}
                   onClick={() => setView(option.id)}
                   className={cx(
-                    "grid size-8 place-items-center rounded-full transition-colors duration-300",
+                    "grid size-8 place-items-center rounded-control transition-colors duration-200",
                     view === option.id ? "bg-canvas text-ink" : "text-ink-mute",
                   )}
                 >
@@ -511,7 +525,7 @@ export function CatalogBrowser({
             ) : null}
           </AnimatePresence>
 
-          <div className="flex flex-wrap items-center gap-2 border-t border-hairline pt-4">
+          <div className="flex flex-wrap items-center gap-2 border-t border-line pt-4">
             <span className="text-[11px] text-ink-mute">
               <span className="num text-ink-dim">
                 {rangeFrom}–{rangeTo}
@@ -540,7 +554,7 @@ export function CatalogBrowser({
             {Array.from({ length: 6 }).map((_, index) => (
               <div key={index} className="bezel-shell p-1.5">
                 <div className="bezel-core flex flex-col gap-3 p-2.5">
-                  <Skeleton className="aspect-[4/3] w-full rounded-[1.35rem]" />
+                  <Skeleton className="aspect-[4/3] w-full rounded-card" />
                   <Skeleton className="h-3 w-2/3" />
                   <Skeleton className="h-3 w-1/2" />
                   <div className="flex items-center justify-between pt-2">

@@ -147,7 +147,7 @@ export async function requestWithdrawal(rawInput: unknown): Promise<WithdrawalRe
       await notifyMany(await adminUserIds(), {
         kind: "withdrawal_submitted",
         title: `Penarikan baru ${outcome.withdrawal.ref}`,
-        body: `${formatIDR(input.amount)} ke ${input.bank} — menunggu persetujuan.`,
+        body: `${formatIDR(input.amount)} ke ${input.bank} , menunggu persetujuan.`,
         link: "/admin",
       });
       return { ok: true, ref: outcome.withdrawal.ref };

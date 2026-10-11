@@ -57,7 +57,7 @@ export function DiscordWebhookCard({
     }
     run(() => saveSellerWebhook({ url: value }), () => {
       setUrl("");
-      setFlash("Webhook tersimpan — mulai sekarang order pool masuk ke Discord kamu.");
+      setFlash("Webhook tersimpan. Mulai sekarang order pool masuk ke Discord kamu.");
     });
   }
 
@@ -70,7 +70,7 @@ export function DiscordWebhookCard({
         </span>
         <p className="text-[11px] leading-relaxed text-ink-mute">
           Setiap order pool yang lunas langsung diteruskan ke channel Discord-mu. Siapa cepat dia
-          dapat — tanpa perlu menatap papan rebutan.
+          dapat, tanpa perlu menatap papan rebutan.
         </p>
 
         {error ? (
@@ -84,7 +84,7 @@ export function DiscordWebhookCard({
           </Notice>
         ) : null}
 
-        <div className="flex items-center justify-between gap-3 rounded-2xl bg-canvas px-4 py-3 outline outline-1 -outline-offset-1 outline-line">
+        <div className="flex items-center justify-between gap-3 rounded-well bg-canvas px-4 py-3 outline outline-1 -outline-offset-1 outline-line">
           <div className="flex min-w-0 flex-col gap-0.5">
             <span className="text-[12px] font-bold text-ink">
               {configured ? "Terpasang" : "Belum dipasang"}
@@ -106,7 +106,7 @@ export function DiscordWebhookCard({
           >
             <span
               className={cx(
-                "absolute size-5 rounded-full bg-white shadow transition-all duration-300",
+                "absolute size-5 rounded-full bg-paper shadow transition-all duration-300",
                 enabled ? "right-1" : "left-1",
               )}
             />
@@ -139,7 +139,7 @@ export function DiscordWebhookCard({
                 size="sm"
                 disabled={disabled || isPending}
                 onClick={() =>
-                  run(() => testSellerWebhook(), () => setFlash("Ping terkirim — cek channel Discord kamu."))
+                  run(() => testSellerWebhook(), () => setFlash("Ping terkirim. Cek channel Discord kamu."))
                 }
               >
                 Tes ping

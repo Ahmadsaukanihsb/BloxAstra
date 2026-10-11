@@ -12,12 +12,17 @@ import {
   RobuxGlyph,
 } from "./icons";
 
+/**
+ * Duotone artwork palette. Roblox red, Robux gold, and graphite — three hues,
+ * five tones — so a grid of tiles has rhythm without turning into a colour
+ * wheel. Every `from`/`to` pair stays dark enough for the white glyph on top.
+ */
 const DUOTONES: { from: string; to: string; glow: string }[] = [
-  { from: "#4a0d22", to: "#210510", glow: "rgba(244,63,94,0.36)" },
-  { from: "#3a2a0c", to: "#191106", glow: "rgba(242,178,62,0.32)" },
-  { from: "#0f2f49", to: "#071a29", glow: "rgba(90,169,255,0.3)" },
-  { from: "#3a1720", to: "#1d0b11", glow: "rgba(255,107,107,0.26)" },
-  { from: "#22300e", to: "#111a08", glow: "rgba(178,224,86,0.26)" },
+  { from: "#7a120c", to: "#3a0a07", glow: "rgba(226,35,26,0.40)" },
+  { from: "#4d0a17", to: "#24040a", glow: "rgba(190,30,45,0.32)" },
+  { from: "#2a2a30", to: "#131317", glow: "rgba(255,255,255,0.20)" },
+  { from: "#262a35", to: "#12141b", glow: "rgba(150,160,180,0.26)" },
+  { from: "#4a3405", to: "#241a02", glow: "rgba(245,177,0,0.34)" },
 ];
 
 const CATEGORY_GLYPH: Record<CategorySlug, (props: { size?: number; className?: string }) => ReactNode> = {
@@ -88,7 +93,7 @@ export function ProductArt({
 
       <div className="absolute inset-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.1),inset_0_-40px_60px_-40px_rgba(0,0,0,0.8)]" />
       {label ? (
-        <span className="absolute bottom-2.5 left-2.5 rounded-full bg-white/25 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white/80 backdrop-blur-sm">
+        <span className="absolute bottom-2.5 left-2.5 rounded-full bg-paper/25 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white/80 backdrop-blur-sm">
           {label}
         </span>
       ) : null}
@@ -157,7 +162,7 @@ export function SellerAvatar({
         className={cx("relative inline-grid shrink-0 place-items-center", className)}
       >
         <span
-          className="grid place-items-center rounded-2xl font-display font-extrabold text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.16)]"
+          className="grid place-items-center rounded-well font-display font-extrabold text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.16)]"
           style={{
             width: size,
             height: size,
@@ -170,7 +175,7 @@ export function SellerAvatar({
         {online !== undefined ? (
           <span
             className={cx(
-              "absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-surface",
+              "absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-paper",
               online ? "bg-astra" : "bg-ink-mute",
             )}
           />

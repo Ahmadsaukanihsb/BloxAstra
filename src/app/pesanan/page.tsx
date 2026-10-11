@@ -17,11 +17,11 @@ export default function OrdersPage() {
   return (
     <Suspense
       fallback={
-        <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-12 md:px-8 md:pt-16">
+        <div className="shell pb-24 pt-10 md:pt-14">
           <Skeleton className="h-9 w-56" />
           <div className="mt-6 flex flex-col gap-3">
             {Array.from({ length: 3 }, (_, i) => (
-              <Skeleton key={i} className="h-24 w-full rounded-2xl" />
+              <Skeleton key={i} className="h-24 w-full rounded-well" />
             ))}
           </div>
         </div>

@@ -47,7 +47,7 @@ export function KycQueue({ rows: initialRows, total }: { rows: KycQueueRow[]; to
     }
     setError(null);
     drop(row.userId);
-    setFlash(`KYC ${row.username} disetujui — toko "${row.storeName ?? row.username}" terverifikasi.`);
+    setFlash(`KYC ${row.username} disetujui. Toko "${row.storeName ?? row.username}" terverifikasi.`);
     router.refresh();
   }
 
@@ -59,7 +59,7 @@ export function KycQueue({ rows: initialRows, total }: { rows: KycQueueRow[]; to
     }
     setError(null);
     drop(row.userId);
-    setFlash(`KYC ${row.username} ditolak — pendaftaran toko dikembalikan ke penjual.`);
+    setFlash(`KYC ${row.username} ditolak. Pendaftaran toko dikembalikan ke penjual.`);
     router.refresh();
   }
 
@@ -82,7 +82,7 @@ export function KycQueue({ rows: initialRows, total }: { rows: KycQueueRow[]; to
     <div className="flex flex-col gap-3">
       {total > rows.length ? (
         <Notice tone="warn" icon={<IconAlert size={15} />} title={`Menampilkan ${rows.length} dari ${total} antrean`}>
-          Proses yang tampil dulu — sisanya muncul setelah antrean berkurang.
+          Proses yang tampil dulu. Sisanya muncul setelah antrean berkurang.
         </Notice>
       ) : null}
       {error ? (
@@ -103,7 +103,7 @@ export function KycQueue({ rows: initialRows, total }: { rows: KycQueueRow[]; to
       <Notice tone="info" icon={<IconShieldCheck size={15} />} title="Alur KYC">
         Menyetujui menandai akun &amp; toko terverifikasi (user.kycStatus → verified,
         seller_profile.kyc_verified → true). Menolak mencatat alasan di log audit. Keduanya
-        dibatasi satu kali — pengajuan yang sudah diproses tidak bisa diproses ulang.
+        dibatasi satu kali: pengajuan yang sudah diproses tidak bisa diproses ulang.
       </Notice>
     </div>
   );
@@ -138,7 +138,7 @@ function KycRow({
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-[1.4rem] bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line md:p-5">
+    <div className="flex flex-col gap-4 rounded-card bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line md:p-5">
       <div className="flex flex-wrap items-center gap-3">
         <Badge tone="warn" icon={<IconShieldCheck size={13} />}>
           KYC pending
@@ -178,7 +178,7 @@ function KycRow({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-ink-mute">
+        <span className="eyebrow text-ink-mute">
           Dokumen identitas
         </span>
         <EvidenceGallery
@@ -186,7 +186,7 @@ function KycRow({
         />
         {[row.idCardImage, row.selfieImage].every(Boolean) ? null : (
           <span className="text-[11px] font-bold text-danger">
-            Berkas tidak lengkap — tolak dan minta unggah ulang.
+            Berkas tidak lengkap. Tolak dan minta unggah ulang.
           </span>
         )}
       </div>
@@ -212,7 +212,7 @@ function KycRow({
           </Button>
         </div>
       ) : (
-        <div className="flex flex-col gap-2.5 rounded-2xl bg-surface-2 p-4 sm:ml-auto sm:w-auto sm:min-w-[320px]">
+        <div className="flex flex-col gap-2.5 rounded-well bg-canvas-2 p-4 sm:ml-auto sm:w-auto sm:min-w-[320px]">
           <Field label="Alasan penolakan" htmlFor={`kyc-reject-${row.userId}`}>
             <TextInput
               id={`kyc-reject-${row.userId}`}

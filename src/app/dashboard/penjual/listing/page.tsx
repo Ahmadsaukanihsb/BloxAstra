@@ -27,10 +27,10 @@ export default function SellerListingsPage() {
 
 function ListingsSkeleton() {
   return (
-    <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-10 md:px-8 md:pt-14">
+    <div className="shell pb-20 pt-8 md:pt-10">
       <Skeleton className="h-3 w-24" />
       <Skeleton className="mt-5 h-12 w-64 max-w-full" />
-      <Skeleton className="mt-10 h-96 w-full rounded-3xl" />
+      <Skeleton className="mt-10 h-96 w-full rounded-card" />
     </div>
   );
 }
@@ -43,7 +43,7 @@ async function ListingsContent() {
   const identity = await getSellerIdentity(user.id);
   if (!identity) {
     return (
-      <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-10 md:px-8 md:pt-14">
+      <div className="shell pb-20 pt-8 md:pt-10">
         <Notice tone="danger" title="Profil penjual belum dibuat">
           Akun ini belum memiliki profil toko, jadi belum ada listing yang bisa dikelola.
         </Notice>
@@ -62,7 +62,7 @@ async function ListingsContent() {
   const kycLocked = !identity.kycVerified;
 
   return (
-    <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-10 md:px-8 md:pt-14">
+    <div className="shell pb-20 pt-8 md:pt-10">
       <SellerStack>
         <SellerPageHeader
           eyebrow="Listing"
@@ -70,7 +70,7 @@ async function ListingsContent() {
           lede={
             inventory.length === 0
               ? "Belum ada listing. Produk yang kamu terbitkan tampil di katalog selama toko berstatus siap kirim, dan stoknya berkurang otomatis setiap ada checkout."
-              : `${inventory.length} listing — ${listed} tayang, ${paused} dijeda${
+              : `${inventory.length} listing · ${listed} tayang, ${paused} dijeda${
                   lowStock > 0 ? `, ${lowStock} berstok tipis` : ""
                 }. Mengubah harga tidak memengaruhi pesanan yang sudah masuk.`
           }
@@ -95,7 +95,7 @@ async function ListingsContent() {
           <Notice
             tone="warn"
             icon={<IconShieldCheck size={15} />}
-            title="Listing dikunci — KYC belum disetujui"
+            title="Listing dikunci: KYC belum disetujui"
           >
             Form di bawah aktif lagi otomatis setelah admin menyetujui identitasmu. Mengirim
             sekarang pun akan ditolak server.
@@ -113,14 +113,14 @@ async function ListingsContent() {
 
         <SellerSection
           title={`Kelola listing (${inventory.length})`}
-          description="Jeda tayang kapan saja tanpa menghapus data — pesanan yang sedang berjalan tidak terpengaruh."
+          description="Jeda tayang kapan saja tanpa menghapus data. Pesanan yang sedang berjalan tidak terpengaruh."
         >
           {inventory.length === 0 ? (
             <p className="text-[12.5px] text-ink-mute">
               Belum ada listing untuk dikelola.
             </p>
           ) : isAdminPreview ? (
-            <div className="flex flex-col divide-y divide-hairline">
+            <div className="flex flex-col divide-y divide-line">
               {inventory.map((item) => (
                 <div key={item.slug} className="flex items-center gap-4 py-3.5 first:pt-0">
                   <div className="flex min-w-0 flex-1 flex-col gap-1">

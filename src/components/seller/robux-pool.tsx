@@ -84,7 +84,7 @@ export function RobuxPoolBoard({
     }
     forget(order.code);
     setFlash(
-      `Berhasil mengambil ${order.code} — sekarang jadi milikmu. Buka ruang pesanan untuk mulai memproses.`,
+      `Berhasil mengambil ${order.code}. Sekarang jadi milikmu. Buka ruang pesanan untuk mulai memproses.`,
     );
     router.refresh();
   }
@@ -100,7 +100,7 @@ export function RobuxPoolBoard({
         <EmptyState
           icon={<IconHexCoin size={22} />}
           title="Pool sedang kosong"
-          description="Belum ada order Robux baru menunggu diambil. Order Robux (Username/Login/Gamepass/Premium) dari pembeli akan langsung masuk ke sini begitu dibayar — rebutan secepat mungkin sebelum penjual lain mengambilnya."
+          description="Belum ada order Robux baru menunggu diambil. Order Robux (Username/Login/Gamepass/Premium) dari pembeli akan langsung masuk ke sini begitu dibayar. Rebut secepat mungkin sebelum penjual lain mengambilnya."
           action={
             <Button
               variant="secondary"
@@ -119,7 +119,7 @@ export function RobuxPoolBoard({
   return (
     <div className="flex flex-col gap-4">
       {locked ? (
-        <Notice tone="warn" icon={<IconShieldCheck size={15} />} title="Rebutan dikunci — KYC belum disetujui">
+        <Notice tone="warn" icon={<IconShieldCheck size={15} />} title="Rebutan dikunci: KYC belum disetujui">
           Tombol ambil aktif lagi otomatis setelah admin menyetujui identitasmu. Mengklik
           sekarang pun ditolak server.
         </Notice>
@@ -140,7 +140,7 @@ export function RobuxPoolBoard({
           {orders.length} order menunggu diambil
         </Badge>
         <span className="text-[11px] text-ink-mute">
-          Yang pertama mengklik &quot;Ambil order&quot; yang mendapatkannya — penjual lain otomatis kalah.
+          Yang pertama mengklik &quot;Ambil order&quot; yang mendapatkannya. Penjual lain otomatis kalah.
           Pool diperbarui otomatis tiap 25 detik.
         </span>
       </div>
@@ -149,7 +149,7 @@ export function RobuxPoolBoard({
         {orders.map((order) => (
           <article
             key={order.id}
-            className="flex flex-col gap-4 rounded-[1.4rem] bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line md:p-5"
+            className="flex flex-col gap-4 rounded-card bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line md:p-5"
           >
             <div className="flex flex-wrap items-center gap-2.5">
               <Badge tone={KIND_TONE[order.kind] ?? "astra"} icon={<IconHexCoin size={13} />}>
@@ -204,7 +204,7 @@ export function RobuxPoolBoard({
                     href={`/pesanan/${order.code}`}
                     className={cx(
                       "inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[12px] font-bold",
-                      "text-ink-dim outline outline-1 -outline-offset-1 outline-line transition-colors duration-200 hover:bg-surface-2 hover:text-ink",
+                      "text-ink-dim outline outline-1 -outline-offset-1 outline-line transition-colors duration-200 hover:bg-canvas-2 hover:text-ink",
                     )}
                   >
                     Detail

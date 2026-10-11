@@ -30,7 +30,7 @@ export async function createTopUp(rawInput: unknown): Promise<TopUpActionResult>
     return { ok: false, code: "LOGIN", error: "Masuk dulu untuk top-up." };
   }
   if (!checkThrottle(`topup:${user.id}`, 5000)) {
-    return { ok: false, code: "INVALID", error: "Terlalu cepat — tunggu 5 detik sebelum top-up lagi." };
+    return { ok: false, code: "INVALID", error: "Terlalu cepat. Tunggu 5 detik sebelum top-up lagi." };
   }
 
   const parsed = topUpSchema.safeParse(rawInput);
@@ -126,7 +126,7 @@ export async function reconcileTopUp(code: string): Promise<
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Masuk dulu." };
   if (!checkThrottle(`reconcile-topup:${user.id}`, 10000)) {
-    return { ok: false, error: "Terlalu cepat — tunggu 10 detik sebelum cek lagi." };
+    return { ok: false, error: "Terlalu cepat. Tunggu 10 detik sebelum cek lagi." };
   }
 
   const topUp = await db.topUp.findUnique({

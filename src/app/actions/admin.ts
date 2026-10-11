@@ -136,7 +136,7 @@ export async function resolveDispute(rawInput: unknown): Promise<AdminActionResu
           data: {
             orderId: order.id,
             state: "refunded",
-            label: "Sengketa diterima — refund penuh ke pembeli",
+            label: "Sengketa diterima, refund penuh ke pembeli",
             actor: "admin",
           },
         });
@@ -186,7 +186,7 @@ export async function resolveDispute(rawInput: unknown): Promise<AdminActionResu
           data: {
             orderId: order.id,
             state: "completed",
-            label: "Sengketa ditolak — dana dicairkan ke penjual",
+            label: "Sengketa ditolak, dana dicairkan ke penjual",
             actor: "admin",
           },
         });
@@ -240,8 +240,8 @@ export async function resolveDispute(rawInput: unknown): Promise<AdminActionResu
     kind: "dispute_resolved",
     title:
       outcome === "refund"
-        ? `Sengketa ${orderCode} dimenangkan — refund masuk`
-        : `Sengketa ${orderCode} ditolak — dana dilepas ke penjual`,
+        ? `Sengketa ${orderCode} dimenangkan. Refund masuk`
+        : `Sengketa ${orderCode} ditolak. Dana dilepas ke penjual`,
     body:
       outcome === "refund"
         ? "Dana dikembalikan penuh sebagai saldo akun."
@@ -255,7 +255,7 @@ export async function resolveDispute(rawInput: unknown): Promise<AdminActionResu
       title:
         outcome === "refund"
           ? `Sengketa ${orderCode} dimenangkan pembeli`
-          : `Sengketa ${orderCode} ditolak — dana cair`,
+          : `Sengketa ${orderCode} ditolak. Dana cair`,
       body:
         outcome === "refund"
           ? "Dana dikembalikan ke pembeli."
@@ -347,7 +347,7 @@ export async function releaseEscrow(rawInput: unknown): Promise<AdminActionResul
     userId: order.seller.userId,
     kind: "order_completed",
     title: `Admin mencairkan dana ${orderCode}`,
-    body: "Manual payout — dana masuk ke dompetmu.",
+    body: "Pencairan manual: dana masuk ke dompetmu.",
     link: `/pesanan/${orderCode}`,
   });
   return { ok: true };
@@ -528,13 +528,13 @@ export async function approveKyc(rawInput: unknown): Promise<AdminActionResult> 
   if (state === "missing") return fail("Pengguna tidak ditemukan.");
   if (state === "stale") return fail("Status KYC ini sudah diproses sebelumnya.");
   if (state === "nodoc") {
-    return fail("Berkas KYC tidak ada (pengajuan lama) — tolak dan minta penjual unggah ulang.");
+    return fail("Berkas KYC tidak ada (pengajuan lama). Tolak dan minta penjual unggah ulang.");
   }
   await notify({
     userId,
     kind: "kyc_approved",
     title: "KYC tokomu disetujui",
-    body: "Toko kini terverifikasi — listing bisa dibuat, toko bisa dibuka, dan pool rebutan terbuka.",
+    body: "Toko kini terverifikasi. Listing bisa dibuat, toko bisa dibuka, dan pool rebutan terbuka.",
     link: "/dashboard/penjual",
   });
   revalidatePath("/dashboard/admin");
@@ -684,7 +684,7 @@ export async function rejectWithdrawal(rawInput: unknown): Promise<AdminActionRe
         sellerId: w.sellerId,
         type: "refund",
         amount: w.amount + w.fee,
-        note: `Penarikan ${ref} ditolak — dana dikembalikan. Alasan: ${reason}`,
+        note: `Penarikan ${ref} ditolak. Dana dikembalikan. Alasan: ${reason}`,
       });
       await tx.adminAuditLog.create({
         data: {

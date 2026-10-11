@@ -9,7 +9,7 @@ import { IconChat } from "@/components/ui/icons";
 
 export const metadata: Metadata = {
   title: "Grup seller",
-  description: "Ruang obrolan bersama seluruh penjual Blox Astra — koordinasi, tanya stok, rebutan order.",
+  description: "Ruang obrolan bersama seluruh penjual Blox Astra: koordinasi stok, tanya ketersediaan, rebutan order.",
   robots: { index: false, follow: false },
 };
 
@@ -17,9 +17,9 @@ export default function SellerGroupPage() {
   return (
     <Suspense
       fallback={
-        <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-12 md:px-8 md:pt-16">
+        <div className="shell pb-20 pt-8 md:pt-10">
           <Skeleton className="h-9 w-64" />
-          <Skeleton className="mt-6 h-96 w-full rounded-3xl" />
+          <Skeleton className="mt-6 h-96 w-full rounded-card" />
         </div>
       }
     >
@@ -34,14 +34,14 @@ async function SellerGroupContent() {
   const messages = await getSellerChat(user.id);
 
   return (
-    <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-12 md:px-8 md:pt-16">
+    <div className="shell pb-20 pt-8 md:pt-10">
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-2.5">
           <span className="flex items-center gap-2 text-[13px] text-ink-mute">
             <IconChat size={16} className="text-astra-ink" />
             Grup seller
           </span>
-          <h1 className="font-display text-3xl font-extrabold tracking-tight text-ink md:text-[2.1rem]">
+ <h1 className="font-display text-page font-extrabold text-ink md:text-page">
             Ruang obrolan penjual
           </h1>
           <p className="max-w-[62ch] text-[13px] leading-relaxed text-ink-dim">

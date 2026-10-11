@@ -199,7 +199,7 @@ export async function applyPaymentNotification(
         data: {
           orderId: order.id,
           state: "paid",
-          label: "Pembayaran diterima — dana ditahan platform",
+          label: "Pembayaran diterima, dana ditahan platform",
           actor: "system",
         },
       });
@@ -227,7 +227,7 @@ export async function applyPaymentNotification(
               type: "refund",
               amount: payment.amount,
               balanceAfter: (aggregate._sum.amount ?? 0) + payment.amount,
-              note: `Pembayaran telat ${order.code} — dikembalikan sebagai saldo`,
+              note: `Pembayaran telat ${order.code}, dikembalikan sebagai saldo`,
               orderCode: order.code,
             },
           });
@@ -239,7 +239,7 @@ export async function applyPaymentNotification(
             data: {
               orderId: order.id,
               state: order.status,
-              label: "Pembayaran telat diterima gateway — dikembalikan sebagai saldo",
+              label: "Pembayaran telat diterima gateway, dikembalikan sebagai saldo",
               actor: "system",
             },
           });
@@ -250,7 +250,7 @@ export async function applyPaymentNotification(
             userId: order.buyer.id,
             kind: "order_refunded",
             title: `Pembayaran telat ${order.code} dikembalikan`,
-            body: "Gateway melunasi setelah order kedaluwarsa — dana masuk sebagai saldo akun.",
+            body: "Gateway melunasi setelah order kedaluwarsa. Dana masuk sebagai saldo akun.",
             link: `/pesanan/${order.code}`,
           });
         }
@@ -261,7 +261,7 @@ export async function applyPaymentNotification(
       userId: order.buyer.id,
       kind: "order_paid",
       title: `Pembayaran ${order.code} diterima`,
-      body: "Dana ditahan platform — penjual segera memproses pesananmu.",
+      body: "Dana ditahan platform. Penjual segera memproses pesananmu.",
       link: `/pesanan/${order.code}`,
     });
     // Pool race: the order is claimable from this instant — ping every

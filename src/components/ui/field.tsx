@@ -2,7 +2,7 @@ import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import { cx } from "@/lib/cx";
 
 const controlBase =
-  "w-full rounded-2xl bg-canvas px-4 text-sm text-ink placeholder:text-ink-mute outline outline-1 -outline-offset-1 outline-line transition-[outline-color,background-color,box-shadow] duration-300 ease-[var(--ease-astra)] focus:bg-canvas focus:outline-2 focus:-outline-offset-2 focus:outline-astra/70";
+  "w-full rounded-control bg-canvas px-4 text-sm text-ink placeholder:text-ink-mute outline outline-1 -outline-offset-1 outline-line transition-[outline-color,background-color] duration-200 ease-[var(--ease-astra)] focus:bg-canvas focus:outline-2 focus:-outline-offset-2 focus:outline-astra/70";
 
 export function Field({
   label,
@@ -23,7 +23,7 @@ export function Field({
     <div className={cx("flex flex-col gap-2", className)}>
       <label
         htmlFor={htmlFor}
-        className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-ink-mute"
+        className="eyebrow text-ink-mute"
       >
         {label}
       </label>
@@ -73,7 +73,7 @@ export function Select({
 }: ComponentPropsWithoutRef<"select">) {
   return (
     <select
-      className={cx(controlBase, "h-12 appearance-none bg-surface-2 pr-10", className)}
+      className={cx(controlBase, "h-12 appearance-none bg-canvas-2 pr-10", className)}
       {...rest}
     >
       {children}
@@ -109,7 +109,7 @@ export function OptionCard({
       disabled={disabled}
       onClick={onSelect}
       className={cx(
-        "group flex w-full items-start gap-3.5 rounded-2xl p-4 text-left transition-[background-color,outline-color,transform,translate,scale,rotate] duration-300 ease-[var(--ease-astra)] active:scale-[0.995] disabled:cursor-not-allowed disabled:opacity-40",
+        "group flex w-full items-start gap-3.5 rounded-control p-4 text-left transition duration-200 ease-[var(--ease-astra)] active:scale-[0.995] disabled:cursor-not-allowed disabled:opacity-40",
         selected
           ? "bg-astra/[0.07] outline outline-2 -outline-offset-2 outline-astra/60"
           : "bg-canvas outline outline-1 -outline-offset-1 outline-line hover:bg-canvas",
@@ -118,7 +118,7 @@ export function OptionCard({
       {icon ? (
         <span
           className={cx(
-            "mt-0.5 grid size-9 shrink-0 place-items-center rounded-xl transition-colors duration-300",
+            "mt-0.5 grid size-9 shrink-0 place-items-center rounded-control transition-colors duration-200",
             selected ? "bg-astra/15 text-astra-ink" : "bg-canvas text-ink-dim",
           )}
         >
@@ -140,7 +140,7 @@ export function OptionCard({
           selected ? "bg-astra" : "bg-canvas outline outline-1 -outline-offset-1 outline-line-strong",
         )}
       >
-        {selected ? <span className="size-1.5 rounded-full bg-white" /> : null}
+        {selected ? <span className="size-1.5 rounded-full bg-paper" /> : null}
       </span>
     </button>
   );
@@ -162,7 +162,7 @@ export function Checkbox({
   return (
     <label
       htmlFor={id}
-      className="flex cursor-pointer items-start gap-3 rounded-2xl bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line transition-colors duration-300 ease-[var(--ease-astra)] hover:bg-canvas"
+      className="flex cursor-pointer items-start gap-3 rounded-control bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line transition-colors duration-200 ease-[var(--ease-astra)] hover:bg-canvas"
     >
       <span className="relative mt-0.5 grid size-5 shrink-0 place-items-center">
         <input

@@ -37,7 +37,7 @@ export function KycResubmitForm({ rejectReason }: { rejectReason: string | null 
       return;
     }
     if (file.size > 1_000_000) {
-      setError(`"${file.name}" melebihi 1MB — kompres dulu.`);
+      setError(`"${file.name}" melebihi 1MB. Kompres dulu.`);
       return;
     }
     const url = await readAsDataUrl(file);
@@ -69,7 +69,7 @@ export function KycResubmitForm({ rejectReason }: { rejectReason: string | null 
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-2xl bg-canvas p-5 outline outline-1 -outline-offset-1 outline-line">
+    <div className="flex flex-col gap-4 rounded-well bg-canvas p-5 outline outline-1 -outline-offset-1 outline-line">
       <div className="flex flex-col gap-1">
         <span className="text-[13px] font-bold text-ink">Ajukan ulang verifikasi</span>
         {rejectReason ? (
@@ -126,22 +126,22 @@ export function KycResubmitForm({ rejectReason }: { rejectReason: string | null 
             type="button"
             onClick={() => item.ref.current?.click()}
             className={cx(
-              "flex items-center gap-2.5 rounded-2xl border border-dashed p-3.5 text-left transition-colors duration-200",
+              "flex items-center gap-2.5 rounded-well border border-dashed p-3.5 text-left transition-colors duration-200",
               item.value ? "border-astra/40 bg-astra/[0.06]" : "border-line-strong hover:bg-canvas",
             )}
           >
             {item.value ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={item.value} alt={item.label} className="size-12 shrink-0 rounded-xl object-cover" />
+              <img src={item.value} alt={item.label} className="size-12 shrink-0 rounded-control object-cover" />
             ) : (
-              <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-canvas text-ink-dim">
+              <span className="grid size-12 shrink-0 place-items-center rounded-control bg-canvas text-ink-dim">
                 <IconUpload size={16} />
               </span>
             )}
             <span className="flex min-w-0 flex-col gap-0.5">
               <span className="text-[12px] font-bold text-ink">{item.label}</span>
               <span className="text-[10px] text-ink-mute">
-                {item.value ? "terlampir — klik untuk ganti" : "maks 1MB"}
+                {item.value ? "terlampir, klik untuk ganti" : "maks 1MB"}
               </span>
             </span>
             {item.value ? <IconCheck size={15} className="ml-auto shrink-0 text-astra-ink" /> : null}

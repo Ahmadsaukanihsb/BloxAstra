@@ -26,7 +26,7 @@ export function ActiveOrderRow({ order }: { order: OrderListItem }) {
       <ProductArt
         seed={order.productSlug ?? order.code}
         category={order.category ?? ("roblox" as CategorySlug)}
-        className="size-11 shrink-0 rounded-xl outline outline-1 -outline-offset-1 outline-line-strong"
+        className="size-11 shrink-0 rounded-control outline outline-1 -outline-offset-1 outline-line-strong"
       />
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="truncate text-[12px] text-ink transition-colors group-hover:text-astra-ink">
@@ -117,7 +117,7 @@ export function SellerHistory({
           description="Pesanan yang kamu ambil dari pool rebutan atau dari katalog akan muncul di sini beserta status escrow-nya."
         />
       ) : (
-        <div className="flex flex-col divide-y divide-hairline rounded-[1.4rem] bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line">
+        <div className="flex flex-col divide-y divide-line rounded-card bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line">
           {filtered.map((order) => (
             <Link
               key={order.id}

@@ -50,13 +50,13 @@ export default function SellerOverviewPage() {
 
 function OverviewSkeleton() {
   return (
-    <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-10 md:px-8 md:pt-14">
+    <div className="shell pb-20 pt-8 md:pt-10">
       <Skeleton className="h-3 w-28" />
       <Skeleton className="mt-5 h-12 w-80 max-w-full" />
       <Skeleton className="mt-4 h-4 w-[420px] max-w-full" />
       <div className="mt-10 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
-        <Skeleton className="h-72 w-full rounded-3xl" />
-        <Skeleton className="h-72 w-full rounded-3xl" />
+        <Skeleton className="h-72 w-full rounded-card" />
+        <Skeleton className="h-72 w-full rounded-card" />
       </div>
     </div>
   );
@@ -70,7 +70,7 @@ async function OverviewContent() {
   const dashboard = await getSellerDashboard(user.id);
   if (!dashboard) {
     return (
-      <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-10 md:px-8 md:pt-14">
+      <div className="shell pb-20 pt-8 md:pt-10">
         {isAdminPreview ? (
           <Notice tone="info" title="Mode preview">
             Akun admin tidak memiliki profil penjual. Aktifkan profil penjual dari halaman Super
@@ -97,7 +97,7 @@ async function OverviewContent() {
       : { tone: "warn" as const, label: "KYC menunggu" };
 
   return (
-    <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-10 md:px-8 md:pt-14">
+    <div className="shell pb-20 pt-8 md:pt-10">
       <SellerStack>
         {isAdminPreview ? (
           <Notice tone="info" icon={<IconInfo size={15} />} title="Preview dashboard penjual">
@@ -109,7 +109,7 @@ async function OverviewContent() {
         <SellerPageHeader
           eyebrow="Dashboard penjual"
           title={dashboard.storeName}
-          lede="Sakelar status mengendalikan seluruh katalog tokomu. Saat offline, produk tidak muncul di pencarian dan pesanan baru ditahan — tapi pesanan yang sedang berjalan tetap bisa diselesaikan."
+          lede="Sakelar status mengendalikan seluruh katalog tokomu. Saat offline, produk tidak muncul di pencarian dan pesanan baru ditahan. Pesanan yang sedang berjalan tetap bisa diselesaikan."
           meta={
             <>
               <TierBadge tier={dashboard.tier} />
@@ -135,10 +135,10 @@ async function OverviewContent() {
 
         <SellerSection
           title="Status toko"
-          description="Bertahan sampai kamu matikan sendiri — tersimpan di server, bukan di peramban."
+          description="Bertahan sampai kamu matikan sendiri. Tersimpan di server, bukan di peramban."
         >
           {isAdminPreview ? (
-            <div className="rounded-2xl bg-canvas px-4 py-3 text-[12px] text-ink-dim outline outline-1 -outline-offset-1 outline-line">
+            <div className="rounded-well bg-canvas px-4 py-3 text-[12px] text-ink-dim outline outline-1 -outline-offset-1 outline-line">
               Sakelar online dinonaktifkan dalam mode preview admin.
             </div>
           ) : (
@@ -176,7 +176,7 @@ async function OverviewContent() {
                   Belum ada pesanan aktif. Begitu ada checkout, pesanan muncul di sini.
                 </p>
               ) : (
-                <div className="flex flex-col divide-y divide-hairline">
+                <div className="flex flex-col divide-y divide-line">
                   {activeOrders.map((order) => (
                     <ActiveOrderRow key={order.id} order={order} />
                   ))}
@@ -197,7 +197,7 @@ async function OverviewContent() {
                   </Link>
                 }
               >
-                <div className="flex flex-col divide-y divide-hairline">
+                <div className="flex flex-col divide-y divide-line">
                   {poolOrders.map((order) => (
                     <Link
                       key={order.id}
@@ -207,7 +207,7 @@ async function OverviewContent() {
                       <ProductArt
                         seed={order.productSlug ?? order.code}
                         category={order.category ?? ("roblox" as CategorySlug)}
-                        className="size-11 shrink-0 rounded-xl outline outline-1 -outline-offset-1 outline-line-strong"
+                        className="size-11 shrink-0 rounded-control outline outline-1 -outline-offset-1 outline-line-strong"
                       />
                       <div className="flex min-w-0 flex-1 flex-col gap-1">
                         <span className="truncate text-[12.5px] text-ink transition-colors group-hover:text-astra-ink">
@@ -294,8 +294,8 @@ async function OverviewContent() {
               </dl>
               <Notice tone="info" icon={<IconTimer size={15} />}>
                 {dashboard.avgDeliverySeconds <= EXPRESS_SLA_SECONDS
-                  ? `Rata-rata ${formatDuration(dashboard.avgDeliverySeconds)} — di bawah ambang ${EXPRESS_SLA_SECONDS / 60} menit, syarat Badge Kilat terpenuhi.`
-                  : `Rata-rata ${formatDuration(dashboard.avgDeliverySeconds)} — turunkan ke bawah ${EXPRESS_SLA_SECONDS / 60} menit untuk memenuhi syarat Badge Kilat.`}
+                  ? `Rata-rata ${formatDuration(dashboard.avgDeliverySeconds)}, di bawah ambang ${EXPRESS_SLA_SECONDS / 60} menit; syarat Badge Kilat terpenuhi.`
+                  : `Rata-rata ${formatDuration(dashboard.avgDeliverySeconds)}, turunkan ke bawah ${EXPRESS_SLA_SECONDS / 60} menit untuk memenuhi syarat Badge Kilat.`}
               </Notice>
             </SellerSection>
 
@@ -308,7 +308,7 @@ async function OverviewContent() {
                 <Notice
                   tone="danger"
                   icon={<IconShieldCheck size={15} />}
-                  title="KYC ditolak — jualan dikunci"
+                  title="KYC ditolak: jualan dikunci"
                 >
                   Listing, toko online, dan pool rebutan dinonaktifkan sampai identitasmu disetujui.
                   Perbaiki berkas di halaman Pengaturan.
@@ -363,7 +363,7 @@ async function OverviewContent() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="group flex flex-col gap-3 rounded-2xl bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line transition-colors duration-300 hover:bg-paper hover:outline-astra/30"
+                className="group flex flex-col gap-3 rounded-well bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line transition-colors duration-300 hover:bg-paper hover:outline-astra/30"
               >
                 <span className="flex items-center gap-2.5 text-astra-ink">
                   {item.icon}

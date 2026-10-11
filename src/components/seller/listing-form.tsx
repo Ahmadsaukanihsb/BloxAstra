@@ -91,7 +91,7 @@ export function ListingForm({ categories }: { categories: Category[] }) {
 
   if (createdSlug) {
     return (
-      <div className="flex flex-col items-center gap-4 rounded-[1.4rem] bg-canvas px-6 py-12 text-center outline outline-1 -outline-offset-1 outline-line">
+      <div className="flex flex-col items-center gap-4 rounded-card bg-canvas px-6 py-12 text-center outline outline-1 -outline-offset-1 outline-line">
         <span className="grid size-14 place-items-center rounded-full bg-astra/10 text-astra-ink">
           <IconCheckCircle size={26} />
         </span>
@@ -127,7 +127,7 @@ export function ListingForm({ categories }: { categories: Category[] }) {
         <Field label="Judul produk" htmlFor="listing-title" className="md:col-span-2">
           <TextInput
             id="listing-title"
-            placeholder="Contoh: 1000 Robux via Gamepass — harga bersahabat"
+            placeholder="Contoh: 1000 Robux via Gamepass, harga bersahabat"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             maxLength={120}
@@ -190,7 +190,7 @@ export function ListingForm({ categories }: { categories: Category[] }) {
           >
             {DELIVERY_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
-                {option.label} — {option.hint}
+                {option.label} · {option.hint}
               </option>
             ))}
           </Select>
@@ -200,7 +200,7 @@ export function ListingForm({ categories }: { categories: Category[] }) {
           <Field
             label="Net Robux (opsional)"
             htmlFor="listing-robux"
-            hint="Isi kalau produk ini paket Robux — harga akan dikutip otomatis dari rate card."
+            hint="Isi kalau produk ini paket Robux. Harga akan dikutip otomatis dari rate card."
             className="md:col-span-2"
           >
             <TextInput

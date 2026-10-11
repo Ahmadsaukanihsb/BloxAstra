@@ -25,13 +25,13 @@ export default function SellerWalletPage() {
 
 function WalletSkeleton() {
   return (
-    <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-10 md:px-8 md:pt-14">
+    <div className="shell pb-20 pt-8 md:pt-10">
       <Skeleton className="h-3 w-20" />
       <Skeleton className="mt-5 h-12 w-56 max-w-full" />
       <div className="mt-10 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Skeleton className="h-32 w-full rounded-3xl" />
-        <Skeleton className="h-32 w-full rounded-3xl" />
-        <Skeleton className="h-32 w-full rounded-3xl" />
+        <Skeleton className="h-32 w-full rounded-card" />
+        <Skeleton className="h-32 w-full rounded-card" />
+        <Skeleton className="h-32 w-full rounded-card" />
       </div>
     </div>
   );
@@ -44,7 +44,7 @@ async function WalletContent() {
   const identity = await getSellerIdentity(user.id);
   if (!identity) {
     return (
-      <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-10 md:px-8 md:pt-14">
+      <div className="shell pb-20 pt-8 md:pt-10">
         <Notice tone="danger" title="Profil penjual belum dibuat">
           Akun ini belum memiliki profil toko, jadi belum ada saldo penjual yang bisa ditarik.
         </Notice>
@@ -55,7 +55,7 @@ async function WalletContent() {
   const [wallet, fees] = await Promise.all([getSellerWallet(user.id), getPaymentFees()]);
 
   return (
-    <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-10 md:px-8 md:pt-14">
+    <div className="shell pb-20 pt-8 md:pt-10">
       <SellerStack>
         <SellerPageHeader
           eyebrow="Dompet penjual"

@@ -29,12 +29,12 @@ export default function SuperDashboardPage() {
   return (
     <Suspense
       fallback={
-        <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-12 md:px-8 md:pt-16">
+        <div className="shell pb-20 pt-8 md:pt-10">
           <Skeleton className="h-9 w-56" />
           <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <Skeleton className="h-40 w-full rounded-3xl" />
-            <Skeleton className="h-40 w-full rounded-3xl" />
-            <Skeleton className="h-40 w-full rounded-3xl" />
+            <Skeleton className="h-40 w-full rounded-card" />
+            <Skeleton className="h-40 w-full rounded-card" />
+            <Skeleton className="h-40 w-full rounded-card" />
           </div>
         </div>
       }
@@ -169,7 +169,7 @@ async function SuperDashboardContent() {
   ];
 
   return (
-    <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-12 md:px-8 md:pt-16">
+    <div className="shell pb-20 pt-8 md:pt-10">
       <div className="flex flex-col gap-8">
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-2.5">
@@ -178,7 +178,7 @@ async function SuperDashboardContent() {
               Super dashboard
             </span>
           </div>
-          <h1 className="font-display text-3xl font-extrabold tracking-tight text-ink md:text-[2.3rem]">
+ <h1 className="font-display text-page font-extrabold text-ink md:text-page">
             Halo, {user.username}
           </h1>
           <p className="max-w-[64ch] text-[13px] leading-relaxed text-ink-dim">
@@ -194,7 +194,7 @@ async function SuperDashboardContent() {
         </div>
 
         <section className="flex flex-col gap-3.5">
-          <h2 className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-ink-mute">
+ <h2 className="eyebrow text-ink-mute">
             Perlu perhatian
           </h2>
           <div className="grid grid-cols-1 gap-3.5 md:grid-cols-3">
@@ -255,7 +255,7 @@ async function SuperDashboardContent() {
             >
               <div className="bezel-core flex flex-col gap-4 p-5">
                 <div className="flex items-center justify-between">
-                  <span className="grid size-10 place-items-center rounded-xl bg-astra/10">{card.icon}</span>
+                  <span className="grid size-10 place-items-center rounded-control bg-astra/10">{card.icon}</span>
                   <IconArrowRight
                     size={18}
                     className="text-ink-mute transition-transform duration-300 group-hover:translate-x-1"
@@ -273,7 +273,7 @@ async function SuperDashboardContent() {
         <section id="kyc-queue" className="flex scroll-mt-24 flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <h2 className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-ink-mute">
+ <h2 className="eyebrow text-ink-mute">
                 Antrean KYC penjual
               </h2>
               <span
@@ -291,7 +291,7 @@ async function SuperDashboardContent() {
 
         <section className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-ink-mute">
+ <h2 className="eyebrow text-ink-mute">
               Pesanan terbaru
             </h2>
             <Link
@@ -313,7 +313,7 @@ async function SuperDashboardContent() {
                 <Link
                   key={order.code}
                   href={`/pesanan/${order.code}`}
-                  className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-canvas px-4 py-3.5 outline outline-1 -outline-offset-1 outline-line transition-colors duration-300 hover:bg-surface-2"
+                  className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-well bg-canvas px-4 py-3.5 outline outline-1 -outline-offset-1 outline-line transition-colors duration-300 hover:bg-canvas-2"
                 >
                   <StatusPill state={order.status as OrderState} />
                   <span className="num text-[13px] font-bold text-ink">{order.code}</span>

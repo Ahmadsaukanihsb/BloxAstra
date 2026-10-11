@@ -205,7 +205,7 @@ async function persistOrder(input: {
           data: {
             orderId: created.id,
             state: "pending_payment",
-            label: "Pesanan dibuat — menunggu pembayaran",
+            label: "Pesanan dibuat, menunggu pembayaran",
             actor: "buyer",
           },
         });
@@ -399,7 +399,7 @@ async function persistWalletOrder(input: {
           data: {
             orderId: created.id,
             state: "paid",
-            label: "Dibayar dengan Saldo Akun — dana ditahan platform",
+            label: "Dibayar dengan Saldo Akun, dana ditahan platform",
             actor: "buyer",
           },
         });
@@ -417,7 +417,7 @@ async function persistWalletOrder(input: {
         userId: input.buyerId,
         kind: "order_paid",
         title: `Pembayaran ${code} lunas via Saldo`,
-        body: "Dana ditahan platform — penjual segera memproses pesananmu.",
+        body: "Dana ditahan platform. Penjual segera memproses pesananmu.",
         link: `/pesanan/${code}`,
       });
       // Pool race: same broadcast as the gateway path (fire-and-forget).
@@ -504,7 +504,7 @@ async function restoreCancelledOrder(orderId: string) {
       data: {
         orderId: order.id,
         state: "cancelled",
-        label: "Pembayaran gagal dibuat — stok dikembalikan",
+        label: "Pembayaran gagal dibuat, stok dikembalikan",
         actor: "system",
       },
     });
@@ -527,7 +527,7 @@ export async function createCatalogOrder(rawInput: unknown): Promise<OrderAction
   // One invoice per 5s per buyer: blocks double-click storms and checkout
   // loops from minting junk Snap invoices.
   if (!checkThrottle(`checkout:${buyerId}`, 5000)) {
-    return { ok: false, code: "INVALID", error: "Terlalu cepat — tunggu 5 detik sebelum checkout lagi." };
+    return { ok: false, code: "INVALID", error: "Terlalu cepat. Tunggu 5 detik sebelum checkout lagi." };
   }
 
   const parsed = catalogOrderSchema.safeParse(rawInput);
@@ -623,7 +623,7 @@ export async function createRobuxOrder(rawInput: unknown): Promise<OrderActionRe
     return { ok: false, code: "LOGIN", error: "Login dulu untuk membeli Robux." };
   }
   if (!checkThrottle(`checkout:${buyerId}`, 5000)) {
-    return { ok: false, code: "INVALID", error: "Terlalu cepat — tunggu 5 detik sebelum checkout lagi." };
+    return { ok: false, code: "INVALID", error: "Terlalu cepat. Tunggu 5 detik sebelum checkout lagi." };
   }
 
   const parsed = robuxOrderSchema.safeParse(rawInput);
@@ -864,7 +864,7 @@ export async function reconcilePaymentStatus(orderCode: string): Promise<
   // Each check hits the Midtrans Status API — throttle per buyer so a loop
   // cannot burn gateway quota.
   if (!checkThrottle(`reconcile:${user.id}`, 10000)) {
-    return { ok: false, error: "Terlalu cepat — tunggu 10 detik sebelum cek lagi." };
+    return { ok: false, error: "Terlalu cepat. Tunggu 10 detik sebelum cek lagi." };
   }
 
   const order = await db.order.findUnique({
@@ -889,10 +889,10 @@ export async function reconcilePaymentStatus(orderCode: string): Promise<
     };
   }
   if (order.payment.provider === "saldo") {
-    return { ok: false, error: "Pesanan saldo langsung lunas — hubungi admin bila macet." };
+    return { ok: false, error: "Pesanan saldo langsung lunas. Hubungi admin bila macet." };
   }
   if (isSimMode()) {
-    return { ok: false, error: "Mode simulasi — selesaikan lewat halaman /bayar/sim." };
+    return { ok: false, error: "Mode simulasi. Selesaikan lewat halaman /bayar/sim." };
   }
 
   let fetched: { transactionStatus: string; fraudStatus?: string; grossAmount: number };

@@ -223,7 +223,7 @@ export async function registerSellerAction(
           handle: username,
           tier: 1,
           city: "-",
-          bio: "Toko baru — menunggu verifikasi KYC.",
+          bio: "Toko baru, menunggu verifikasi KYC.",
           fullName,
           idCardImage,
           selfieImage,

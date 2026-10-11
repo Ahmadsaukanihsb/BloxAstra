@@ -29,8 +29,8 @@ export function FeaturedListings({
           <SectionHeading
             align="between"
             eyebrow="Listing aktif"
-            title="Stok yang paling sering dicari minggu ini"
-            description="Semua listing di bawah sudah lewat kurasi stok, verifikasi penjual, dan pengukuran waktu serah terima."
+            title="Listing pilihan minggu ini"
+            description="Dipilih manual dari stok yang aktif, lengkap dengan status verifikasi penjual dan catatan waktu serah terima."
             action={
               <ButtonLink
                 href="/katalog"

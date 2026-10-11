@@ -61,21 +61,21 @@ export function SimPayCard({ order, simMode }: { order: SimOrderSummary; simMode
   }
 
   return (
-    <div className="flex flex-col gap-5 rounded-3xl border border-line bg-paper p-6 md:p-8">
+    <div className="flex flex-col gap-5 rounded-card border border-line bg-paper p-6 md:p-8">
       <div className="flex flex-col gap-1">
         <p className="font-mono text-[11px] tracking-[0.18em] text-ink-dim uppercase">
           Simulasi pembayaran
         </p>
-        <h1 className="font-display text-2xl font-bold text-ink">{order.orderCode}</h1>
+ <h1 className="font-display text-page font-bold text-ink">{order.orderCode}</h1>
       </div>
 
       {!simMode ? (
         <Notice tone="warn" title="Mode live aktif">
-          PAYMENT_PROVIDER bukan &quot;sim&quot; — halaman ini tidak menerima pembayaran.
+          PAYMENT_PROVIDER bukan &quot;sim&quot;. Halaman ini tidak menerima pembayaran.
         </Notice>
       ) : null}
 
-      <dl className="flex flex-col gap-3 rounded-2xl bg-canvas p-4 text-sm">
+      <dl className="flex flex-col gap-3 rounded-well bg-canvas p-4 text-sm">
         <div className="flex items-center justify-between gap-4">
           <dt className="text-ink-dim">Item</dt>
           <dd className="text-right font-semibold text-ink">{order.itemTitle}</dd>
@@ -100,7 +100,7 @@ export function SimPayCard({ order, simMode }: { order: SimOrderSummary; simMode
 
       {settled ? (
         <div className="flex flex-col items-center gap-4 py-4 text-center">
-          <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10 font-display text-2xl font-bold text-emerald-600">
+          <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-success/10 font-display text-2xl font-bold text-success">
             ✓
           </span>
           <div>
@@ -122,7 +122,7 @@ export function SimPayCard({ order, simMode }: { order: SimOrderSummary; simMode
       ) : (
         <div className="flex flex-col gap-3">
           <Button size="lg" fullWidth onClick={handlePay} disabled={paying || !simMode}>
-            {paying ? "Memproses…" : `Bayar sekarang — ${formatIDR(order.total)}`}
+            {paying ? "Memproses…" : `Bayar sekarang · ${formatIDR(order.total)}`}
           </Button>
           <Link
             href="/pesanan"

@@ -39,13 +39,13 @@ export function ProductCard({
       href={`/produk/${product.slug}`}
       style={style}
       className={cx(
-        "group flex items-center gap-4 rounded-[1.4rem] bg-canvas p-2.5 outline outline-1 -outline-offset-1 outline-line transition-[background-color,transform,translate,scale,rotate] duration-500 ease-[var(--ease-astra)] hover:bg-canvas active:scale-[0.995]",
+        "group flex items-center gap-4 rounded-card bg-canvas p-2.5 outline outline-1 -outline-offset-1 outline-line transition-[background-color,transform,translate,scale,rotate] duration-500 ease-[var(--ease-astra)] hover:bg-canvas active:scale-[0.995]",
           className,
         )}
       >
         <ProductImage
           product={product}
-          className="size-16 shrink-0 rounded-[1.05rem] outline outline-1 -outline-offset-1 outline-line-strong"
+          className="size-16 shrink-0 rounded-well outline outline-1 -outline-offset-1 outline-line-strong"
         />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <p className="truncate text-[13px] font-bold text-ink">{product.title}</p>
@@ -73,13 +73,13 @@ export function ProductCard({
       href={`/produk/${product.slug}`}
       style={style}
       className={cx(
-        "group block transition-transform duration-500 ease-[var(--ease-astra)] hover:-translate-y-1 active:scale-[0.995]",
+        "lift group block active:scale-[0.995]",
         className,
       )}
     >
       <div className="bezel-shell h-full p-1.5">
         <div className="bezel-core flex h-full flex-col overflow-hidden">
-          <div className="relative overflow-hidden rounded-[1.35rem]">
+          <div className="relative overflow-hidden rounded-card">
             <ProductImage product={product} className="aspect-[4/3] w-full" />
             <div className="absolute left-2.5 top-2.5 flex flex-col items-start gap-1.5">
               {product.deliveryKind === "gamepass_auto" ? (
@@ -131,7 +131,7 @@ export function ProductCard({
               </span>
             </div>
 
-            <div className="flex items-end justify-between gap-3 border-t border-hairline pt-3">
+            <div className="flex items-end justify-between gap-3 border-t border-line pt-3">
               <div className="flex flex-col">
                 {product.compareAtPrice ? (
                   <span className="num text-[11px] text-ink-mute line-through">

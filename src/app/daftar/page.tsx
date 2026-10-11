@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function RegisterPage() {
   return (
-    <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-28 md:px-8 md:pt-36">
+    <div className="shell pb-24 pt-24 md:pt-28">
       <div className="bezel-shell p-1.5">
         <div className="bezel-core overflow-hidden">
           <AuthPanel mode="register" />

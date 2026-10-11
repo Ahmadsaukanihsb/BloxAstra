@@ -102,7 +102,7 @@ export async function changePassword(rawInput: unknown): Promise<ProfileActionRe
     select: { passwordHash: true },
   });
   if (!row?.passwordHash) {
-    return fail("Akun ini masuk lewat OAuth — kelola kata sandi dari penyedia akunmu.");
+    return fail("Akun ini masuk lewat OAuth. Kelola kata sandi dari penyedia akunmu.");
   }
   const matches = await bcrypt.compare(parsed.data.current, row.passwordHash);
   if (!matches) return fail("Kata sandi saat ini salah.");

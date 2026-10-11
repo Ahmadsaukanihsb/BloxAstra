@@ -28,10 +28,10 @@ export default function SellerOrdersPage() {
 
 function OrdersSkeleton() {
   return (
-    <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-10 md:px-8 md:pt-14">
+    <div className="shell pb-20 pt-8 md:pt-10">
       <Skeleton className="h-3 w-24" />
       <Skeleton className="mt-5 h-12 w-72 max-w-full" />
-      <Skeleton className="mt-10 h-80 w-full rounded-3xl" />
+      <Skeleton className="mt-10 h-80 w-full rounded-card" />
     </div>
   );
 }
@@ -44,7 +44,7 @@ async function OrdersContent() {
   const identity = await getSellerIdentity(user.id);
   if (!identity) {
     return (
-      <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-10 md:px-8 md:pt-14">
+      <div className="shell pb-20 pt-8 md:pt-10">
         <Notice tone="danger" title="Profil penjual belum dibuat">
           Akun ini belum memiliki profil toko, jadi belum ada pesanan yang bisa ditampilkan.
         </Notice>
@@ -61,7 +61,7 @@ async function OrdersContent() {
   const poolValue = poolOrders.reduce((sum, order) => sum + order.total, 0);
 
   return (
-    <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-10 md:px-8 md:pt-14">
+    <div className="shell pb-20 pt-8 md:pt-10">
       <SellerStack>
         <SellerPageHeader
           eyebrow="Pesanan"
@@ -88,7 +88,7 @@ async function OrdersContent() {
               Tidak ada pesanan aktif. Begitu ada checkout, pesanan muncul di sini.
             </p>
           ) : (
-            <div className="flex flex-col divide-y divide-hairline">
+            <div className="flex flex-col divide-y divide-line">
               {activeOrders.map((order) => (
                 <ActiveOrderRow key={order.id} order={order} />
               ))}
@@ -100,7 +100,7 @@ async function OrdersContent() {
           <SellerSection
             title="Order rebutan menunggu diambil"
             description={`${poolOrders.length} pesanan lunas belum punya penjual${
-              poolValue > 0 ? ` — total ${formatIDR(poolValue)}` : ""
+              poolValue > 0 ? ` · total ${formatIDR(poolValue)}` : ""
             }. ${
               identity.kycVerified
                 ? "Kamu bisa mengambilnya sekarang."

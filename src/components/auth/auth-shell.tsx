@@ -31,7 +31,7 @@ Pernyataan: Saya bertanggung jawab penuh atas barang yang saya jual.`;
 export function AuthPanel({ mode }: { mode: "login" | "register" }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.05fr]">
-      <div className="flex flex-col justify-between gap-10 border-b border-hairline p-7 md:p-10 lg:border-b-0 lg:border-r">
+      <div className="flex flex-col justify-center gap-10 border-b border-line p-7 md:p-10 lg:border-b-0 lg:border-r">
         <div className="flex flex-col gap-6">
           <span className="flex items-center gap-2.5 text-astra-ink">
             <AstraMark size={28} />
@@ -40,9 +40,9 @@ export function AuthPanel({ mode }: { mode: "login" | "register" }) {
             </span>
           </span>
 
-          <h2 className="max-w-[24ch] font-display text-[1.7rem] font-extrabold leading-[1.08] text-ink md:text-[2.1rem]">
+ <h2 className="max-w-[24ch] font-display text-title font-extrabold text-ink md:text-title">
             {mode === "login"
-              ? "Dana kamu dijaga sistem, bukan dijaga keberuntungan."
+              ? "Dana berpindah setelah barang kamu terima."
               : "Buka toko dengan identitas yang bisa dipertanggungjawabkan."}
           </h2>
 
@@ -69,7 +69,7 @@ export function AuthPanel({ mode }: { mode: "login" | "register" }) {
                 ]
             ).map((item) => (
               <div key={item.text} className="flex items-start gap-3 text-[12px] text-ink-dim">
-                <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg bg-canvas text-astra-ink">
+                <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-control bg-canvas text-astra-ink">
                   <item.icon size={15} />
                 </span>
                 {item.text}
@@ -95,10 +95,10 @@ function LoginForm() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1.5">
-        <h1 className="font-display text-xl font-extrabold text-ink">Masuk ke akun</h1>
+ <h1 className="font-display text-page font-extrabold text-ink">Masuk ke akun</h1>
         <p className="text-[12px] text-ink-mute">
           Gunakan email atau username yang terdaftar. Pembeli, penjual, dan admin
-          masuk dari pintu yang sama — sistem mengarahkan sesuai peran akunmu.
+          masuk dari pintu yang sama. Sistem mengarahkan sesuai peran akunmu.
         </p>
       </div>
 
@@ -107,14 +107,14 @@ function LoginForm() {
         <div className="flex gap-2.5">
           <Link
             href="/api/auth/start/google"
-            className="flex flex-1 items-center justify-center gap-2.5 rounded-full border border-line bg-paper px-4 py-3 text-[13px] font-bold text-ink transition-all duration-300 ease-[var(--ease-astra)] hover:border-line-strong hover:bg-canvas active:scale-[0.98]"
+            className="flex flex-1 items-center justify-center gap-2.5 rounded-control border border-line bg-paper px-4 py-3 text-[13px] font-bold text-ink transition-colors duration-200 ease-[var(--ease-astra)] hover:border-line-strong hover:bg-canvas active:scale-[0.98]"
           >
             <IconGoogle size={18} />
             Google
           </Link>
           <Link
             href="/api/auth/start/discord"
-            className="flex flex-1 items-center justify-center gap-2.5 rounded-full border border-line bg-paper px-4 py-3 text-[13px] font-bold text-ink transition-all duration-300 ease-[var(--ease-astra)] hover:border-[#5865F2]/40 hover:bg-[#5865F2]/[0.06] active:scale-[0.98]"
+            className="flex flex-1 items-center justify-center gap-2.5 rounded-control border border-line bg-paper px-4 py-3 text-[13px] font-bold text-ink transition-colors duration-200 ease-[var(--ease-astra)] hover:border-line-strong hover:bg-canvas active:scale-[0.98]"
           >
             <IconDiscord size={18} />
             Discord
@@ -122,9 +122,9 @@ function LoginForm() {
         </div>
 
         <div className="flex items-center gap-3">
-          <span className="h-px flex-1 bg-hairline" />
+          <span className="h-px flex-1 bg-line" />
           <span className="text-[11px] font-medium text-ink-mute">atau masuk manual</span>
-          <span className="h-px flex-1 bg-hairline" />
+          <span className="h-px flex-1 bg-line" />
         </div>
       </div>
 
@@ -163,7 +163,7 @@ function LoginForm() {
               onClick={() => setReveal((value) => !value)}
               aria-pressed={reveal}
               aria-label={reveal ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
-              className="absolute right-3 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-xl text-ink-mute transition-colors duration-300 hover:text-ink"
+              className="absolute right-3 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-control text-ink-mute transition-colors duration-300 hover:text-ink"
             >
               {reveal ? <IconEyeOff size={16} /> : <IconEye size={16} />}
             </button>
@@ -187,11 +187,7 @@ function LoginForm() {
         </Button>
       </form>
 
-      <Notice tone="info" icon={<IconBell size={15} />} title="Notifikasi kamir">
-        Semua kabar orderan, sengketa, dan penarikan masuk ke kotak masuk di dalam akun Blox Astra.
-      </Notice>
-
-      <p className="border-t border-hairline pt-5 text-[11px] text-ink-mute">
+      <p className="border-t border-line pt-5 text-[11px] text-ink-mute">
         Belum punya akun?{" "}
         <Link href="/daftar" className="text-astra-ink underline decoration-dotted underline-offset-4">
           Daftar sebagai pembeli atau penjual
@@ -229,7 +225,7 @@ function RegisterForm() {
       return;
     }
     if (file.size > 1_000_000) {
-      setDocError(`"${file.name}" melebihi 1MB — kompres dulu sebelum unggah.`);
+      setDocError(`"${file.name}" melebihi 1MB. Kompres dulu sebelum unggah.`);
       return;
     }
     const url = await new Promise<string>((resolve, reject) => {
@@ -248,7 +244,7 @@ function RegisterForm() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1.5">
-        <h1 className="font-display text-xl font-extrabold text-ink">Buat akun Blox Astra</h1>
+ <h1 className="font-display text-page font-extrabold text-ink">Buat akun Blox Astra</h1>
         <p className="text-[12px] text-ink-mute">
           Akun pembeli aktif langsung. Akun penjual menunggu verifikasi identitas manual.
         </p>
@@ -407,7 +403,7 @@ function RegisterForm() {
                     type="button"
                     onClick={() => document.getElementById(item.inputId)?.click()}
                     className={cx(
-                      "flex w-full items-start gap-3.5 rounded-2xl border border-dashed p-4 text-left transition-colors duration-300 ease-[var(--ease-astra)]",
+                      "flex w-full items-start gap-3.5 rounded-well border border-dashed p-4 text-left transition-colors duration-300 ease-[var(--ease-astra)]",
                       item.value
                         ? "border-astra/40 bg-astra/[0.06]"
                         : "border-line-strong bg-canvas hover:bg-canvas",
@@ -415,7 +411,7 @@ function RegisterForm() {
                   >
                     <span
                       className={cx(
-                        "mt-0.5 grid size-9 shrink-0 place-items-center rounded-xl",
+                        "mt-0.5 grid size-9 shrink-0 place-items-center rounded-control",
                         item.value ? "bg-astra/15 text-astra-ink" : "bg-canvas text-ink-dim",
                       )}
                     >
@@ -425,7 +421,7 @@ function RegisterForm() {
                       <span className="text-[13px] text-ink">{item.label}</span>
                       <span className="text-[11px] leading-relaxed text-ink-mute">{item.hint}</span>
                       <span className="num mt-1 text-[10px] text-ink-mute">
-                        {item.value ? "terlampirkan — klik untuk ganti" : "belum ada berkas"}
+                        {item.value ? "terlampirkan, klik untuk ganti" : "belum ada berkas"}
                       </span>
                     </span>
                     {item.value ? (
@@ -433,7 +429,7 @@ function RegisterForm() {
                       <img
                         src={item.value}
                         alt={item.label}
-                        className="size-16 shrink-0 rounded-xl object-cover outline outline-1 -outline-offset-1 outline-line"
+                        className="size-16 shrink-0 rounded-control object-cover outline outline-1 -outline-offset-1 outline-line"
                       />
                     ) : null}
                   </button>
@@ -443,8 +439,8 @@ function RegisterForm() {
                 <p className="text-xs font-bold text-danger">{docError}</p>
               ) : null}
 
-              <div className="flex flex-col gap-3 rounded-2xl bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line">
-                <span className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-ink-mute">
+              <div className="flex flex-col gap-3 rounded-well bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line">
+                <span className="eyebrow text-ink-mute">
                   Tulisan tangan wajib pada kertas
                 </span>
                 <pre className="num overflow-x-auto whitespace-pre-wrap text-[11px] leading-relaxed text-ink-dim">
@@ -470,13 +466,13 @@ function RegisterForm() {
                   label: `Penjual baru dibatasi ${formatIDR(TIER_DAILY_CAPS[1])} per hari sampai terbukti.`,
                   tier: "Tier 1",
                 },
-                { label: "Peningkatan tier beserta plafonnya ditinjau admin berdasarkan performa toko — bukan otomatis.", tier: "Tier 1" },
+                { label: "Peningkatan tier beserta plafonnya ditinjau manual berdasarkan performa toko, tidak otomatis.", tier: "Tier 1" },
                 { label: "Akses rebutan orderan pool baru terbuka setelah Tier 2.", tier: "Tier 2" },
                 { label: "Rasio sengketa ditinjau admin saat pertimbangan naik/turun tier.", tier: "Tier 2" },
               ].map((rule) => (
                   <div
                     key={rule.label}
-                    className="flex items-start gap-3 rounded-2xl bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line"
+                    className="flex items-start gap-3 rounded-well bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line"
                   >
                     <Badge tone="astra">{rule.tier}</Badge>
                     <span className="text-[12px] leading-relaxed text-ink-dim">{rule.label}</span>
@@ -515,7 +511,7 @@ function RegisterForm() {
             </Notice>
           ) : null}
 
-          <div className="flex flex-col gap-2.5 border-t border-hairline pt-5 sm:flex-row sm:justify-between">
+          <div className="flex flex-col gap-2.5 border-t border-line pt-5 sm:flex-row sm:justify-between">
             {step > 0 ? (
               <Button variant="ghost" type="button" onClick={() => setStep((value) => value - 1)}>
                 Kembali
@@ -557,7 +553,7 @@ function RegisterForm() {
             <div className="flex gap-2.5">
               <Link
                 href="/api/auth/start/google"
-                className="flex flex-1 items-center justify-center gap-2.5 rounded-full border border-line bg-paper px-4 py-3 text-[13px] font-bold text-ink transition-all duration-300 ease-[var(--ease-astra)] hover:border-line-strong hover:bg-canvas active:scale-[0.98]"
+                className="flex flex-1 items-center justify-center gap-2.5 rounded-control border border-line bg-paper px-4 py-3 text-[13px] font-bold text-ink transition-colors duration-200 ease-[var(--ease-astra)] hover:border-line-strong hover:bg-canvas active:scale-[0.98]"
               >
                 <IconGoogle size={18} />
                 Daftar dengan Google
@@ -565,16 +561,16 @@ function RegisterForm() {
             </div>
             <Link
               href="/api/auth/start/discord"
-              className="flex items-center justify-center gap-2.5 rounded-full border border-line bg-paper px-4 py-3 text-[13px] font-bold text-ink transition-all duration-300 ease-[var(--ease-astra)] hover:border-[#5865F2]/40 hover:bg-[#5865F2]/[0.06] active:scale-[0.98]"
+              className="flex items-center justify-center gap-2.5 rounded-control border border-line bg-paper px-4 py-3 text-[13px] font-bold text-ink transition-all duration-300 ease-[var(--ease-astra)] hover:border-line-strong hover:bg-canvas active:scale-[0.98]"
             >
               <IconDiscord size={18} />
               Daftar dengan Discord
             </Link>
 
             <div className="flex items-center gap-3">
-              <span className="h-px flex-1 bg-hairline" />
+              <span className="h-px flex-1 bg-line" />
               <span className="text-[11px] font-medium text-ink-mute">atau isi manual</span>
-              <span className="h-px flex-1 bg-hairline" />
+              <span className="h-px flex-1 bg-line" />
             </div>
           </div>
 

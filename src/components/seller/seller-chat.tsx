@@ -64,17 +64,17 @@ export function SellerChatBox({ messages }: { messages: SellerChatItem[] }) {
           {messages.length} pesan di ruang ini
         </span>
         <span className="text-[11px] text-ink-mute">
-          Ruang ini dibaca semua penjual — jangan bagikan data sensitif.
+          Ruang ini dibaca semua penjual. Jangan bagikan data sensitif.
         </span>
       </div>
 
       <div
         ref={scrollRef}
-        className="flex h-[min(58vh,460px)] flex-col gap-3 overflow-y-auto rounded-2xl bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line"
+        className="flex h-[min(58vh,460px)] flex-col gap-3 overflow-y-auto rounded-well bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line"
       >
         {messages.length === 0 ? (
           <div className="m-auto flex max-w-[36ch] flex-col items-center gap-3 text-center">
-            <span className="grid size-12 place-items-center rounded-2xl text-ink-mute">
+            <span className="grid size-12 place-items-center rounded-well text-ink-mute">
               <IconChat size={22} />
             </span>
             <p className="text-[13px] font-bold text-ink">Belum ada pesan</p>
@@ -90,7 +90,7 @@ export function SellerChatBox({ messages }: { messages: SellerChatItem[] }) {
             >
               <div
                 className={cx(
-                  "rounded-2xl px-3.5 py-2.5 outline outline-1 -outline-offset-1",
+                  "rounded-well px-3.5 py-2.5 outline outline-1 -outline-offset-1",
                   message.isSelf
                     ? "bg-astra/10 text-ink outline-astra/25"
                     : "bg-paper text-ink outline-line",
@@ -124,7 +124,7 @@ export function SellerChatBox({ messages }: { messages: SellerChatItem[] }) {
           placeholder="Tulis pesan untuk sesama penjual… (Enter untuk kirim, Shift+Enter untuk baris baru)"
           rows={1}
           maxLength={1000}
-          className="min-h-[44px] w-full resize-none rounded-2xl bg-canvas px-4 py-3 text-[13px] text-ink outline outline-1 -outline-offset-1 outline-line placeholder:text-ink-mute focus:outline-astra/40"
+          className="min-h-[44px] w-full resize-none rounded-well bg-canvas px-4 py-3 text-[13px] text-ink outline outline-1 -outline-offset-1 outline-line placeholder:text-ink-mute focus:outline-astra/40"
         />
         <Button
           type="submit"

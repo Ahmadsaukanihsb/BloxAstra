@@ -94,7 +94,7 @@ export function ProfileView({
       return;
     }
     if (file.size > 500_000) {
-      setAvatarMsg({ ok: false, text: "Foto maksimal 500KB — kompres dulu." });
+      setAvatarMsg({ ok: false, text: "Foto maksimal 500KB. Kompres dulu." });
       return;
     }
     const reader = new FileReader();
@@ -145,7 +145,7 @@ export function ProfileView({
     setWaMsg({
       ok: true,
       text: result.simCode
-        ? `Mode simulasi — kode verifikasimu: ${result.simCode}. Di produksi kode dikirim via WhatsApp.`
+        ? `Mode simulasi. Kode verifikasimu: ${result.simCode}. Di produksi kode dikirim via WhatsApp.`
         : "Kode 6 digit dikirim via WhatsApp. Berlaku 5 menit.",
     });
   }
@@ -180,14 +180,14 @@ export function ProfileView({
   }
 
   return (
-    <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-12 md:px-8 md:pt-16">
+    <div className="shell pb-24 pt-10 md:pt-14">
       <div className="flex flex-col gap-8">
         <div className="flex flex-col gap-3">
           <span className="flex items-center gap-2 text-[13px] text-ink-mute">
             <IconUserSquare size={16} className="text-astra-ink" />
             Akun saya
           </span>
-          <h1 className="font-display text-3xl font-extrabold tracking-tight text-ink md:text-[2.3rem]">
+ <h1 className="font-display text-page font-extrabold text-ink md:text-page">
             Profil saya
           </h1>
           <p className="max-w-[66ch] text-[13px] leading-relaxed text-ink-dim">
@@ -207,10 +207,10 @@ export function ProfileView({
                     alt={`Foto ${profile.username}`}
                     width={64}
                     height={64}
-                    className="size-16 rounded-2xl object-cover outline outline-1 -outline-offset-1 outline-line"
+                    className="size-16 rounded-well object-cover outline outline-1 -outline-offset-1 outline-line"
                   />
                 ) : (
-                  <span className="grid size-16 place-items-center rounded-2xl bg-astra/15 text-xl font-extrabold text-astra-ink">
+                  <span className="grid size-16 place-items-center rounded-well bg-astra/15 text-xl font-extrabold text-astra-ink">
                     {initials}
                   </span>
                 )}
@@ -331,7 +331,7 @@ export function ProfileView({
         <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
           <div className="bezel-shell p-1.5">
             <div className="bezel-core flex items-center gap-3 p-4">
-              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-astra/10 text-astra-ink">
+              <span className="grid size-9 shrink-0 place-items-center rounded-control bg-astra/10 text-astra-ink">
                 <IconReceipt size={16} />
               </span>
               <span className="flex min-w-0 flex-col">
@@ -342,14 +342,14 @@ export function ProfileView({
                   {profile.activeOrders} pesanan
                 </span>
                 <span className="truncate text-[10px] text-ink-mute">
-                  Belum selesai — bayar, proses, kirim, sengketa
+                  Belum selesai: bayar, proses, kirim, sengketa
                 </span>
               </span>
             </div>
           </div>
           <div className="bezel-shell p-1.5">
             <div className="bezel-core flex items-center gap-3 p-4">
-              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-astra/10 text-astra-ink">
+              <span className="grid size-9 shrink-0 place-items-center rounded-control bg-astra/10 text-astra-ink">
                 <IconPackage size={16} />
               </span>
               <span className="flex min-w-0 flex-col">
@@ -367,7 +367,7 @@ export function ProfileView({
           </div>
           <div className="bezel-shell p-1.5">
             <div className="bezel-core flex items-center gap-3 p-4">
-              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-astra/10 text-astra-ink">
+              <span className="grid size-9 shrink-0 place-items-center rounded-control bg-astra/10 text-astra-ink">
                 <IconHexCoin size={16} />
               </span>
               <span className="flex min-w-0 flex-col">
@@ -592,9 +592,9 @@ export function ProfileView({
                   return (
                     <div
                       key={account.provider}
-                      className="flex items-center gap-3 rounded-2xl bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line"
+                      className="flex items-center gap-3 rounded-well bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line"
                     >
-                      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-paper text-ink outline outline-1 -outline-offset-1 outline-line">
+                      <span className="grid size-10 shrink-0 place-items-center rounded-control bg-paper text-ink outline outline-1 -outline-offset-1 outline-line">
                         <Icon size={19} />
                       </span>
                       <div className="flex min-w-0 flex-1 flex-col">
@@ -618,9 +618,9 @@ export function ProfileView({
                   return (
                     <div
                       key={`link-${provider}`}
-                      className="flex items-center gap-3 rounded-2xl bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line"
+                      className="flex items-center gap-3 rounded-well bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line"
                     >
-                      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-paper text-ink outline outline-1 -outline-offset-1 outline-line">
+                      <span className="grid size-10 shrink-0 place-items-center rounded-control bg-paper text-ink outline outline-1 -outline-offset-1 outline-line">
                         <Icon size={19} />
                       </span>
                       <div className="flex min-w-0 flex-1 flex-col">

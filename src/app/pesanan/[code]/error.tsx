@@ -17,15 +17,15 @@ export default function OrderRoomError({
 
   return (
     <div className="mx-auto flex max-w-[560px] flex-col items-center gap-5 px-4 py-24 text-center md:py-32">
-      <span className="grid size-14 place-items-center rounded-2xl bg-danger/12 text-danger">
+      <span className="grid size-14 place-items-center rounded-well bg-danger/12 text-danger">
         <IconAlert size={26} />
       </span>
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-ink">
+ <h1 className="text-page font-extrabold text-ink">
           Ruang pesanan gagal dimuat
         </h1>
         <p className="text-sm leading-relaxed text-ink-mute">
-          Data order, chat, atau status pembayaran tidak bisa diambil. Coba muat ulang — kalau
+          Data order, chat, atau status pembayaran tidak bisa diambil. Coba muat ulang. Kalau
           berlanjut, kembali ke daftar pesanan.
         </p>
       </div>

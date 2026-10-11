@@ -18,11 +18,11 @@ export default function AdminPage() {
   return (
     <Suspense
       fallback={
-        <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-12 md:px-8 md:pt-16">
+        <div className="shell pb-20 pt-8 md:pt-10">
           <Skeleton className="h-9 w-48" />
           <div className="mt-6 flex flex-col gap-3">
             {Array.from({ length: 3 }, (_, i) => (
-              <Skeleton key={i} className="h-20 w-full rounded-2xl" />
+              <Skeleton key={i} className="h-20 w-full rounded-well" />
             ))}
           </div>
         </div>
@@ -41,7 +41,7 @@ async function AdminContent() {
   dashboard.adminEmail = user.email;
 
   return (
-    <div className="mx-auto max-w-[1180px] px-4 pb-24 pt-12 md:px-8 md:pt-16">
+    <div className="shell pb-20 pt-8 md:pt-10">
       <AdminShell
         initialDisputes={dashboard.openDisputes}
         initialEscrow={dashboard.escrowOrders}

@@ -97,7 +97,7 @@ export function DashboardSidebar({ username, role }: { username: string; role: R
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-line bg-paper lg:flex">
         <Link
           href="/dashboard"
-          className="flex h-16 shrink-0 items-center gap-2.5 border-b border-line px-5"
+          className="flex h-14 shrink-0 items-center gap-2.5 border-b border-line px-4"
         >
           <span className="text-astra-ink">
             <AstraMark size={24} />
@@ -110,7 +110,7 @@ export function DashboardSidebar({ username, role }: { username: string; role: R
           </span>
         </Link>
 
-        <nav className="flex flex-1 flex-col gap-4 overflow-y-auto p-3">
+        <nav className="flex flex-1 flex-col gap-3 overflow-y-auto p-2.5">
           {sections.map((section) => (
             <div key={section.title} className="flex flex-col gap-0.5">
               <span className="px-3 pb-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-ink-mute">
@@ -124,7 +124,7 @@ export function DashboardSidebar({ username, role }: { username: string; role: R
                     key={item.href}
                     href={item.href}
                     className={cx(
-                      "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-bold transition-colors duration-200",
+                      "flex items-center gap-2.5 rounded-control px-3 py-2 text-[13px] font-bold transition-colors duration-200",
                       active
                         ? "bg-astra/[0.08] text-ink outline outline-1 -outline-offset-1 outline-astra/25"
                         : "text-ink-dim outline outline-1 -outline-offset-1 outline-transparent hover:bg-canvas hover:text-ink",
@@ -140,7 +140,7 @@ export function DashboardSidebar({ username, role }: { username: string; role: R
         </nav>
 
         <div className="shrink-0 border-t border-line p-3">
-          <div className="flex items-center gap-2.5 px-2 pb-3">
+          <div className="flex items-center gap-2.5 px-2 pb-2.5">
             <span className="grid size-8 shrink-0 place-items-center rounded-full bg-astra/15 text-[11px] font-extrabold text-astra-ink">
               {initials}
             </span>
@@ -153,7 +153,7 @@ export function DashboardSidebar({ username, role }: { username: string; role: R
           </div>
           <a
             href="/api/auth/logout"
-            className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-bold text-danger transition-colors duration-200 hover:bg-danger/[0.07]"
+            className="flex items-center gap-2.5 rounded-control px-3 py-2 text-[13px] font-bold text-danger transition-colors duration-200 hover:bg-danger/[0.07]"
           >
             <IconLogout size={17} />
             Keluar

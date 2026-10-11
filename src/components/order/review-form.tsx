@@ -41,7 +41,7 @@ export function ReviewForm({ orderCode, sellerName }: { orderCode: string; selle
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-2xl bg-canvas p-5 outline outline-1 -outline-offset-1 outline-line">
+    <div className="flex flex-col gap-4 rounded-well bg-canvas p-5 outline outline-1 -outline-offset-1 outline-line">
       <div className="flex flex-col gap-1">
         <span className="text-[13px] font-bold text-ink">Beri ulasan untuk {sellerName}</span>
         <span className="text-[11px] text-ink-mute">
@@ -67,7 +67,7 @@ export function ReviewForm({ orderCode, sellerName }: { orderCode: string; selle
               onMouseEnter={() => setHovered(value)}
               onMouseLeave={() => setHovered(0)}
               onClick={() => setRating(value)}
-              className="rounded-lg p-1 text-robux transition-transform duration-150 hover:scale-110"
+              className="rounded-control p-1 text-robux transition-transform duration-150 hover:scale-110"
             >
               <IconStar size={26} filled={value <= shown} />
             </button>
@@ -102,7 +102,7 @@ export function ReviewForm({ orderCode, sellerName }: { orderCode: string; selle
 /** Read-only display of a submitted review. */
 export function ReviewCard({ review }: { review: OrderReview }) {
   return (
-    <div className="flex flex-col gap-2 rounded-2xl bg-canvas p-5 outline outline-1 -outline-offset-1 outline-line">
+    <div className="flex flex-col gap-2 rounded-well bg-canvas p-5 outline outline-1 -outline-offset-1 outline-line">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <StarRating rating={review.rating} size={14} />
         <span className="num text-[10px] text-ink-mute">{formatDateTime(review.createdAt)}</span>

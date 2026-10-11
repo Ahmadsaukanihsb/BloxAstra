@@ -14,7 +14,6 @@ import {
   IconArrowRight,
   IconChartBars,
   IconShieldCheck,
-  IconTimer,
   IconWallet,
 } from "@/components/ui/icons";
 
@@ -82,16 +81,12 @@ export function OnlineToggle({ online }: { online: boolean }) {
             layout
             transition={{ type: "spring", stiffness: 420, damping: 32 }}
             className={cx(
-              "absolute size-6 rounded-full bg-white shadow-[0_1px_3px_rgba(16,24,40,0.3)]",
+              "absolute size-6 rounded-full bg-paper shadow-[0_1px_3px_rgba(16,24,40,0.3)]",
               isOnline ? "right-1" : "left-1",
             )}
           />
         </span>
       </button>
-      <span className="flex items-center gap-2 text-[11px] text-ink-mute">
-        <IconTimer size={13} />
-        status tersimpan di server · bertahan sampai kamu matikan sendiri
-      </span>
     </div>
   );
 }
@@ -154,7 +149,7 @@ export function SellerStats({ stats }: { stats: SellerStatsData }) {
         {metrics.map((metric) => (
           <div
             key={metric.label}
-            className="flex flex-col gap-3 rounded-[1.5rem] bg-canvas p-5 outline outline-1 -outline-offset-1 outline-line"
+            className="flex flex-col gap-3 rounded-card bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line"
           >
             <span className="text-[10px] leading-snug uppercase tracking-[0.16em] text-ink-mute">
               {metric.label}
@@ -167,7 +162,7 @@ export function SellerStats({ stats }: { stats: SellerStatsData }) {
             >
               {metric.value}
             </span>
-            <span className="mt-auto border-t border-hairline pt-3 text-[11px] leading-relaxed text-ink-mute">
+            <span className="mt-auto border-t border-line pt-3 text-[11px] leading-relaxed text-ink-mute">
               {metric.note}
             </span>
           </div>
@@ -222,7 +217,7 @@ export function VolumeCap({
   const ratio = dailyCap > 0 ? todayVolume / dailyCap : 0;
 
   return (
-    <div className="flex flex-col gap-4 rounded-[1.5rem] bg-canvas p-5 outline outline-1 -outline-offset-1 outline-line">
+    <div className="flex flex-col gap-4 rounded-card bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span className="flex items-center gap-2 text-[13px] font-bold text-ink">
           <IconShieldCheck size={16} className="text-astra-ink" />
@@ -244,7 +239,7 @@ export function VolumeCap({
 
       <p className="text-[11px] leading-relaxed text-ink-mute">
         Plafon harian mengikuti tier tokomu dan berlaku untuk seluruh penjualan hari ini.
-        Peningkatan tier beserta plafonnya ditinjau admin berdasarkan performa toko — bukan
+        Peningkatan tier beserta plafonnya ditinjau manual berdasarkan performa toko,
         otomatis.
       </p>
     </div>
@@ -272,7 +267,7 @@ export function PayoutCard({
 
   return (
     <div className="bezel-shell p-1.5">
-      <div className="bezel-core flex flex-col gap-4 p-5">
+      <div className="bezel-core flex flex-col gap-4 p-4">
         <span className="flex items-center gap-2 text-[13px] font-bold text-ink">
           <IconWallet size={16} className="text-astra-ink" />
           Saldo dompet
@@ -287,7 +282,7 @@ export function PayoutCard({
           </span>
         </div>
 
-        <div className="flex flex-col gap-2 border-t border-hairline pt-4">
+        <div className="flex flex-col gap-2 border-t border-line pt-4">
           <div className="flex items-center justify-between text-[11px]">
             <span className="text-ink-mute">Ditahan platform</span>
             <span className="num text-robux">{formatIDR(balanceLocked)}</span>
@@ -306,7 +301,7 @@ export function PayoutCard({
           fullWidth
           disabled={!canWithdraw || balanceAvailable <= 0}
           trailingIcon={<IconArrowRight size={15} />}
-          iconCircleClassName="bg-white/20"
+          iconCircleClassName="bg-paper/20"
           onClick={() => setOpen(true)}
         >
           Tarik dana

@@ -37,7 +37,7 @@ function buildColumns(categories: Category[]) {
 const assurances = [
   { label: "Dana ditahan terpantau", icon: IconShieldCheck },
   { label: "KYC manual penjual", icon: IconSealCheck },
-  { label: "Kredensial AES-256-GCM", icon: IconLock },
+  { label: "Kredensial pesanan dienkripsi", icon: IconLock },
   { label: "Notifikasi dalam akun", icon: IconHeadset },
 ];
 
@@ -94,7 +94,7 @@ export function SiteFooter({ categories }: { categories: Category[] }) {
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 border-t border-hairline pt-8 text-[11px] text-ink-mute md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-4 border-t border-line pt-8 text-[11px] text-ink-mute md:flex-row md:items-center md:justify-between">
           <p>
             © 2026 Blox Astra. Bukan afiliasi resmi Roblox Corporation. Robux dan Roblox adalah
             merek dagang Roblox Corporation.

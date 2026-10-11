@@ -36,7 +36,7 @@ export function MarkReadButton({ disabled }: { disabled?: boolean }) {
       </Button>
       {error ? (
         <span className="text-[11px] font-bold text-danger">
-          Gagal menandai — sesi berakhir, muat ulang halaman.
+          Gagal menandai. Sesi berakhir, muat ulang halaman.
         </span>
       ) : null}
     </span>

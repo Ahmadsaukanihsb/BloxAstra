@@ -24,13 +24,16 @@ import { Reveal, RevealGroup, RevealItem } from "@/components/ui/reveal";
 
 type BadgeTone = "diskon" | "populer" | "terlaris" | "limited" | "premium" | "kilat" | "habis";
 
+/* Two fills carry meaning here — brand red for a price cut, gold for the
+   best seller. Everything else is the black pill Roblox uses on its own
+   shelves, so four cards in a row read as one shelf instead of four tribes. */
 const BADGES: Record<BadgeTone, { label: string; className: string }> = {
   diskon: { label: "Diskon", className: "bg-astra text-white" },
-  populer: { label: "Populer", className: "bg-[#2563eb] text-white" },
-  terlaris: { label: "Terlaris", className: "bg-[#f59e0b] text-white" },
-  limited: { label: "Limited", className: "bg-astra-deep text-white" },
-  premium: { label: "Premium", className: "bg-[#7c3aed] text-white" },
-  kilat: { label: "Kilat", className: "bg-[#0284c7] text-white" },
+  terlaris: { label: "Terlaris", className: "bg-gold text-ink" },
+  populer: { label: "Populer", className: "bg-ink text-white" },
+  limited: { label: "Limited", className: "bg-ink text-white" },
+  premium: { label: "Premium", className: "bg-ink text-white" },
+  kilat: { label: "Kilat", className: "bg-ink text-white" },
   habis: { label: "Stok habis", className: "bg-ink-mute text-white" },
 };
 
@@ -133,11 +136,11 @@ export function ServiceRail({ products }: { products: Product[] }) {
       <div className="mx-auto flex max-w-[1180px] flex-col gap-7">
         <Reveal>
           <div className="flex flex-col gap-1.5">
-            <h2 className="text-[1.6rem] font-extrabold leading-tight tracking-[-0.03em] text-ink md:text-[2rem]">
-              Pilihan Layanan & <span className="text-astra">Kategori</span>
+ <h2 className="text-title font-extrabold leading-tight text-ink md:text-title">
+              Top up Robux atau beli item
             </h2>
             <p className="text-[13px] text-ink-dim md:text-sm">
-              Temukan metode top up Robux, item gamepass, dan kebutuhan Roblox kamu
+              Empat metode top up, item gamepass, dan Premium dari penjual terverifikasi
             </p>
           </div>
         </Reveal>
@@ -158,11 +161,8 @@ export function ServiceRail({ products }: { products: Product[] }) {
                   aria-disabled={soldOut || undefined}
                   tabIndex={soldOut ? -1 : undefined}
                   className={cx(
-                    "relative flex h-full w-[152px] shrink-0 snap-start flex-col items-center gap-3 rounded-3xl border-2 bg-paper px-3 pb-4 pt-6 text-center transition-[transform,translate,scale,rotate,border-color,box-shadow] duration-500 ease-[var(--ease-astra)] hover:-translate-y-1 hover:shadow-[0_18px_34px_-26px_rgba(225,29,72,0.55)] md:w-full",
-                    soldOut
-                      ? "border-line pointer-events-none"
-                      : "border-astra/30 hover:border-astra/70",
-                    service.badge === "diskon" && !soldOut && "bg-astra-wash",
+                    "bezel-shell relative flex h-full w-[152px] shrink-0 snap-start flex-col items-center gap-3 px-3 pb-4 pt-6 text-center transition-[transform,translate,scale,rotate,outline-color,box-shadow] duration-500 ease-[var(--ease-astra)] hover:-translate-y-1 md:w-full",
+                    soldOut ? "pointer-events-none" : "hover:outline-astra/45",
                   )}
                 >
                   <span
@@ -176,8 +176,8 @@ export function ServiceRail({ products }: { products: Product[] }) {
 
                   <span
                     className={cx(
-                      "grid size-14 place-items-center rounded-2xl",
-                      soldOut ? "bg-canvas text-ink-mute" : "bg-astra-wash text-astra",
+                      "grid size-14 place-items-center rounded-well",
+                      soldOut ? "bg-canvas text-ink-mute" : "bg-canvas-2 text-ink",
                     )}
                   >
                     <Icon size={26} />
@@ -192,12 +192,7 @@ export function ServiceRail({ products }: { products: Product[] }) {
                     >
                       {service.name}
                     </span>
-                    <span
-                      className={cx(
-                        "text-[10px] font-extrabold uppercase tracking-[0.04em]",
-                        soldOut ? "text-ink-mute" : "text-astra",
-                      )}
-                    >
+                    <span className="text-[10px] font-extrabold uppercase tracking-[0.04em] text-ink-mute">
                       {service.via}
                     </span>
                   </span>
@@ -207,14 +202,7 @@ export function ServiceRail({ products }: { products: Product[] }) {
                       <span className="text-[10px] text-ink-mute">Tidak tersedia</span>
                     </span>
                   ) : (
-                    <span className="mt-auto flex w-full flex-col items-center gap-1 rounded-2xl bg-astra-wash px-2 py-2">
-                      <span className="text-[9px] font-extrabold uppercase tracking-[0.08em] text-astra-deep">
-                        Tersedia
-                      </span>
-                      <span className="num text-[12px] font-extrabold text-astra-deep">
-                        {price}
-                      </span>
-                    </span>
+                    <span className="num mt-auto text-[13px] font-extrabold text-ink">{price}</span>
                   )}
 
                   <span
