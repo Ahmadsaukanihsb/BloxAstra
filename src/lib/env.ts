@@ -1,0 +1,88 @@
+import "server-only";
+
+/**
+ * Validates required environment variables at startup. Fails fast in
+ * production when any critical secret is missing or uses the dev fallback.
+ */
+
+const REQUIRED_KEYS = [
+  "DATABASE_URL",
+  "SESSION_SECRET",
+  "PAYMENT_PROVIDER",
+  "NEXT_PUBLIC_SITE_URL",
+  "ENCRYPTION_KEY",
+] as const;
+
+const DEV_FALLBACKS: Record<string, string> = {
+  SESSION_SECRET: "dev-only-change-me-to-a-long-random-string-32-bytes-min",
+};
+
+let validated = false;
+
+export function validateEnv(): void {
+  if (validated) return;
+
+  const isProd = process.env.NODE_ENV === "production";
+  const missing: string[] = [];
+  const weak: string[] = [];
+
+  for (const key of REQUIRED_KEYS) {
+    const value = process.env[key];
+    if (!value) {
+      missing.push(key);
+      continue;
+    }
+    // Reject known dev fallbacks in production.
+    if (isProd && DEV_FALLBACKS[key] === value) {
+      weak.push(key);
+    }
+    // Session secret must be >= 32 chars.
+    if (key === "SESSION_SECRET" && value.length < 32) {
+      weak.push(key);
+    }
+    // Encryption key must be 64 hex chars.
+    if (key === "ENCRYPTION_KEY" && !/^[0-9a-fA-F]{64}$/.test(value)) {
+      weak.push(key);
+    }
+  }
+
+  if (isProd && process.env.PAYMENT_PROVIDER !== "midtrans") {
+    throw new Error(
+      `Production PAYMENT_PROVIDER must be "midtrans". Current value: "${process.env.PAYMENT_PROVIDER}". ` +
+        `Sim mode is not allowed in production because orders can be settled for free.`,
+    );
+  }
+
+  // Midtrans keys are only lazy-checked inside midtransServerKey(), which
+  // throws mid-request. Fail fast here instead so a misconfigured deploy
+  // never boots with a dead payment pipeline.
+  if (process.env.PAYMENT_PROVIDER === "midtrans") {
+    for (const key of ["MIDTRANS_SERVER_KEY", "MIDTRANS_CLIENT_KEY", "MIDTRANS_IS_PRODUCTION"] as const) {
+      if (!process.env[key]) {
+        missing.push(key);
+      }
+    }
+  }
+
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing required environment variables: ${missing.join(", ")}. ` +
+        `Copy .env.example to .env and fill in the values.`,
+    );
+  }
+
+  // NOTE (verified 2026-10-11 by probing both Midtrans environments): key
+  // prefixes no longer reliably indicate sandbox (SB-) vs production — a
+  // live key without SB- authenticated fine against sandbox. So presence is
+  // all we gate on here; a wrong-environment key surfaces as a gateway 401
+  // at checkout time. Do NOT re-add prefix heuristics without re-probing.
+
+  if (weak.length > 0) {
+    throw new Error(
+      `Weak or invalid environment variables in production: ${weak.join(", ")}. ` +
+        `Generate strong secrets before deploying.`,
+    );
+  }
+
+  validated = true;
+}

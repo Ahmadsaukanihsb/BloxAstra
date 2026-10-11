@@ -1,0 +1,364 @@
+@import "tailwindcss";
+
+/* ============================================================
+   BLOX ASTRA — DESIGN TOKENS
+   Light commerce surface: white canvas, soft grey wells, a single
+   green accent, red reserved for "hot"/discount signals.
+   ============================================================ */
+
+@theme {
+  /* --- surfaces (slate) --- */
+  --color-paper: #ffffff;
+  --color-canvas: #f8fafc;
+  --color-canvas-2: #f1f5f9;
+
+  /* --- hairlines --- */
+  --color-line: #e2e8f0;
+  --color-line-strong: #cbd5e1;
+
+  /* --- ink (slate) --- */
+  --color-ink: #0f172a;
+  --color-ink-dim: #475569;
+  --color-ink-mute: #64748b;
+
+  /* --- single accent: rose --- */
+  --color-astra: #e11d48;
+  /* text-safe rose: 6.2:1 on white, used for small copy and numerals */
+  --color-astra-ink: #be123c;
+  --color-astra-bright: #be123c;
+  --color-astra-deep: #9f1239;
+  --color-astra-wash: #fff1f2;
+  --color-astra-mint: #ffe4e6;
+  --color-gold: #d4af37;
+  --color-gold-wash: #fffbeb;
+
+  /* --- semantic --- */
+  --color-robux: #b45309;
+  --color-robux-wash: #fff7ed;
+  --color-danger: #dc2626;
+  --color-danger-wash: #fee2e2;
+  --color-warn: #b45309;
+  --color-info: #0284c7;
+
+  /* --- legacy aliases so deep-space naming keeps working --- */
+  --color-void: #f8fafc;
+  --color-abyss: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-2: #f8fafc;
+  --color-surface-3: #f1f5f9;
+  --color-hairline: #e2e8f0;
+  --color-hairline-strong: #cbd5e1;
+
+  /* --- type --- */
+  --font-display: var(--font-jakarta), "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-jakarta), "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  /* Real monospace stack for numerals. Previously aliased to Jakarta Sans,
+     so every `num` (order codes, rupiah amounts) silently rendered in the
+     body font and the token did nothing. System stack = no extra download. */
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+
+  /* --- motion --- */
+  --ease-astra: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --animate-marquee: marquee 42s linear infinite;
+  --animate-marquee-slow: marquee 70s linear infinite;
+  --animate-breathe: breathe 3.6s ease-in-out infinite;
+  --animate-shimmer: shimmer 2.2s linear infinite;
+  --animate-rise: rise 0.7s var(--ease-out-expo) both;
+  --animate-orbit: orbit 26s linear infinite;
+}
+
+@keyframes marquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    transform: translate3d(-100%, 0, 0);
+  }
+  to {
+    transform: translate3d(200%, 0, 0);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes orbit {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+
+@layer base {
+  html {
+    color-scheme: light;
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01";
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background-color: var(--color-astra-mint);
+    color: var(--color-astra-deep);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-astra);
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-canvas-2);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-line-strong);
+    border: 3px solid var(--color-canvas);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-ink-mute);
+  }
+}
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+
+/* Card shell: flat white surface, hairline edge, generous radius */
+@utility bezel-shell {
+  border-radius: 1.5rem;
+  background-color: var(--color-paper);
+  outline: 1px solid var(--color-line);
+  outline-offset: -1px;
+  box-shadow: none;
+}
+
+/* Inner core stays flat so nested shells read as one card */
+@utility bezel-core {
+  border-radius: 0.75rem;
+  background-color: transparent;
+}
+
+@utility text-balance-tight {
+  text-wrap: balance;
+}
+
+@utility num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Soft rose wash for promotional strips and hero gradients */
+@utility accent-wash {
+  background-image: linear-gradient(90deg, var(--color-astra-mint) 0%, var(--color-astra-wash) 50%, var(--color-astra-mint) 100%);
+}
+
+@utility accent-fall {
+  background-image: linear-gradient(180deg, var(--color-astra-wash) 0%, var(--color-paper) 100%);
+}
+
+/* Rose brand gradient — solid fills, badges, hero accents */
+@utility accent-gradient {
+  background-image: linear-gradient(135deg, var(--color-astra) 0%, var(--color-astra-ink) 100%);
+}
+
+/* Tri-tone gradient text (rose → pink → amber) used on headline fragments */
+@utility accent-text {
+  background-image: linear-gradient(90deg, var(--color-astra) 0%, #db2777 55%, #f59e0b 105%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+@supports not ((background-clip: text) or (-webkit-background-clip: text)) {
+  .accent-text {
+    color: var(--color-astra-ink);
+  }
+}
+
+/* ============================================================
+   SCROLL-DRIVEN REVEAL
+   CSS-only (animation-timeline: view()) so content is never left
+   hidden when a browser lacks support or JS fails.
+   ============================================================ */
+
+@keyframes astra-reveal {
+  from {
+    opacity: 0;
+    transform: translate3d(0, var(--reveal-shift, 18px), 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.reveal,
+.reveal-item {
+  --reveal-shift: 18px;
+  --reveal-offset: 0%;
+}
+
+.reveal-group > *:nth-child(2) {
+  --reveal-offset: 2.5%;
+}
+.reveal-group > *:nth-child(3) {
+  --reveal-offset: 5%;
+}
+.reveal-group > *:nth-child(4) {
+  --reveal-offset: 7.5%;
+}
+.reveal-group > *:nth-child(5) {
+  --reveal-offset: 10%;
+}
+.reveal-group > *:nth-child(6) {
+  --reveal-offset: 12.5%;
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal,
+    .reveal-item {
+      animation: astra-reveal linear both;
+      animation-timeline: view();
+      animation-range: cover calc(3% + var(--reveal-offset)) cover calc(26% + var(--reveal-offset));
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================================
+   SMOOTH RANGE SLIDER
+   Hardware-accelerated native thumb with zero lag or stutter
+   ============================================================ */
+
+.smooth-range-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+}
+
+.smooth-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 4px solid #e11d48;
+  box-shadow: 0 2px 8px rgba(225, 29, 72, 0.35);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.smooth-range-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.5);
+}
+
+.smooth-range-slider::-webkit-slider-thumb:active {
+  transform: scale(1.08);
+}
+
+.smooth-range-slider::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 4px solid #e11d48;
+  box-shadow: 0 2px 8px rgba(225, 29, 72, 0.35);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.smooth-range-slider::-moz-range-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.5);
+}
+

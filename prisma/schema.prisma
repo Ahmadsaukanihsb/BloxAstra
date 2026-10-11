@@ -1,0 +1,475 @@
+// BloxAstra — Prisma schema.
+//
+// Dev uses SQLite (`file:./bloxastra.db`). For production switch the provider
+// to `postgresql` and point DATABASE_URL at a managed Postgres instance — the
+// models below are written to be portable (no SQLite-only types).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────── auth ───────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  username     String   @unique
+  passwordHash String?
+  role         String   @default("buyer") // buyer | seller | admin
+  avatarImage  String? // custom profile photo (data URL, ≤500KB)
+  whatsapp     String?
+  whatsappVerified Boolean @default(false)
+  kycStatus   String   @default("none") // none | pending | verified | rejected
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sellerProfile SellerProfile?
+  buyerOrders   Order[]     @relation("BuyerOrders")
+  wallet        WalletLedger[]
+  withdrawals   Withdrawal[]
+  topUps        TopUp[]
+  wishlist      WishlistItem[]
+  linkedAccounts LinkedAccount[]
+  whatsappOtps   WhatsappOtp[]
+  sellerChat    SellerChatMessage[]
+  buyerReviews  Review[]    @relation("BuyerReviews")
+  notifications Notification[]
+
+  @@index([role])
+}
+
+/// OAuth identity link — one row per provider identity (Discord, Google).
+model LinkedAccount {
+  id             String   @id @default(cuid())
+  userId         String
+  provider       String // discord | google
+  providerUserId String // the provider's stable subject id
+  email          String?
+  name           String?
+  avatarUrl      String?
+  createdAt      DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
+}
+
+/// One-time WhatsApp verification code. Only the hash is stored; the plain
+/// code lives for 5 minutes and is delivered out-of-band (Fonnte / sim).
+model WhatsappOtp {
+  id        String    @id @default(cuid())
+  userId    String
+  phone     String // normalized msisdn, e.g. 62812xxxxxxx
+  codeHash  String // sha256 hex of the 6-digit code
+  attempts  Int       @default(0)
+  expiresAt DateTime
+  consumedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ───────────────────────────── catalog ─────────────────────────────
+
+model Category {
+  slug               String  @id // gamepass | item | gift | akun | premium
+  name               String
+  tagline            String
+  fulfillment        String
+  slaMinutes         Int
+  taxCoverSupported  Boolean @default(false)
+  autoDelivery      Boolean @default(false)
+  commissionPercent Float
+
+  products Product[]
+}
+
+model SellerProfile {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  storeName          String
+  handle             String   @unique
+  tier               Int      @default(1) // 1 | 2 | 3
+  isOnline           Boolean  @default(false)
+  hasExpressBadge    Boolean  @default(false)
+  avgDeliverySeconds Int      @default(600)
+  rating             Float    @default(0)
+  reviewCount        Int      @default(0)
+  ordersCompleted    Int      @default(0)
+  disputeRatePercent Float    @default(0)
+  joinedOn           DateTime @default(now())
+  city               String
+  kycVerified        Boolean  @default(false)
+  bio                String
+  fullName           String   @default("")
+  /// KYC documents (data URLs) + last rejection reason for resubmits.
+  idCardImage        String?
+  selfieImage        String?
+  kycRejectReason    String?
+  /// Seller-owned Discord webhook for pool-race pings (secret-ish URL).
+  discordWebhookUrl     String?
+  discordWebhookEnabled Boolean  @default(true)
+
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products  Product[]
+  orders    Order[]
+  ledger    WalletLedger[]
+  withdrawals Withdrawal[]
+  reviews   Review[]
+
+  @@index([tier])
+}
+
+model Product {
+  id                String   @id @default(cuid())
+  slug              String   @unique
+  title             String
+  categorySlug      String
+  game              String
+  netRobux          Int?
+  pricingMode       String? // cover | no_cover
+  price             Int // rupiah, whole
+  compareAtPrice    Int?
+  stock             Int      @default(0)
+  deliveryKind      String // gamepass_auto | manual | instant_code | credential
+  sellerId          String
+  sold              Int      @default(0)
+  description       String
+  highlights        String // JSON string array
+  autoReleaseHours  Int      @default(24)
+  instantDelivery   Boolean  @default(false)
+  featured          Boolean  @default(false)
+  /// Seller-uploaded product photo (data URL). Null = generative art.
+  imageUrl          String?
+  /// Seller-side pause switch — false hides the listing everywhere.
+  isListed          Boolean  @default(true)
+  sortOrder         Int      @default(0)
+  /// Landing-shelf placement: "pack" | "limited" | "service" | null
+  shelf             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  category Category       @relation(fields: [categorySlug], references: [slug])
+  seller   SellerProfile  @relation(fields: [sellerId], references: [id])
+  orders   Order[]
+  reviews  Review[]
+  wishlist WishlistItem[]
+
+  @@index([categorySlug])
+  @@index([sellerId])
+  @@index([featured])
+  @@index([isListed])
+  @@index([sortOrder])
+  @@index([shelf])
+}
+
+// ──────────────────────────── pricing ────────────────────────────
+
+/// Single active rate card. Admin edits write a new row and flip `active`.
+model RateCard {
+  id          String   @id @default(cuid())
+  active      Boolean  @default(false)
+  cover       Float // Rp per net Robux (cover-tax)
+  noCover     Float // Rp per net Robux (no-cover)
+  vol2000     Float   @default(0.02)
+  vol5000     Float   @default(0.04)
+  vol10000    Float   @default(0.06)
+  orderUsername Float @default(160)
+  orderLogin    Float @default(150)
+  orderGamepass Float @default(89.6)
+  /// Rp per bulan for the standalone Roblox Premium flow.
+  orderPremium  Float @default(185000)
+  adminFee      Float @default(564)
+  updatedBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([active])
+}
+
+/// Platform key-value settings (payment fees, bank list, tax rate, …).
+model Setting {
+  key   String @id
+  value String // JSON-encoded
+}
+
+// ──────────────────────────── orders ────────────────────────────
+
+model Order {
+  id             String   @id @default(cuid())
+  code           String   @unique // human-facing "BX-XXXXXX"
+  kind           String   @default("catalog") // catalog | robux_username | robux_login | robux_gamepass | premium
+  status         String   @default("pending_payment") // OrderState
+  buyerId        String
+  productId      String?
+  sellerId       String?
+  quantity       Int      @default(1)
+  unitPrice      Int
+  platformFee    Int      @default(0)
+  total          Int
+  robuxAmount    Int?
+  robloxUsername String?
+  promoCode      String?
+  paymentMethod  String? // qris | va | ewallet | saldo
+  isPoolOrder    Boolean  @default(false)
+  expressBadge   Boolean  @default(false)
+  autoReleaseAt  DateTime?
+  credentialsEnc String? // AES-256-GCM encrypted JSON (credential deliveries)
+  gamepassUrl    String?
+  buyerNote      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  buyer    User            @relation("BuyerOrders", fields: [buyerId], references: [id])
+  product  Product?        @relation(fields: [productId], references: [id])
+  seller   SellerProfile?  @relation(fields: [sellerId], references: [id])
+  events   OrderEvent[]
+  messages Message[]
+  payment  Payment?
+  dispute  Dispute?
+  review   Review?
+
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+}
+
+model OrderEvent {
+  id      String   @id @default(cuid())
+  orderId String
+  state   String // OrderState at the time of the event
+  label   String
+  note    String?
+  actor   String   @default("system") // system | buyer | seller | admin
+  at      DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model Payment {
+  id              String   @id @default(cuid())
+  orderId         String   @unique
+  provider        String   @default("cashi") // cashi | sim
+  providerOrderId String?
+  checkoutUrl     String?
+  qrData          String?
+  amount          Int
+  status          String   @default("pending") // pending | settled | failed | expired
+  rawJson         String?
+  expiresAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([providerOrderId])
+  @@index([status])
+}
+
+model Message {
+  id      String   @id @default(cuid())
+  orderId String
+  fromRole String  // buyer | seller | system
+  body    String
+  at      DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+/// Group chat shared by every seller (and admin) — one global room.
+model SellerChatMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  body      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([userId])
+}
+
+model Dispute {
+  id          String   @id @default(cuid())
+  orderId     String   @unique
+  ref         String   @unique // "DSP-BX-XXXXXX"
+  reasonId    String
+  reasonLabel String
+  buyerNote   String
+  sellerReply String   @default("")
+  evidence    String   @default("[]") // JSON string array
+  status      String   @default("open") // open | under_review | resolved_refund | resolved_release
+  slaHoursLeft Int     @default(24)
+  openedAt    DateTime @default(now())
+  resolvedAt  DateTime?
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+}
+
+/// One buyer rating per completed order. Drives the seller's public
+/// rating/reviewCount and the product review list.
+model Review {
+  id        String   @id @default(cuid())
+  orderId   String   @unique
+  productId String?
+  sellerId  String?
+  buyerId   String
+  rating    Int // 1–5
+  comment   String   @default("")
+  createdAt DateTime @default(now())
+
+  order   Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product?       @relation(fields: [productId], references: [id], onDelete: SetNull)
+  seller  SellerProfile? @relation(fields: [sellerId], references: [id], onDelete: SetNull)
+  buyer   User           @relation("BuyerReviews", fields: [buyerId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([sellerId])
+  @@index([buyerId])
+  @@index([rating])
+}
+
+/// Buyer wishlist — one row per (user, product).
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
+}
+
+/// In-app inbox. Every money/state move (paid, shipped, refund, dispute,
+/// withdrawal, review) drops a row here so users never miss it.
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  kind      String // order_paid | order_processing | order_shipped | order_completed | order_refunded | order_cancelled | dispute_opened | dispute_resolved | withdrawal_submitted | withdrawal_decided | review_received | chat_message | pool_refunded
+  title     String
+  body      String    @default("")
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, readAt])
+  @@index([createdAt])
+}
+
+// ──────────────────────────── wallets ────────────────────────────
+
+/// Standalone wallet top-up. Lives outside `Order` so it never pollutes the
+/// seller-facing order lists, but settles through the same Midtrans status
+/// machine (webhook + buyer-triggered reconcile).
+model TopUp {
+  id              String    @id @default(cuid())
+  userId          String
+  code            String    @unique // "TU-XXXXXX" — also the Midtrans order_id
+  amount          Int       // gross rupiah credited to the wallet
+  fee             Int       @default(0) // gateway fee
+  status          String    @default("pending") // pending | credited | failed | expired
+  paymentMethod  String   @default("qris")
+  provider        String    @default("sim")
+  providerToken   String?
+  checkoutUrl     String?
+  providerOrderId String?
+  expiresAt       DateTime?
+  createdAt       DateTime  @default(now())
+  creditedAt      DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}
+
+model WalletLedger {
+  id           String   @id @default(cuid())
+  userId       String
+  sellerId     String?
+  type         String // earning | withdrawal | penalty_debt | protection_bailout | refund | purchase
+  amount       Int // signed rupiah
+  balanceAfter Int
+  note         String
+  orderCode    String?
+  createdAt    DateTime @default(now())
+
+  user   User            @relation(fields: [userId], references: [id])
+  seller SellerProfile?  @relation(fields: [sellerId], references: [id])
+
+  @@index([userId])
+  @@index([sellerId])
+  @@index([orderCode])
+  @@unique([orderCode, type])
+}
+
+model Withdrawal {
+  id            String   @id @default(cuid())
+  userId        String
+  sellerId      String
+  amount        Int
+  bank          String
+  accountNumber String
+  fee           Int      @default(2500)
+  status        String   @default("pending") // pending | paid | rejected
+  ref           String   @unique // "WD-XXXX"
+  note          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user   User            @relation(fields: [userId], references: [id])
+  seller SellerProfile  @relation(fields: [sellerId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+}
+
+// ───────────────────────────── admin ─────────────────────────────
+
+model AdminAuditLog {
+  id             String   @id @default(cuid())
+  actionType     String
+  targetResource String // orders | wallets | credentials | users
+  targetId       String
+  diffPayload    String   @default("{}")
+  ipAddress      String
+  actor          String
+  createdAt      DateTime @default(now())
+
+  @@index([targetResource])
+  @@index([actor])
+  @@index([createdAt])
+}
+
+model PromoCode {
+  code   String  @id
+  type   String  @default("fixed") // fixed | percent
+  value  Int
+  active Boolean @default(true)
+  note   String?
+  /// Global redemption budget — null means unlimited. Consumed atomically
+  /// at order creation so concurrent checkouts cannot overshoot it.
+  maxUses   Int?
+  usedCount Int     @default(0)
+}
