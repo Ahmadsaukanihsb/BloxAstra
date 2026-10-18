@@ -28,8 +28,8 @@ function buildCsp(nonce: string): string {
   // worth reading. Never widen this outside development.
   const isDev = process.env.NODE_ENV !== "production";
   const scriptSrc = isDev
-    ? `script-src 'self' 'nonce-${nonce}' 'unsafe-eval'`
-    : `script-src 'self' 'nonce-${nonce}'`;
+    ? `script-src 'self' 'nonce-${nonce}' 'unsafe-eval' https://challenges.cloudflare.com`
+    : `script-src 'self' 'nonce-${nonce}' https://challenges.cloudflare.com`;
 
   return [
     "default-src 'self'",
@@ -39,9 +39,11 @@ function buildCsp(nonce: string): string {
     // Seller photos / KYC docs are data: URLs; avatars may be remote https:.
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
-    // Same-origin server actions + the payment/identity APIs we redirect to.
-    "connect-src 'self' https://app.midtrans.com https://app.sandbox.midtrans.com https://api.midtrans.com https://api.sandbox.midtrans.com https://users.roblox.com",
-    "frame-src 'none'",
+    // Same-origin server actions + the payment/identity APIs we redirect to,
+    // and Turnstile's siteverify-adjacent frames.
+    "connect-src 'self' https://app.midtrans.com https://app.sandbox.midtrans.com https://api.midtrans.com https://api.sandbox.midtrans.com https://users.roblox.com https://challenges.cloudflare.com",
+    // Turnstile renders its checkbox in an iframe from this origin.
+    "frame-src https://challenges.cloudflare.com",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -51,12 +53,26 @@ function buildCsp(nonce: string): string {
 
 export function proxy(request: NextRequest) {
   const nonce = makeNonce();
+  const csp = buildCsp(nonce);
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
+  // The header has to go on the *request* as well, and that is the whole point
+  // of this line: Next does not read `x-nonce` at all. It recovers the nonce by
+  // parsing the CSP header on the incoming request — see
+  // node_modules/next/dist/server/route-modules/app-page/parse-request-headers.js,
+  // which reads `content-security-policy` and falls back to the report-only
+  // name, then hands the nonce to its own inline and framework scripts.
+  //
+  // With only the response header set, that parse found nothing, so Next's
+  // scripts rendered without a nonce and every one of them was reported as a
+  // violation. The app's own tags worked because they read `x-nonce` directly,
+  // which is why only some scripts were ever flagged. A request header is not
+  // sent to the browser — it is the channel the nonce travels on.
+  requestHeaders.set("content-security-policy-report-only", csp);
 
   const response = NextResponse.next({ request: { headers: requestHeaders } });
-  response.headers.set("content-security-policy-report-only", buildCsp(nonce));
+  response.headers.set("content-security-policy-report-only", csp);
   return response;
 }
 

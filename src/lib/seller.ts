@@ -2,6 +2,8 @@ import "server-only";
 
 import { db } from "@/lib/db";
 import { maskWebhookUrl } from "@/lib/discord";
+import type { MentionTarget } from "@/lib/mentions";
+import { listOnlineSellers, type OnlineSeller } from "@/lib/presence";
 import { TIER_DAILY_CAPS } from "@/lib/order-meta";
 import { getSellerWallet } from "@/lib/wallet";
 import type { WalletView } from "@/lib/wallet";
@@ -270,41 +272,191 @@ export async function getSellerInventory(sellerId: string): Promise<SellerInvent
   });
 }
 
+/** The message a reply quotes, flattened so the room never ships its body twice. */
+export interface SellerChatQuote {
+  id: string;
+  author: string;
+  /** One-line preview, truncated server-side. Empty when the original was deleted. */
+  excerpt: string;
+  deleted: boolean;
+}
+
 export interface SellerChatItem {
   id: string;
+  /** Empty once deleted: the tombstone text is the client's, not the row's. */
   body: string;
   createdAt: string;
   username: string;
   storeName: string | null;
   isSelf: boolean;
+  deleted: boolean;
+  edited: boolean;
+  replyTo: SellerChatQuote | null;
+}
+
+/** Collapse and clip a message for a quote preview. */
+function quoteExcerpt(body: string): string {
+  const flat = body.replace(/\s+/g, " ").trim();
+  return flat.length > 140 ? `${flat.slice(0, 139)}…` : flat;
 }
 
 /** Global seller group chat (last 200 messages, oldest first). */
-export async function getSellerChat(viewerId: string): Promise<SellerChatItem[]> {
-  const rows = await db.sellerChatMessage.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 200,
-    select: {
-      id: true,
-      body: true,
-      createdAt: true,
-      user: {
-        select: {
-          id: true,
-          username: true,
-          sellerProfile: { select: { storeName: true } },
+export interface ChatRevision {
+  count: number;
+  latestId: string | null;
+}
+
+/**
+ * Fingerprint of the shared room: total messages plus the newest id. Lets an
+ * open chat ask "anything new?" every few seconds and skip the RSC refetch
+ * when the answer is no.
+ */
+export async function getSellerChatRevision(): Promise<ChatRevision> {
+  const [count, latest] = await Promise.all([
+    db.sellerChatMessage.count(),
+    db.sellerChatMessage.findFirst({
+      orderBy: { createdAt: "desc" },
+      select: { id: true },
+    }),
+  ]);
+  return { count, latestId: latest?.id ?? null };
+}
+
+export interface SellerChatUnread {
+  /** Messages from other sellers posted since this viewer last opened the room. */
+  count: number;
+  /** Where the "pesan baru" divider goes. Null on a first visit or a quiet room. */
+  firstUnreadId: string | null;
+}
+
+export interface SellerChatView {
+  items: SellerChatItem[];
+  unread: SellerChatUnread;
+  /** Shops the composer can call out with `@`. */
+  mentionable: MentionTarget[];
+  /** Sellers with a live stream right now, this viewer excluded. */
+  online: OnlineSeller[];
+}
+
+/**
+ * Every shop a message can call out by name. Capped: the room is one shared
+ * page and the full directory rides the initial payload for the `@` menu.
+ */
+export async function getMentionDirectory(limit = 300): Promise<MentionTarget[]> {
+  const rows = await db.sellerProfile.findMany({
+    select: { userId: true, storeName: true, user: { select: { username: true } } },
+    orderBy: { storeName: "asc" },
+    take: limit,
+  });
+  return rows.map((row) => ({
+    userId: row.userId,
+    storeName: row.storeName,
+    username: row.user.username,
+  }));
+}
+
+/**
+ * How many group-room messages this user has not seen yet — the number on the
+ * nav badge. Zero until the room has been opened once, which is the same rule
+ * the divider follows: a brand-new account is not handed 200 "unread" messages.
+ * Messages this user posted are never counted, at any age.
+ */
+export async function getSellerChatUnreadCount(userId: string): Promise<number> {
+  const viewer = await db.user.findUnique({
+    where: { id: userId },
+    select: { groupChatSeenAt: true },
+  });
+  const seenAt = viewer?.groupChatSeenAt ?? null;
+  if (!seenAt) return 0;
+  return db.sellerChatMessage.count({
+    where: { createdAt: { gt: seenAt }, userId: { not: userId }, deletedAt: null },
+  });
+}
+
+/**
+ * The room plus this viewer's place in it.
+ *
+ * The unread cursor is read, never advanced, here: a render decides what to
+ * draw, and the open room advances the cursor through a server action once the
+ * reader has actually seen the messages on screen.
+ */
+export async function getSellerChat(viewerId: string): Promise<SellerChatView> {
+  const [rows, viewer, mentionable] = await Promise.all([
+    db.sellerChatMessage.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 200,
+      select: {
+        id: true,
+        body: true,
+        createdAt: true,
+        editedAt: true,
+        deletedAt: true,
+        user: {
+          select: {
+            id: true,
+            username: true,
+            sellerProfile: { select: { storeName: true } },
+          },
+        },
+        replyTo: {
+          select: {
+            id: true,
+            body: true,
+            deletedAt: true,
+            user: {
+              select: {
+                username: true,
+                sellerProfile: { select: { storeName: true } },
+              },
+            },
+          },
         },
       },
-    },
-  });
-  return rows
+    }),
+    db.user.findUnique({ where: { id: viewerId }, select: { groupChatSeenAt: true } }),
+    getMentionDirectory(),
+  ]);
+
+  const items = rows
     .reverse()
     .map((row) => ({
       id: row.id,
-      body: row.body,
+      // A deleted message keeps its row but loses its words — the tombstone
+      // the reader sees is rendered, never stored.
+      body: row.deletedAt ? "" : row.body,
       createdAt: row.createdAt.toISOString(),
       username: row.user.username,
       storeName: row.user.sellerProfile?.storeName ?? null,
       isSelf: row.user.id === viewerId,
+      deleted: row.deletedAt !== null,
+      edited: row.editedAt !== null,
+      replyTo: row.replyTo
+        ? {
+            id: row.replyTo.id,
+            author:
+              row.replyTo.user.sellerProfile?.storeName ?? row.replyTo.user.username,
+            excerpt: row.replyTo.deletedAt ? "" : quoteExcerpt(row.replyTo.body),
+            deleted: row.replyTo.deletedAt !== null,
+          }
+        : null,
     }));
+
+  // A first visit (no cursor) is not "200 unread" — the room simply opens
+  // clean, and the cursor is written from the client on mount.
+  // A tombstone is not something anyone can still read, so it never counts as
+  // unread and never hosts the divider.
+  const seenAt = viewer?.groupChatSeenAt ?? null;
+  const fresh = seenAt
+    ? items.filter(
+        (item) =>
+          !item.isSelf && !item.deleted && new Date(item.createdAt).getTime() > seenAt.getTime(),
+      )
+    : [];
+
+  return {
+    items,
+    unread: { count: fresh.length, firstUnreadId: fresh[0]?.id ?? null },
+    mentionable,
+    online: listOnlineSellers(viewerId),
+  };
 }

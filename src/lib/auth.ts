@@ -10,6 +10,16 @@ export interface CurrentUser {
   username: string;
   whatsapp: string | null;
   role: "buyer" | "seller" | "admin";
+  /** True when the account has a custom photo — the nav then points <img> at /api/avatar. */
+  hasAvatar: boolean;
+  /** Row mtime as ms, used as `?v=` so a new upload busts the browser cache. */
+  avatarVersion: number;
+  /**
+   * A buyer with no KYC review in flight — the only account state that may be
+   * offered "Mulai jualan" in the nav. Keeps a rejected/pending account from
+   * being pointed at a form it can no longer submit.
+   */
+  canApplyAsSeller: boolean;
 }
 
 /**
@@ -26,9 +36,26 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
 
   const user = await db.user.findUnique({
     where: { id: userId },
-    select: { id: true, email: true, username: true, whatsapp: true, role: true },
+    select: {
+      id: true,
+      email: true,
+      username: true,
+      whatsapp: true,
+      role: true,
+      avatarImage: true,
+      updatedAt: true,
+      kycStatus: true,
+      suspendedAt: true,
+      sessionVersion: true,
+    },
   });
   if (!user) return null;
+  // Suspended accounts lose their session everywhere immediately — the cookie
+  // may still exist client-side, but every read treats it as signed out.
+  if (user.suspendedAt) return null;
+  // "Log out of all devices" / password change bumps the stored version, so
+  // every cookie minted before that point stops authenticating here.
+  if ((session.sessionVersion ?? 0) !== user.sessionVersion) return null;
 
   return {
     id: user.id,
@@ -36,6 +63,9 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     username: user.username,
     whatsapp: user.whatsapp,
     role: user.role as CurrentUser["role"],
+    hasAvatar: Boolean(user.avatarImage),
+    avatarVersion: user.updatedAt.getTime(),
+    canApplyAsSeller: user.role === "buyer" && user.kycStatus === "none",
   };
 });
 

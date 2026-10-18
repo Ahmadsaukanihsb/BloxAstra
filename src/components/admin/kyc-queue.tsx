@@ -4,8 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { approveKyc, rejectKyc } from "@/app/actions/admin";
 import { formatDateTime } from "@/lib/format";
+import { RecordFrame } from "@/components/admin/console";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { EmptyState, Notice } from "@/components/ui/feedback";
 import { Field, TextInput } from "@/components/ui/field";
 import { EvidenceGallery } from "@/components/order/dispute-evidence";
@@ -70,18 +71,22 @@ export function KycQueue({ rows: initialRows, total }: { rows: KycQueueRow[]; to
         title="Antrean KYC bersih"
         description="Tidak ada pendaftaran penjual yang menunggu verifikasi. Pengajuan baru dari /daftar (mode penjual) akan muncul di sini."
         action={
-          <Badge tone="success" icon={<IconCheck size={13} />}>
-            Semua pengajuan terproses
-          </Badge>
+          <ButtonLink href="/admin/cari?jenis=pengguna&kyc=pending" variant="secondary" size="sm">
+            Riwayat pengajuan
+          </ButtonLink>
         }
       />
     );
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3.5">
       {total > rows.length ? (
-        <Notice tone="warn" icon={<IconAlert size={15} />} title={`Menampilkan ${rows.length} dari ${total} antrean`}>
+        <Notice
+          tone="warn"
+          icon={<IconAlert size={15} />}
+          title={`Menampilkan ${rows.length} dari ${total} antrean`}
+        >
           Proses yang tampil dulu. Sisanya muncul setelah antrean berkurang.
         </Notice>
       ) : null}
@@ -138,7 +143,7 @@ function KycRow({
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-card bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line md:p-5">
+    <RecordFrame tone="warn">
       <div className="flex flex-wrap items-center gap-3">
         <Badge tone="warn" icon={<IconShieldCheck size={13} />}>
           KYC pending
@@ -150,7 +155,7 @@ function KycRow({
       </div>
 
       <div className="flex flex-wrap items-center gap-3.5">
-        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-astra/15 text-[12px] font-extrabold text-astra-ink">
+        <span className="grid size-11 shrink-0 place-items-center rounded-control bg-astra/15 text-[12px] font-extrabold text-astra-ink">
           {initials}
         </span>
         <div className="flex min-w-0 flex-col gap-0.5">
@@ -162,9 +167,7 @@ function KycRow({
                 {row.storeName}
               </span>
             ) : null}
-            {row.tier !== null ? (
-              <Badge tone="neutral">Tier {row.tier}</Badge>
-            ) : null}
+            {row.tier !== null ? <Badge tone="neutral">Tier {row.tier}</Badge> : null}
           </div>
           <span className="num text-[11px] text-ink-mute">
             {row.whatsapp ? `WhatsApp ${row.whatsapp}` : "Tanpa nomor WhatsApp"}
@@ -177,10 +180,8 @@ function KycRow({
         </div>
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <span className="eyebrow text-ink-mute">
-          Dokumen identitas
-        </span>
+      <div className="flex flex-col gap-2 rounded-well bg-canvas-2 p-4">
+        <span className="eyebrow text-ink-mute">Dokumen identitas</span>
         <EvidenceGallery
           items={[row.idCardImage, row.selfieImage].filter((src): src is string => Boolean(src))}
         />
@@ -192,7 +193,7 @@ function KycRow({
       </div>
 
       {mode === "view" ? (
-        <div className="flex flex-wrap justify-end gap-2.5">
+        <div className="flex flex-wrap justify-end gap-2.5 border-t border-line pt-4">
           <Button
             size="sm"
             leadingIcon={<IconCheck size={15} />}
@@ -236,6 +237,6 @@ function KycRow({
           </div>
         </div>
       )}
-    </div>
+    </RecordFrame>
   );
 }

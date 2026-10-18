@@ -43,18 +43,20 @@ export async function generateMetadata(props: PageProps<"/produk/[slug]">): Prom
     title: detail.product.title,
     description,
     alternates: { canonical: url },
+    // No explicit `images` here: an explicit openGraph.images would override
+    // the colocated opengraph-image.tsx, so the per-listing card (title, price,
+    // store) would never be used. Leaving them out lets the file convention
+    // supply the image for both OG and Twitter.
     openGraph: {
       title: detail.product.title,
       description,
       url,
       type: "website",
-      images: [{ url: "/opengraph-image", width: 1200, height: 630 }],
     },
     twitter: {
       card: "summary_large_image",
       title: detail.product.title,
       description,
-      images: ["/opengraph-image"],
     },
   };
 }

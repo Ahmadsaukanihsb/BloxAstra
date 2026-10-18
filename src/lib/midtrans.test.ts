@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  classifyMidtransStatus,
+  retiredTopUpStatus,
   verifyMidtransSignature,
   type MidtransNotificationPayload,
 } from "@/lib/midtrans";
@@ -52,5 +54,47 @@ describe("verifyMidtransSignature", () => {
   it("returns false when no server key is configured", () => {
     vi.stubEnv("MIDTRANS_SERVER_KEY", "");
     expect(verifyMidtransSignature(payload())).toBe(false);
+  });
+});
+
+describe("classifyMidtransStatus", () => {
+  it("treats settlement and clean capture as settled", () => {
+    expect(classifyMidtransStatus("settlement", "accept")).toBe("settled");
+    expect(classifyMidtransStatus("capture", "accept")).toBe("settled");
+    expect(classifyMidtransStatus("capture")).toBe("settled");
+  });
+
+  it("holds a `capture` still under fraud review (challenge)", () => {
+    // Crediting a challenged capture pays out money that may later be denied,
+    // with no clawback path — it must stay unpaid.
+    expect(classifyMidtransStatus("capture", "challenge")).toBe("unpaid");
+  });
+
+  it("never retires the invoice on the first `pending` notification", () => {
+    // Regression: retiring here killed invoices that Midtrans settled a
+    // minute later, so the buyer paid and the wallet was never credited.
+    expect(classifyMidtransStatus("pending")).toBe("unpaid");
+    expect(classifyMidtransStatus("pending", "accept")).toBe("unpaid");
+  });
+
+  it("retires only terminal statuses and fraud denials", () => {
+    for (const status of ["deny", "cancel", "expire", "failure"]) {
+      expect(classifyMidtransStatus(status)).toBe("retired");
+    }
+    expect(classifyMidtransStatus("capture", "deny")).toBe("retired");
+  });
+
+  it("retires refunded payments instead of leaving them unpaid", () => {
+    // A refund/partial_refund means the money moved back — the invoice is
+    // done, not still payable (top-up settlement relies on this).
+    expect(classifyMidtransStatus("refund")).toBe("retired");
+    expect(classifyMidtransStatus("partial_refund")).toBe("retired");
+    expect(classifyMidtransStatus("something_new")).toBe("unpaid");
+  });
+
+  it("parks a retired invoice in the matching local status", () => {
+    expect(retiredTopUpStatus("expire")).toBe("expired");
+    expect(retiredTopUpStatus("cancel")).toBe("failed");
+    expect(retiredTopUpStatus("deny")).toBe("failed");
   });
 });

@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import {
+  fetchInboxRevision,
   fetchNotifications,
-  fetchUnreadCount,
   markNotificationsRead,
 } from "@/app/actions/notifications";
+import { useLiveRevision, useLiveStream } from "@/lib/live";
 import type { NotificationItem } from "@/lib/notifications";
 import { formatDateTime } from "@/lib/format";
 import { cx } from "@/lib/cx";
@@ -25,28 +26,22 @@ export function NotifBell() {
   const [marking, startMarking] = useTransition();
   const panelRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    let alive = true;
-    async function load() {
-      try {
-        const count = await fetchUnreadCount();
-        if (alive) setUnread(count);
-      } catch {
-        /* offline — badge stays hidden */
-      }
-    }
-    void load();
-    const id = window.setInterval(load, 60_000);
-    function onFocus() {
-      void load();
-    }
-    window.addEventListener("focus", onFocus);
-    return () => {
-      alive = false;
-      window.clearInterval(id);
-      window.removeEventListener("focus", onFocus);
-    };
-  }, []);
+  // Push first: the server tells this tab the moment the inbox moves, so the
+  // badge updates in well under a second and an open panel refreshes in place.
+  useLiveStream(["inbox"], () => {
+    void loadItems({ quiet: true });
+  });
+
+  // Fallback loop for a blocked or buffered stream — and the safety net that
+  // re-checks the moment this tab comes back to the foreground.
+  useLiveRevision({
+    read: fetchInboxRevision,
+    intervalMs: 60_000,
+    onChange: (revision) => {
+      setUnread(revision.unread);
+      if (open) void loadItems({ quiet: true });
+    },
+  });
 
   // Close on Escape.
   useEffect(() => {
@@ -58,8 +53,10 @@ export function NotifBell() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open ]);
 
-  async function loadItems() {
-    setLoading(true);
+  async function loadItems(options?: { quiet?: boolean }) {
+    // A background poll must not flip an open panel back to skeletons, so
+    // only a real user action shows the loading state.
+    if (!options?.quiet) setLoading(true);
     try {
       const result = await fetchNotifications();
       setItems(result.items);
@@ -102,7 +99,7 @@ export function NotifBell() {
       >
         <IconBell size={19} />
         {unread > 0 ? (
-          <span className="num absolute right-0.5 top-0.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-[9px] font-extrabold text-white">
+          <span className="num absolute right-0.5 top-0.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-[9px] font-extrabold text-on-bright">
             {unread > 99 ? "99+" : unread}
           </span>
         ) : null}

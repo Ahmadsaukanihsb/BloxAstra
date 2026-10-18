@@ -1,9 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
+import { getCurrentUser } from "@/lib/auth";
 import {
   exchangeCode,
   fetchProfile,
+  fetchProviderAvatar,
   isOAuthConfigured,
   unsealOAuthState,
   type OAuthProvider,
@@ -89,8 +91,11 @@ export async function GET(
   // Account-linking flow: attach this provider identity to the user who
   // started the flow. The session must still belong to the same user.
   if (stored.linkUserId) {
-    const session = await getSession();
-    if (!session.userId || session.userId !== stored.linkUserId) {
+    // getCurrentUser enforces the FULL session check (exists, not suspended,
+    // sessionVersion still current), so a cookie revoked by "log out of all
+    // devices" or a password change cannot complete an account takeover.
+    const current = await getCurrentUser();
+    if (!current || current.id !== stored.linkUserId) {
       return linkFail("oauth_session", origin);
     }
 
@@ -119,6 +124,15 @@ export async function GET(
         avatarUrl: profile.avatarUrl,
       },
     });
+    // A linked provider photo becomes the profile photo while the user never
+    // uploaded their own (a custom upload always wins, never overwritten).
+    const linkedAvatar = await fetchProviderAvatar(profile.avatarUrl);
+    if (linkedAvatar) {
+      await db.user.updateMany({
+        where: { id: stored.linkUserId, avatarImage: null },
+        data: { avatarImage: linkedAvatar },
+      });
+    }
     const res = NextResponse.redirect(new URL(`/profil?linked=${typed}`, origin));
     res.cookies.delete(OAUTH_COOKIE);
     return res;
@@ -189,17 +203,41 @@ export async function GET(
     });
   }
 
+  // Keep the stored provider photo fresh, and adopt it as the profile photo
+  // while the user never uploaded their own. Best-effort: a failed download
+  // never blocks the login (the remote URL fallback in getProfileView stays).
+  await db.linkedAccount.updateMany({
+    where: { provider: typed, providerUserId: profile.providerUserId },
+    data: { avatarUrl: profile.avatarUrl, email: profile.email, name: profile.name },
+  });
+  const providerAvatar = await fetchProviderAvatar(profile.avatarUrl);
+  if (providerAvatar) {
+    await db.user.updateMany({
+      where: { id: userId, avatarImage: null },
+      data: { avatarImage: providerAvatar },
+    });
+  }
+
   const user = await db.user.findUnique({
     where: { id: userId },
-    select: { id: true, email: true, username: true, role: true },
+    select: {
+      id: true,
+      email: true,
+      username: true,
+      role: true,
+      suspendedAt: true,
+      sessionVersion: true,
+    },
   });
   if (!user) return fail("oauth_lookup", origin);
+  if (user.suspendedAt) return fail("suspended", origin);
 
   const session = await getSession();
   session.userId = user.id;
   session.role = user.role as "buyer" | "seller" | "admin";
   session.email = user.email;
   session.username = user.username;
+  session.sessionVersion = user.sessionVersion;
   await session.save();
 
   // Clear the OAuth state cookie and land by role (sellers/admins who

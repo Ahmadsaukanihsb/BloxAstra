@@ -85,6 +85,32 @@ export function formatDateTime(iso: string): string {
   }).format(date);
 }
 
+/**
+ * Day label for chat separators: "Hari ini", "Kemarin", or the full date.
+ * `now` is passed in (instead of read from the clock) so the label is
+ * deterministic in tests, matching `relativeFromNow`.
+ */
+export function formatChatDay(iso: string, now: number): string {
+  const dayKey = (value: Date) =>
+    new Intl.DateTimeFormat("en-CA", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      timeZone: "Asia/Jakarta",
+    }).format(value);
+
+  const target = dayKey(new Date(iso));
+  if (target === dayKey(new Date(now))) return "Hari ini";
+  if (target === dayKey(new Date(now - 86_400_000))) return "Kemarin";
+  return new Intl.DateTimeFormat("id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "Asia/Jakarta",
+  }).format(new Date(iso));
+}
+
 export function relativeFromNow(iso: string, now: number): string {
   const diffSeconds = Math.round((new Date(iso).getTime() - now) / 1000);
   if (diffSeconds <= 0) return "berakhir";

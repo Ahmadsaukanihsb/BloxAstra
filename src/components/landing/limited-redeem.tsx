@@ -7,6 +7,7 @@ import type { Product } from "@/lib/types";
 import { ProductArt } from "@/components/ui/art";
 import { Reveal, RevealGroup, RevealItem } from "@/components/ui/reveal";
 import { IconCrown, IconGift } from "@/components/ui/icons";
+import { EmptyRow } from "@/components/landing/shelf-empty";
 
 /**
  * Two side-by-side shelves. Both are DB-driven: the "Limited" side reads
@@ -24,8 +25,9 @@ export function LimitedRedeem({ products }: { products: Product[] }) {
     return { limited, redeem };
   }, [products]);
 
-  if (!limited.length && !redeem.length) return null;
-
+  // Both columns always render. A shelf with nothing in it keeps its heading and
+  // swaps the grid for a status line, so the pair stays balanced when only one
+  // side has stock — which is the common case, not the exception.
   return (
     <section className="px-4 py-10 md:px-8 md:py-14">
       <div className="mx-auto grid max-w-[1180px] grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-8">
@@ -38,6 +40,16 @@ export function LimitedRedeem({ products }: { products: Product[] }) {
               href="/katalog?kategori=item"
             />
           </Reveal>
+          {limited.length === 0 ? (
+            <Reveal>
+              <EmptyRow
+                label="Belum ada koleksi limited"
+                body="Rak ini diisi penjual dari item terbatas milik mereka. Punya stok item? Pasang listing dan rak ini ikut terisi."
+                icon={<IconCrown size={17} />}
+                secondary={{ href: "/dashboard/penjual", label: "Jual di Blox Astra" }}
+              />
+            </Reveal>
+          ) : null}
           <RevealGroup className="grid grid-cols-2 gap-3.5 sm:grid-cols-4" stagger={0.05}>
             {limited.map((product) => (
               <RevealItem key={product.slug} className="h-full">
@@ -53,7 +65,7 @@ export function LimitedRedeem({ products }: { products: Product[] }) {
                   <span className="line-clamp-2 px-0.5 text-[11px] font-bold leading-snug text-ink">
                     {product.title}
                   </span>
-                  <span className="num mt-auto px-0.5 text-[13px] font-extrabold text-astra">
+                  <span className="num mt-auto px-0.5 text-[13px] font-extrabold text-astra-ink">
                     {formatIDR(product.price)}
                   </span>
                 </Link>
@@ -65,12 +77,21 @@ export function LimitedRedeem({ products }: { products: Product[] }) {
         <div className="flex flex-col gap-5">
           <Reveal>
             <ShelfHead
-              icon={<IconGift size={20} className="text-astra" />}
+              icon={<IconGift size={20} className="text-astra-ink" />}
               title="Kode"
               accent="Redeem"
               href="/katalog?kategori=gift"
             />
           </Reveal>
+          {redeem.length === 0 ? (
+            <Reveal>
+              <EmptyRow
+                label="Belum ada kode redeem"
+                body="Kode Robux dan hadiah dari penjual tampil di sini begitu dipasang — pembeli melihat sisa kodenya langsung."
+                icon={<IconGift size={17} />}
+              />
+            </Reveal>
+          ) : null}
           <RevealGroup className="grid grid-cols-2 gap-3.5 sm:grid-cols-4" stagger={0.05}>
             {redeem.map((product) => (
               <RevealItem key={product.slug} className="h-full">
@@ -87,7 +108,7 @@ export function LimitedRedeem({ products }: { products: Product[] }) {
                   <span className="line-clamp-2 px-0.5 text-[11px] font-bold leading-snug text-ink">
                     {product.title}
                   </span>
-                  <span className="num mt-auto px-0.5 text-[13px] font-extrabold text-astra">
+                  <span className="num mt-auto px-0.5 text-[13px] font-extrabold text-astra-ink">
                     {formatIDR(product.price)}
                   </span>
                 </Link>
@@ -115,7 +136,7 @@ function ShelfHead({
     <div className="flex items-center justify-between gap-3">
  <h2 className="flex items-center gap-2 text-title font-extrabold text-ink md:text-title">
         {icon}
-        {title} <span className="text-astra">{accent}</span>
+        {title} <span className="text-astra-ink">{accent}</span>
       </h2>
       <Link
         href={href}

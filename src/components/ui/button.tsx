@@ -6,19 +6,22 @@ type Variant = "primary" | "secondary" | "ghost" | "danger" | "robux";
 type Size = "sm" | "md" | "lg";
 
 const base =
-  "group relative inline-flex select-none items-center justify-center gap-2.5 rounded-control font-bold whitespace-nowrap transition duration-200 ease-[var(--ease-astra)] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-45";
+  "group relative inline-flex select-none items-center justify-center gap-2.5 rounded-control font-bold whitespace-nowrap disabled:pointer-events-none disabled:opacity-45";
 
 const variants: Record<Variant, string> = {
-  // `sheen` (globals.css) sweeps one light pass across the fill on hover; it is
-  // transform-only and honours prefers-reduced-motion like the rest of the app.
-  primary: "sheen bg-astra text-white hover:bg-astra-deep",
+  // `press` (globals.css) is the app's one signature control: a solid block with
+  // a dark edge that collapses under the cursor, so a click feels physical.
+  // Hover deliberately does not change the fill — brightening the red drops the
+  // white label under 4.5:1, and the growing edge already carries the hover.
+  primary: "press bg-astra text-white [--press-edge:var(--color-astra-deep)]",
   secondary:
-    "bg-paper text-ink outline outline-1 -outline-offset-1 outline-line hover:bg-canvas",
-  ghost: "bg-transparent text-ink-dim hover:bg-canvas hover:text-ink",
+    "press bg-paper text-ink outline outline-1 -outline-offset-1 outline-line",
+  ghost:
+    "text-ink-dim transition-colors duration-200 ease-[var(--ease-astra)] hover:bg-canvas hover:text-ink",
   danger:
-    "bg-danger/12 text-danger outline outline-1 -outline-offset-1 outline-danger/30 hover:bg-danger/20",
+    "press bg-danger/12 text-danger outline outline-1 -outline-offset-1 outline-danger/30 hover:bg-danger/20",
   robux:
-    "bg-robux/12 text-robux outline outline-1 -outline-offset-1 outline-robux/30 hover:bg-robux/20",
+    "press bg-robux/12 text-robux outline outline-1 -outline-offset-1 outline-robux/30 hover:bg-robux/20",
 };
 
 const sizes: Record<Size, string> = {
@@ -56,7 +59,7 @@ function inner(
           className={cx(
             "grid shrink-0 place-items-center rounded-full transition-transform duration-300 ease-[var(--ease-astra)] group-hover:translate-x-0.5 group-hover:-translate-y-px",
             iconCircle[size],
-            props.iconCircleClassName ?? "bg-paper/20",
+            props.iconCircleClassName ?? "bg-astra-deep/70",
           )}
         >
           {trailingIcon}

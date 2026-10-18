@@ -6,8 +6,11 @@ import "./globals.css";
 import { validateEnv } from "@/lib/env";
 import { getCurrentUser } from "@/lib/auth";
 import { getWalletBalance } from "@/lib/wallet";
+import { getSellerChatUnreadCount } from "@/lib/seller";
 import { getCategories } from "@/lib/catalog";
 import { getCachedActiveRates } from "@/lib/rate-card";
+import { getSiteLogo } from "@/lib/site-logo";
+import { getSitePromo } from "@/lib/site-notice";
 import { PromoStrip } from "@/components/site/promo-strip";
 import { TopNav } from "@/components/site/top-nav";
 import { NavGate } from "@/components/site/nav-gate";
@@ -29,7 +32,10 @@ async function TopNavWithAuth({
 }) {
   await connection();
   const user = await getCurrentUser();
-  const balance = user ? await getWalletBalance(user.id) : null;
+  const [balance, logo] = await Promise.all([
+    user ? getWalletBalance(user.id) : Promise.resolve(null),
+    getSiteLogo(),
+  ]);
   return (
     <TopNav
       authSlot={authSlot}
@@ -37,16 +43,38 @@ async function TopNavWithAuth({
       isLoggedIn={Boolean(user)}
       userRole={user?.role ?? null}
       balance={balance}
+      logo={logo}
     />
   );
 }
 
-/** Marketing strip for prospective sellers — hidden once they already sell. */
-async function PromoStripWithAuth() {
+/**
+ * The bottom bar is public, but sellers get one extra tab in it — the group
+ * room, with its unread count. The role and the count are read here so the bar
+ * arrives complete instead of growing a tab a moment after the first paint.
+ */
+async function BottomNavWithAuth() {
   await connection();
   const user = await getCurrentUser();
+  if (!user) return <BottomNav />;
+  return (
+    <BottomNav
+      role={user.role}
+      groupUnread={user.role === "seller" ? await getSellerChatUnreadCount(user.id) : 0}
+    />
+  );
+}
+
+/**
+ * Marketing strip for prospective sellers — hidden once they already sell,
+ * and hidden for everyone when the admin turns it off in /admin → Notifikasi.
+ */
+async function PromoStripWithAuth() {
+  await connection();
+  const [user, promo] = await Promise.all([getCurrentUser(), getSitePromo()]);
   if (user?.role === "seller") return null;
-  return <PromoStrip />;
+  if (!promo.enabled) return null;
+  return <PromoStrip message={promo.message} ctaLabel={promo.ctaLabel} ctaHref={promo.ctaHref} />;
 }
 
 validateEnv();
@@ -79,6 +107,7 @@ export const metadata: Metadata = {
     template: "%s · Blox Astra",
   },
   description: DESCRIPTION,
+  icons: { icon: "/api/favicon" },
   keywords: [
     "roblox",
     "robux",
@@ -106,7 +135,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#ffffff",
+  // Matches `--color-canvas`. This tints the browser's own chrome on mobile, so
+  // a white value here puts a white bar above a near-black lobby — the app
+  // declares `color-scheme: dark` and has no light theme to fall back to.
+  themeColor: "#0d0d11",
   width: "device-width",
   initialScale: 1,
 };
@@ -119,7 +151,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${montserrat.variable} ${manrope.variable} antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-[100dvh] bg-paper text-ink selection:bg-astra-mint" suppressHydrationWarning>
+      {/* `bg-canvas` is the floor. Panels inside pages use `bg-paper` and are
+          therefore lighter than the page, which is what gives them depth. */}
+      <body className="min-h-[100dvh] bg-canvas text-ink" suppressHydrationWarning>
         <Suspense fallback={null}>
           <SiteJsonLd description={DESCRIPTION} />
         </Suspense>
@@ -133,11 +167,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <main className="relative z-10 pb-28 md:pb-0">{children}</main>
           <Suspense fallback={null}>
             <NavGate>
-              <SiteFooter categories={categories} />
+              <SiteFooter />
             </NavGate>
           </Suspense>
           <Suspense fallback={null}>
-            <BottomNav />
+            <BottomNavWithAuth />
           </Suspense>
         </RateProvider>
       </body>

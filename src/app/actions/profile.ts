@@ -5,7 +5,9 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { getSession } from "@/lib/session";
 import { validImageDataUrl } from "@/lib/images";
+import { fetchProviderAvatar } from "@/lib/oauth";
 
 export interface ProfileActionResult {
   ok: boolean;
@@ -86,6 +88,9 @@ export async function updateAvatar(rawInput: unknown): Promise<ProfileActionResu
   }
   await db.user.update({ where: { id: user.id }, data: { avatarImage: parsed.data.image } });
   revalidatePath("/profil");
+  // The avatar also shows in the top-nav dropdown, which lives in the root
+  // layout — without this the nav keeps the old photo until a hard reload.
+  revalidatePath("/", "layout");
   return { ok: true };
 }
 
@@ -107,10 +112,94 @@ export async function changePassword(rawInput: unknown): Promise<ProfileActionRe
   const matches = await bcrypt.compare(parsed.data.current, row.passwordHash);
   if (!matches) return fail("Kata sandi saat ini salah.");
 
+  // Changing the password retires every OTHER session (and re-stamps this
+  // one) — the whole point of changing it after a scare.
+  const passwordHash = await bcrypt.hash(parsed.data.next, 10);
+  const bumped = await db.user.update({
+    where: { id: user.id },
+    data: { passwordHash, sessionVersion: { increment: 1 } },
+    select: { sessionVersion: true },
+  });
+  const session = await getSession();
+  session.sessionVersion = bumped.sessionVersion;
+  await session.save();
+
+  revalidatePath("/profil");
+  return { ok: true };
+}
+
+/** Disconnect a linked OAuth provider (Google/Discord). */
+export async function unlinkProvider(rawInput: unknown): Promise<ProfileActionResult> {
+  const user = await requireUser();
+  const parsed = z.object({ provider: z.enum(["google", "discord"]) }).safeParse(rawInput);
+  if (!parsed.success) return fail("Provider tidak valid.");
+
+  const row = await db.user.findUnique({
+    where: { id: user.id },
+    select: { passwordHash: true, linkedAccounts: { select: { provider: true } } },
+  });
+  if (!row) return fail("Akun tidak ditemukan.");
+
+  const linked = row.linkedAccounts.some((account) => account.provider === parsed.data.provider);
+  if (!linked) return fail("Provider ini memang belum tertaut.");
+
+  // Removing the last login method would lock the user out permanently.
+  const remainingProviders = row.linkedAccounts.filter(
+    (account) => account.provider !== parsed.data.provider,
+  ).length;
+  if (!row.passwordHash && remainingProviders === 0) {
+    return fail(
+      "Ini satu-satunya cara masuk akunmu. Buat kata sandi dulu di bagian Keamanan sebelum melepas tautan.",
+    );
+  }
+
+  await db.linkedAccount.deleteMany({
+    where: { userId: user.id, provider: parsed.data.provider },
+  });
+  revalidatePath("/profil");
+  return { ok: true };
+}
+
+/** Adopt a linked provider's photo as the profile picture. */
+export async function adoptProviderAvatar(rawInput: unknown): Promise<ProfileActionResult> {
+  const user = await requireUser();
+  const parsed = z.object({ provider: z.enum(["google", "discord"]) }).safeParse(rawInput);
+  if (!parsed.success) return fail("Provider tidak valid.");
+
+  const link = await db.linkedAccount.findFirst({
+    where: { userId: user.id, provider: parsed.data.provider },
+    select: { avatarUrl: true },
+  });
+  if (!link) return fail("Provider ini belum tertaut.");
+  if (!link.avatarUrl) {
+    return fail("Provider tidak menyediakan foto untuk akun ini. Unggah foto manual saja.");
+  }
+
+  const dataUrl = await fetchProviderAvatar(link.avatarUrl);
+  if (!dataUrl) return fail("Gagal mengambil foto dari provider. Coba lagi sebentar lagi.");
+
+  await db.user.update({ where: { id: user.id }, data: { avatarImage: dataUrl } });
+  revalidatePath("/profil");
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/** Sign out every device: bump the session version so old cookies stop valid. */
+export async function logoutAllDevices(): Promise<ProfileActionResult> {
+  const user = await requireUser();
   await db.user.update({
     where: { id: user.id },
-    data: { passwordHash: await bcrypt.hash(parsed.data.next, 10) },
+    data: { sessionVersion: { increment: 1 } },
   });
+  // This device keeps working — re-stamp its cookie with the new version.
+  const fresh = await db.user.findUnique({
+    where: { id: user.id },
+    select: { sessionVersion: true },
+  });
+  const session = await getSession();
+  session.sessionVersion = fresh?.sessionVersion ?? 0;
+  await session.save();
+
   revalidatePath("/profil");
   return { ok: true };
 }

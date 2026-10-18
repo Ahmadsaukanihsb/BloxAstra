@@ -5,11 +5,11 @@ import { useEffect, useRef, useState } from "react";
 import { cx } from "@/lib/cx";
 import {
   IconChevronDown,
-  IconCrown,
   IconLogout,
   IconPackage,
   IconShieldCheck,
   IconStorefront,
+  IconTrendUp,
   IconUserSquare,
   IconWallet,
 } from "@/components/ui/icons";
@@ -17,9 +17,15 @@ import {
 export function UserDropdown({
   username,
   role,
+  hasAvatar = false,
+  avatarVersion = 0,
+  canApplyAsSeller = false,
 }: {
   username: string;
   role: "buyer" | "seller" | "admin";
+  hasAvatar?: boolean;
+  avatarVersion?: number;
+  canApplyAsSeller?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -35,23 +41,25 @@ export function UserDropdown({
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
+  const roleItems =
+    role === "admin"
+      ? [{ href: "/admin", icon: IconShieldCheck, label: "Panel Admin" }]
+      : role === "seller"
+        ? [{ href: "/dashboard/penjual", icon: IconStorefront, label: "Dashboard Penjual" }]
+        : canApplyAsSeller
+          ? [{ href: "/profil", icon: IconTrendUp, label: "Mulai jualan" }]
+          : [];
+
+  // `/profil` is already in baseItems, so the buyer's CTA (which targets the
+  // same page) would collide on both key and href. Keep one entry: relabel the
+  // existing one so the menu stays a clean list of distinct destinations.
   const baseItems = [
-    { href: "/profil", icon: IconUserSquare, label: "Profil Saya" },
+    { href: "/profil", icon: IconUserSquare, label: canApplyAsSeller && role === "buyer" ? "Profil & mulai jualan" : "Profil Saya" },
     { href: "/dompet", icon: IconWallet, label: "Dompet" },
     { href: "/pesanan", icon: IconPackage, label: "Pesanan Saya" },
   ];
 
-  const roleItems =
-    role === "admin"
-      ? [
-          { href: "/admin", icon: IconShieldCheck, label: "Panel Admin" },
-          { href: "/dashboard/admin", icon: IconCrown, label: "Super Dashboard" },
-        ]
-      : role === "seller"
-        ? [{ href: "/dashboard/penjual", icon: IconStorefront, label: "Dashboard Penjual" }]
-        : [];
-
-  const items = [...roleItems, ...baseItems];
+  const items = [...roleItems.filter((item) => !baseItems.some((base) => base.href === item.href)), ...baseItems];
 
   return (
     <div ref={ref} className="relative hidden items-center md:flex">
@@ -65,9 +73,20 @@ export function UserDropdown({
           open && "bg-astra/[0.07] text-ink outline-astra/25",
         )}
       >
-        <span className="grid size-6 place-items-center rounded-full bg-astra/15 text-[10px] font-extrabold text-astra-ink">
-          {initials}
-        </span>
+        {hasAvatar ? (
+          // eslint-disable-next-line @next/next/no-img-element -- /api/avatar is same-origin and per-user; next/image would need a remote pattern and would cache it publicly.
+          <img
+            src={`/api/avatar?v=${avatarVersion}`}
+            alt=""
+            width={24}
+            height={24}
+            className="size-6 rounded-full object-cover outline outline-1 -outline-offset-1 outline-line"
+          />
+        ) : (
+          <span className="grid size-6 place-items-center rounded-full bg-astra/15 text-[10px] font-extrabold text-astra-ink">
+            {initials}
+          </span>
+        )}
         <span className="max-w-[8rem] truncate font-bold">{username}</span>
         <IconChevronDown
           size={14}

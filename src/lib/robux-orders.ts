@@ -90,32 +90,81 @@ export const ROBUX_ORDERS: Record<RobuxOrderKind, RobuxOrderConfig> = {
 export interface RobuxOrderRates {
   username: number;
   login: number;
-  gamepass: number;
+  /** Gamepass with cover tax: Blox Astra swallows Roblox's 30% cut — Rp per net Robux. */
+  gamepassCover: number;
+  /** Gamepass with no cover tax: the buyer swallows the cut — Rp per raw gamepass Robux. */
+  gamepassNoCover: number;
   /** Rp per month for the Premium flow. */
   premium: number;
   adminFee: number;
 }
 
+/**
+ * Roblox keeps 30% of every gamepass sale. When the buyer bears that cut the
+ * raw gamepass price buys only 70% of it as net Robux, so this rate has to be
+ * 30% under the cover-tax rate for the same net Robux to cost the same rupiah.
+ */
+const GAMEPASS_NO_COVER_RATE = Math.round(ROBUX_ORDERS.gamepass.rate * 0.7 * 100) / 100; // 62.72
+
 export const DEFAULT_ORDER_RATES: RobuxOrderRates = {
   username: ROBUX_ORDERS.username.rate,
   login: ROBUX_ORDERS.login.rate,
-  gamepass: ROBUX_ORDERS.gamepass.rate,
+  gamepassCover: ROBUX_ORDERS.gamepass.rate,
+  gamepassNoCover: GAMEPASS_NO_COVER_RATE,
   premium: ROBUX_ORDERS.premium.rate,
   adminFee: ROBUX_ORDERS.username.adminFee,
 };
+
+/** The gamepass rate that matches who swallows Roblox's 30% cut. */
+export function gamepassRate(rates: RobuxOrderRates, mode: GamepassTaxMode): number {
+  return mode === "no_cover" ? rates.gamepassNoCover : rates.gamepassCover;
+}
 
 /** Flow config with the current (possibly admin-adjusted) rate card applied. */
 export function robuxOrderConfig(
   kind: RobuxOrderKind,
   rates: RobuxOrderRates = DEFAULT_ORDER_RATES,
+  taxMode: GamepassTaxMode = "cover",
 ): RobuxOrderConfig {
-  return { ...ROBUX_ORDERS[kind], rate: rates[kind], adminFee: rates.adminFee };
+  const rate = kind === "gamepass" ? gamepassRate(rates, taxMode) : rates[kind];
+  return { ...ROBUX_ORDERS[kind], rate, adminFee: rates.adminFee };
 }
 
 /** Price of `robux` on this flow, admin fee excluded. */
 export function robuxOrderPrice(config: RobuxOrderConfig, robux: number): number {
   const amount = Math.max(0, Math.floor(robux || 0));
   return Math.round(amount * config.rate);
+}
+
+/**
+ * The one query key that carries a chosen nominal from the lobby into a buy
+ * flow. Only the key — the parsing and clamping live below, so the hero and the
+ * order pages can never disagree about what a valid nominal is.
+ */
+export const ROBUX_AMOUNT_PARAM = "robux";
+
+/**
+ * Snap a nominal onto this flow's grid and keep it inside its min/max. Anything
+ * unreadable (NaN, empty) falls back to the flow's initial nominal, so a link
+ * with a mangled parameter lands on the normal default instead of 0 Robux.
+ */
+export function clampRobuxAmount(config: RobuxOrderConfig, value: unknown): number {
+  // A repeated query key arrives as an array — take the first value, never NaN.
+  const source = Array.isArray(value) ? value[0] : value;
+  const raw = typeof source === "string" ? Number(source.replace(/[^0-9]/g, "")) : Number(source);
+  if (!Number.isFinite(raw) || raw <= 0) return config.initialRobux;
+  const stepped = Math.round(raw / config.step) * config.step;
+  return Math.min(config.maxRobux, Math.max(config.minRobux, stepped));
+}
+
+/**
+ * Buy-flow link for a given nominal. The amount rides in the query string so the
+ * number the buyer already dialled in the lobby is still there on the order page
+ * — clicking "lanjut beli" must never throw their choice away.
+ */
+export function robuxOrderHref(config: RobuxOrderConfig, robux?: number): string {
+  if (robux === undefined) return config.href;
+  return `${config.href}?${ROBUX_AMOUNT_PARAM}=${clampRobuxAmount(config, robux)}`;
 }
 
 /**

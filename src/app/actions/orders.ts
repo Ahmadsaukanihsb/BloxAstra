@@ -4,7 +4,7 @@ import { z } from "zod";
 import { revalidatePath, updateTag } from "next/cache";
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
-import { getSession } from "@/lib/session";
+
 import { listingQuote } from "@/lib/robux-pricing";
 import {
   gamepassOrderPrice,
@@ -24,6 +24,14 @@ import {
   type PaymentMethodId,
 } from "@/lib/payments";
 import { createSnapTransaction, fetchMidtransStatus, isSimMode } from "@/lib/midtrans";
+import {
+  createTripayTransaction,
+  fetchTripayDetail,
+  isTripayMode,
+  tripayToMidtransStatus,
+  TripayNotFoundError,
+} from "@/lib/tripay";
+import { creditTopUp, notifyTopUpCredited } from "@/lib/topup";
 import { broadcastPoolOrder, poolKindLabel } from "@/lib/discord";
 import { lookupRobloxUsers } from "@/lib/roblox";
 import { checkThrottle } from "@/lib/throttle";
@@ -71,10 +79,10 @@ const robuxOrderSchema = z.object({
 export type OrderActionResult =
   | { ok: true; checkoutUrl: string; orderCode: string }
   | {
-      ok: false;
-      code: "LOGIN" | "INVALID" | "NOT_FOUND" | "OUT_OF_STOCK" | "PAYMENT_FAILED" | "INSUFFICIENT";
-      error: string;
-    };
+    ok: false;
+    code: "LOGIN" | "INVALID" | "NOT_FOUND" | "OUT_OF_STOCK" | "PAYMENT_FAILED" | "INSUFFICIENT";
+    error: string;
+  };
 
 const MIN_TOTAL = 1_000;
 
@@ -100,11 +108,11 @@ export async function validatePromoAction(
 }
 
 async function requireBuyerId(): Promise<string | null> {
-  const session = await getSession();
-  if (!session.userId) return null;
-  // The cookie alone is not enough — a deleted account must stop here
-  // instead of living on inside a 7-day session.
-  const user = await db.user.findUnique({ where: { id: session.userId }, select: { id: true } });
+  // Resolve through getCurrentUser so the money paths inherit the FULL checks:
+  // account still exists, not suspended, and the cookie's sessionVersion still
+  // matches (i.e. "log out of all devices" / password change evicts it).
+  // A raw cookie read would let a stale session spend wallet balance.
+  const user = await getCurrentUser();
   return user?.id ?? null;
 }
 
@@ -144,8 +152,9 @@ async function persistOrder(input: {
   itemName: string;
   customerName: string;
   customerEmail: string;
+  customerPhone?: string;
 }): Promise<OrderActionResult> {
-  const provider = isSimMode() ? "sim" : "midtrans";
+  const provider = isSimMode() ? "sim" : isTripayMode() ? "tripay" : "midtrans";
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
   let lastError: unknown;
@@ -213,25 +222,41 @@ async function persistOrder(input: {
       });
 
       try {
-        const snap = await createSnapTransaction({
-          orderId: order.code,
-          grossAmount: input.total,
-          itemName: input.itemName,
-          customerName: input.customerName,
-          customerEmail: input.customerEmail,
-        });
+        // Tripay is the live gateway; Midtrans only serves invoices minted
+        // before the switch. Both hand back a hosted checkout URL.
+        const checkout = isTripayMode()
+          ? await createTripayTransaction({
+            orderId: order.code,
+            grossAmount: input.total,
+            itemName: input.itemName,
+            customerName: input.customerName,
+            customerEmail: input.customerEmail,
+            customerPhone: input.customerPhone,
+            paymentMethod: input.paymentMethod,
+          }).then((result) => ({ redirectUrl: result.redirectUrl, providerRef: result.reference }))
+          : await createSnapTransaction({
+            orderId: order.code,
+            grossAmount: input.total,
+            itemName: input.itemName,
+            customerName: input.customerName,
+            customerEmail: input.customerEmail,
+          }).then((result) => ({ redirectUrl: result.redirectUrl, providerRef: result.token }));
         await db.payment.update({
           where: { orderId: order.id },
-          data: { checkoutUrl: snap.redirectUrl, providerOrderId: snap.token },
+          data: { checkoutUrl: checkout.redirectUrl, providerOrderId: checkout.providerRef },
         });
         updateTag("catalog");
-        return { ok: true, checkoutUrl: snap.redirectUrl, orderCode: order.code };
+        return { ok: true, checkoutUrl: checkout.redirectUrl, orderCode: order.code };
       } catch (snapError) {
         // Gateway unreachable — release the reservation and report cleanly.
         await restoreCancelledOrder(order.id);
-        if (snapError instanceof Error && /Midtrans Snap 4\d\d:/.test(snapError.message)) {
-          // Deterministic client error (bad payload / key) — a fresh order
-          // code cannot fix it, so fail fast instead of retrying.
+        if (
+          snapError instanceof Error &&
+          (/Midtrans Snap 4\d\d:/.test(snapError.message) ||
+            /Tripay create (4\d\d|ditolak)/.test(snapError.message))
+        ) {
+          // Deterministic client error (bad payload / key / channel) — a
+          // fresh order code cannot fix it, so fail fast instead of retrying.
           console.error("persistOrder failed", snapError);
           return {
             ok: false,
@@ -266,11 +291,11 @@ async function persistOrder(input: {
   };
 }
 
-class OutOfStockError extends Error {}
+class OutOfStockError extends Error { }
 
-class InsufficientBalanceError extends Error {}
+class InsufficientBalanceError extends Error { }
 
-class PromoExhaustedError extends Error {}
+class PromoExhaustedError extends Error { }
 
 /** Append a wallet ledger row on top of the buyer's running balance (in-tx). */
 async function appendBuyerLedger(
@@ -353,6 +378,17 @@ async function persistWalletOrder(input: {
             throw new PromoExhaustedError();
           }
         }
+
+        // Serialize concurrent spenders on the same buyer: touching the User
+        // row takes a row lock in Postgres, so a second checkout for the same
+        // buyer waits for the first to commit before reading the balance.
+        // Without this, two tx under read-committed can both see the same
+        // pre-deduction balance and both succeed (overdraft). SQLite
+        // serializes the whole DB anyway, so this is a no-op there.
+        await tx.user.update({
+          where: { id: input.buyerId },
+          data: { updatedAt: new Date() },
+        });
 
         const aggregate = await tx.walletLedger.aggregate({
           where: { userId: input.buyerId },
@@ -587,7 +623,7 @@ export async function createCatalogOrder(rawInput: unknown): Promise<OrderAction
 
   const buyer = await db.user.findUnique({
     where: { id: buyerId },
-    select: { username: true, email: true },
+    select: { username: true, email: true, whatsapp: true },
   });
 
   const base = {
@@ -613,6 +649,7 @@ export async function createCatalogOrder(rawInput: unknown): Promise<OrderAction
     paymentMethod: input.paymentMethod,
     customerName: buyer?.username ?? "Pembeli",
     customerEmail: buyer?.email ?? "",
+    customerPhone: buyer?.whatsapp ?? undefined,
   });
 }
 
@@ -734,7 +771,9 @@ export async function createRobuxOrder(rawInput: unknown): Promise<OrderActionRe
   }
 
   const rates = await getActiveOrderRates();
-  const config = robuxOrderConfig(input.kind, rates);
+  // The gamepass rate depends on who swallows Roblox's 30% cut — the same
+  // tax mode the client quoted with, chosen server-side from the raw input.
+  const config = robuxOrderConfig(input.kind, rates, taxMode);
   const subtotal = gamepass
     ? gamepassOrderPrice(config, gamepass)
     : premiumMonths !== null
@@ -754,7 +793,7 @@ export async function createRobuxOrder(rawInput: unknown): Promise<OrderActionRe
 
   const buyer = await db.user.findUnique({
     where: { id: buyerId },
-    select: { username: true, email: true },
+    select: { username: true, email: true, whatsapp: true },
   });
 
   const base = {
@@ -771,9 +810,8 @@ export async function createRobuxOrder(rawInput: unknown): Promise<OrderActionRe
     buyerNote: input.buyerNote,
     promoCode: input.promoCode,
     itemName: gamepass
-      ? `${gamepass.netRobux} Robux via Gamepass (${
-          gamepass.mode === "cover" ? "pajak ditanggung" : "pajak ditanggung pembeli"
-        })`
+      ? `${gamepass.netRobux} Robux via Gamepass (${gamepass.mode === "cover" ? "pajak ditanggung" : "pajak ditanggung pembeli"
+      })`
       : input.kind === "premium"
         ? `Roblox Premium ${input.robuxAmount} bulan`
         : `${input.robuxAmount} Robux (${input.kind})`,
@@ -788,6 +826,7 @@ export async function createRobuxOrder(rawInput: unknown): Promise<OrderActionRe
     paymentMethod: input.paymentMethod,
     customerName: buyer?.username ?? "Pembeli",
     customerEmail: buyer?.email ?? "",
+    customerPhone: buyer?.whatsapp ?? undefined,
   });
 }
 
@@ -802,6 +841,31 @@ export async function settleSimPayment(orderCode: string): Promise<
   const user = await getCurrentUser();
   if (!user) {
     return { ok: false, error: "Silakan masuk terlebih dahulu." };
+  }
+
+  // Wallet top-ups settle through the same sim screen — they are not orders,
+  // so they credit the ledger directly instead of the order state machine.
+  if (typeof orderCode === "string" && orderCode.startsWith("TU-")) {
+    const topUp = await db.topUp.findUnique({
+      where: { code: orderCode },
+      select: { userId: true, amount: true, fee: true, status: true, expiresAt: true },
+    });
+    if (!topUp) return { ok: false, error: "Top-up tidak ditemukan." };
+    if (topUp.userId !== user.id) return { ok: false, error: "Kamu tidak memiliki akses ke tagihan ini." };
+    if (topUp.status === "credited") return { ok: true, alreadyProcessed: true };
+    if (topUp.expiresAt && topUp.expiresAt < new Date()) {
+      return { ok: false, error: "Jendela pembayaran sudah kedaluwarsa." };
+    }
+    const credited = await creditTopUp({
+      userId: user.id,
+      code: orderCode,
+      amount: topUp.amount,
+      settledByGateway: true,
+    });
+    if (!credited) return { ok: false, error: "Top-up ini sudah tidak bisa dibayar." };
+    await notifyTopUpCredited(user.id, orderCode, topUp.amount);
+    revalidatePath("/dompet");
+    return { ok: true };
   }
 
   if (typeof orderCode !== "string" || !/^BX-[A-Z0-9]{6}$/.test(orderCode)) {
@@ -846,9 +910,9 @@ export async function settleSimPayment(orderCode: string): Promise<
 }
 
 /**
- * Buyer-triggered rescue when the Midtrans webhook never arrived: query the
- * Status API directly and funnel the answer through the same payment state
- * machine webhooks use. Safe to spam — settled/cancelled orders no-op.
+ * Buyer-triggered rescue when the gateway webhook never arrived: query the
+ * gateway Status API directly and funnel the answer through the same payment
+ * state machine webhooks use. Safe to spam — settled/cancelled orders no-op.
  */
 export async function reconcilePaymentStatus(orderCode: string): Promise<
   { ok: true; paid: boolean } | { ok: false; error: string }
@@ -861,7 +925,7 @@ export async function reconcilePaymentStatus(orderCode: string): Promise<
   if (!user) {
     return { ok: false, error: "Silakan masuk terlebih dahulu." };
   }
-  // Each check hits the Midtrans Status API — throttle per buyer so a loop
+  // Each check hits the gateway Status API — throttle per buyer so a loop
   // cannot burn gateway quota.
   if (!checkThrottle(`reconcile:${user.id}`, 10000)) {
     return { ok: false, error: "Terlalu cepat. Tunggu 10 detik sebelum cek lagi." };
@@ -873,7 +937,7 @@ export async function reconcilePaymentStatus(orderCode: string): Promise<
       id: true,
       buyerId: true,
       status: true,
-      payment: { select: { amount: true, status: true, provider: true } },
+      payment: { select: { amount: true, status: true, provider: true, providerOrderId: true } },
     },
   });
   if (!order || !order.payment) {
@@ -895,11 +959,31 @@ export async function reconcilePaymentStatus(orderCode: string): Promise<
     return { ok: false, error: "Mode simulasi. Selesaikan lewat halaman /bayar/sim." };
   }
 
+  // Tripay detail is queried by its `reference` (stored at creation); legacy
+  // Midtrans invoices are queried by our order code.
   let fetched: { transactionStatus: string; fraudStatus?: string; grossAmount: number };
-  try {
-    fetched = await fetchMidtransStatus(orderCode);
-  } catch {
-    return { ok: false, error: "Gagal menghubungi Midtrans. Coba lagi sebentar lagi." };
+  if (order.payment.provider === "tripay") {
+    if (!order.payment.providerOrderId) {
+      return { ok: false, error: "Referensi gateway hilang. Hubungi admin." };
+    }
+    try {
+      const detail = await fetchTripayDetail(order.payment.providerOrderId);
+      fetched = {
+        transactionStatus: tripayToMidtransStatus(detail.status),
+        grossAmount: detail.amount,
+      };
+    } catch (error) {
+      if (error instanceof TripayNotFoundError) {
+        return { ok: false, error: "Gateway belum mengenal tagihan ini. Coba lagi." };
+      }
+      return { ok: false, error: "Gagal menghubungi Tripay. Coba lagi sebentar lagi." };
+    }
+  } else {
+    try {
+      fetched = await fetchMidtransStatus(orderCode);
+    } catch {
+      return { ok: false, error: "Gagal menghubungi Midtrans. Coba lagi sebentar lagi." };
+    }
   }
 
   const result = await applyPaymentNotification({

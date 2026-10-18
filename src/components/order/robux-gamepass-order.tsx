@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cx } from "@/lib/cx";
 import { formatIDR, formatNumber } from "@/lib/format";
-import { ROBUX_ORDERS, robuxOrderPrice, gamepassQuote, GAMEPASS_TAX_MODE_LABEL, type GamepassTaxMode } from "@/lib/robux-orders";
+import { ROBUX_ORDERS, clampRobuxAmount, robuxOrderPrice, gamepassQuote, GAMEPASS_TAX_MODE_LABEL, type GamepassTaxMode } from "@/lib/robux-orders";
 import { useRobuxOrder } from "@/components/rates/rate-store";
 import { createRobuxOrder } from "@/app/actions/orders";
 import {
@@ -45,13 +45,19 @@ const fadeSlide = {
 export function RobuxGamepassOrder({
   isLoggedIn,
   walletBalance = 0,
+  initialRobux = baseConfig.initialRobux,
 }: {
   isLoggedIn: boolean;
   walletBalance?: number;
+  /** Net Robux the buyer already picked in the lobby's quick-buy counter. */
+  initialRobux?: number;
 }) {
   const router = useRouter();
-  const [robux, setRobux] = useState(1000);
-  const [inputValue, setInputValue] = useState("1000");
+  // Snapped onto this flow's grid so the number in the box is always one a
+  // slider value could actually hold.
+  const startRobux = clampRobuxAmount(baseConfig, initialRobux);
+  const [robux, setRobux] = useState(startRobux);
+  const [inputValue, setInputValue] = useState(String(startRobux));
   const [username, setUsername] = useState("");
   const [verifiedName, setVerifiedName] = useState<string | null>(null);
   const [verifiedAvatar, setVerifiedAvatar] = useState<string | null>(null);
@@ -73,8 +79,10 @@ export function RobuxGamepassOrder({
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
 
-  const config = useRobuxOrder("gamepass");
   const [taxMode, setTaxMode] = useState<GamepassTaxMode>("cover");
+  // Cover tax bills the net Robux figure, no-cover bills the raw gamepass
+  // figure — each mode carries its own admin-editable rate.
+  const config = useRobuxOrder("gamepass", taxMode);
 
   const quote = useMemo(() => gamepassQuote(taxMode, robux), [taxMode, robux]);
   const quickPacks = useMemo(
@@ -176,7 +184,7 @@ export function RobuxGamepassOrder({
                 <span className="num rounded-full border border-warn/25 bg-warn/[0.06] px-3 py-1 text-[12px] font-bold text-warn">
                   Rate Super Hemat
                 </span>
-                <span className="rounded-full bg-warn px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">
+                <span className="rounded-full bg-warn px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-on-bright">
                   Cover Tax 100%
                 </span>
               </div>
@@ -190,7 +198,7 @@ export function RobuxGamepassOrder({
                   Via Gamepass: Robux berstatus Pending 5 hari di akunmu (aturan resmi Roblox) sebelum cair ke saldo aktif.
                 </span>
               </div>
-              <span className="shrink-0 rounded-full bg-warn px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-xs">
+              <span className="shrink-0 rounded-full bg-warn px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-on-bright shadow-xs">
                 Pending 5 Hari
               </span>
             </div>
@@ -216,7 +224,7 @@ export function RobuxGamepassOrder({
                     <span
                       className={cx(
                         "text-[12px] font-extrabold",
-                        active ? "text-astra" : "text-ink",
+                        active ? "text-astra-ink" : "text-ink",
                       )}
                     >
                       {GAMEPASS_TAX_MODE_LABEL[mode]}
@@ -239,7 +247,7 @@ export function RobuxGamepassOrder({
               <span className="num font-display text-[2.75rem] font-extrabold leading-none tracking-tight text-ink">
                 {formatNumber(robux)}
               </span>
-              <span className="num rounded-full border border-astra/25 bg-astra/[0.06] px-3.5 py-1 text-[14px] font-extrabold text-astra">
+              <span className="num rounded-full border border-astra/25 bg-astra/[0.06] px-3.5 py-1 text-[14px] font-extrabold text-astra-ink">
                 = {formatIDR(price)}
               </span>
             </div>
@@ -261,7 +269,7 @@ export function RobuxGamepassOrder({
                   </div>
                 </div>
               </div>
-              <span className="rounded-full bg-success px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white">
+              <span className="rounded-full bg-success px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-on-bright">
                 {taxMode === "cover" ? "Pajak 30% Kami Tanggung" : "Pajak 30% Kamu Tanggung"}
               </span>
             </div>
@@ -343,7 +351,7 @@ export function RobuxGamepassOrder({
                     <span
                       className={cx(
                         "num text-[17px] font-extrabold",
-                        isSelected ? "text-astra" : "text-ink",
+                        isSelected ? "text-astra-ink" : "text-ink",
                       )}
                     >
                       {formatNumber(pack.robux)}
@@ -413,7 +421,7 @@ export function RobuxGamepassOrder({
             {/* Tutorial Box */}
             <div className="mt-6 rounded-well border border-line/90 bg-canvas/70 p-5">
               <div className="mb-3 flex items-center gap-2">
-                <span className="grid size-6 place-items-center rounded-control bg-astra/10 text-astra">
+                <span className="grid size-6 place-items-center rounded-control bg-astra/10 text-astra-ink">
                   <IconFileText size={15} />
                 </span>
                 <h3 className="text-[13px] font-extrabold text-ink">
@@ -424,7 +432,7 @@ export function RobuxGamepassOrder({
                 <li>Buka situs <span className="font-bold text-ink">create.roblox.com</span> lalu masuk ke menu <span className="font-bold text-ink">Creations</span>.</li>
                 <li>Pilih salah satu Experience/Game publik milikmu, lalu klik menu <span className="font-bold text-ink">Passes</span> di bilah samping.</li>
                 <li>Klik tombol <span className="font-bold text-ink">Create a Pass</span>, beri nama bebas, lalu simpan.</li>
-                <li>Buka Pass tersebut, pilih menu <span className="font-bold text-ink">Sales</span>, aktifkan opsi <span className="font-bold text-ink">Item for Sale</span> dan masukkan harga persis <span className="font-extrabold text-astra">{formatNumber(requiredGamepassPrice)} Robux</span>.</li>
+                <li>Buka Pass tersebut, pilih menu <span className="font-bold text-ink">Sales</span>, aktifkan opsi <span className="font-bold text-ink">Item for Sale</span> dan masukkan harga persis <span className="font-extrabold text-astra-ink">{formatNumber(requiredGamepassPrice)} Robux</span>.</li>
                 <li>Salin link gamepass tersebut dan tempelkan pada kolom di atas.</li>
               </ol>
             </div>
@@ -478,7 +486,7 @@ export function RobuxGamepassOrder({
                     className={cx(
                       "flex items-center justify-center gap-2 rounded-well border-2 px-3 py-3.5 text-[12px] font-bold transition-all duration-200",
                       isSelected
-                        ? "border-astra bg-paper text-astra"
+                        ? "border-astra bg-paper text-astra-ink"
                         : "border-line bg-paper text-ink-dim hover:border-line-strong",
                     )}
                   >
@@ -498,7 +506,7 @@ export function RobuxGamepassOrder({
                   className="rounded-well border border-success/25 bg-success/[0.06] p-4 text-success"
                 >
                   <div className="flex items-start gap-3">
-                    <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-success text-white">
+                    <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-success text-on-bright">
                       <IconCheck size={12} />
                     </span>
                     <div className="flex flex-col gap-1">
@@ -518,7 +526,7 @@ export function RobuxGamepassOrder({
                   className="rounded-well border border-info/25 bg-info/[0.06] p-4 text-info"
                 >
                   <div className="flex items-start gap-3">
-                    <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-info text-white">
+                    <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-info text-on-bright">
                       <IconCheck size={12} />
                     </span>
                     <div className="flex flex-col gap-1">
@@ -538,7 +546,7 @@ export function RobuxGamepassOrder({
                   className="rounded-well border border-info/25 bg-info/[0.06] p-4 text-info"
                 >
                   <div className="flex items-start gap-3">
-                    <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-info text-white">
+                    <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-info text-on-bright">
                       <IconCheck size={12} />
                     </span>
                     <div className="flex flex-col gap-1">
@@ -656,7 +664,7 @@ export function RobuxGamepassOrder({
                     {formatIDR(totalPrice)}
                   </div>
                 ) : null}
-                <div className="num mt-1 text-[1.85rem] font-black tracking-tight text-astra">
+                <div className="num mt-1 text-[1.85rem] font-black tracking-tight text-astra-ink">
                   {formatIDR(finalPrice)}
                 </div>
                 {promoCut ? (

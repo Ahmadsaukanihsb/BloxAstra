@@ -40,7 +40,12 @@ export async function requestWhatsappOtp(rawInput: unknown): Promise<WhatsappOtp
     return { ok: false, error: "Nomor WhatsApp tidak valid. Gunakan format 08xx." };
   }
 
-  if (!isWhatsappSimMode() && !process.env.FONNTE_TOKEN) {
+  // Production must have a real sender. Without WA_BOT_TOKEN the flow silently
+  // falls into sim mode, which hands the OTP straight back to the caller below
+  // — that would let anyone self-verify any number. Refuse instead.
+  // (Dulu guard-nya FONNTE_TOKEN; Fonnte sudah diganti bot Baileys sendiri,
+  // jadi cek yang benar adalah WA_BOT_TOKEN lewat isWhatsappSimMode().)
+  if (process.env.NODE_ENV === "production" && isWhatsappSimMode()) {
     return { ok: false, error: "Verifikasi WhatsApp belum dikonfigurasi. Hubungi admin." };
   }
 
@@ -64,7 +69,11 @@ export async function requestWhatsappOtp(rawInput: unknown): Promise<WhatsappOtp
   if (!delivery.sent) {
     return { ok: false, error: delivery.error ?? "Gagal mengirim kode verifikasi." };
   }
-  return delivery.sim ? { ok: true, simCode: code } : { ok: true };
+  // The code is echoed back ONLY in development/sim. In production this line
+  // must never run (the guard above already refused), but keep the env check
+  // as belt-and-braces so the code cannot leak even if that guard is removed.
+  const echoCode = delivery.sim && process.env.NODE_ENV !== "production";
+  return echoCode ? { ok: true, simCode: code } : { ok: true };
 }
 
 /** Verify the code and mark the number as verified on the account. */

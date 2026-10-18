@@ -4,6 +4,7 @@ import { cx } from "@/lib/cx";
 import { formatIDR } from "@/lib/format";
 import { Reveal, RevealGroup, RevealItem } from "@/components/ui/reveal";
 import { IconCrown } from "@/components/ui/icons";
+import { ShelfEmpty } from "@/components/landing/shelf-empty";
 
 /** 3-month term is sold 15% under three single months. */
 const QUARTER_DISCOUNT = 0.15;
@@ -17,7 +18,28 @@ export async function PremiumPlans() {
   const monthly = products
     .filter((product) => product.category === "premium")
     .sort((a, b) => a.price - b.price)[0];
-  if (!monthly) return null;
+
+  // Terms can only be priced off a live monthly listing, but Premium itself can
+  // still be bought straight from the platform — so the empty state sells that
+  // instead of disappearing.
+  if (!monthly) {
+    return (
+      <ShelfEmpty
+        title={
+          <>
+            Roblox <span className="text-astra-ink">Premium</span>
+          </>
+        }
+        description="Term 1, 3, dan 12 bulan dihitung dari harga penjual — belum ada listing Premium yang aktif hari ini."
+        action={{ href: "/beli/premium", label: "Beli Premium langsung", variant: "primary" }}
+        label="Rak Premium masih kosong"
+        body="Jalur Premium milik platform tidak butuh stok penjual: pilih durasinya, bayar, dan langganan diproses seperti biasa."
+        icon={<IconCrown size={17} />}
+        secondary={{ href: "/katalog?kategori=premium", label: "Lihat katalog" }}
+      />
+    );
+  }
+
   const MONTHLY_PRICE = monthly.price;
 
   const PLANS = [
@@ -27,7 +49,7 @@ export async function PremiumPlans() {
       price: formatIDR(roundUpToThousand(MONTHLY_PRICE * 3 * (1 - QUARTER_DISCOUNT))),
       badge: {
         label: `Hemat ${Math.round(QUARTER_DISCOUNT * 100)}%`,
-        className: "bg-success text-white",
+        className: "bg-success text-on-bright",
       },
       href: "/katalog?kategori=premium",
     },
@@ -48,7 +70,7 @@ export async function PremiumPlans() {
         <Reveal>
           <div className="flex flex-col gap-1.5">
  <h2 className="text-title font-extrabold leading-tight text-ink md:text-title">
-              Roblox <span className="text-astra">Premium</span>
+              Roblox <span className="text-astra-ink">Premium</span>
             </h2>
             <p className="text-[13px] text-ink-dim md:text-sm">
               Lebih banyak keuntungan & hadiah eksklusif
@@ -72,12 +94,12 @@ export async function PremiumPlans() {
                 ) : null}
 
                 <div className="flex items-center gap-3">
-                  <span className="grid size-11 shrink-0 place-items-center rounded-full bg-astra-wash text-astra">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-full bg-astra-wash text-astra-ink">
                     <IconCrown size={22} />
                   </span>
                   <div className="flex flex-col">
                     <span className="text-[14px] font-extrabold text-ink">{plan.term}</span>
-                    <span className="num text-[15px] font-extrabold text-astra">{plan.price}</span>
+                    <span className="num text-[15px] font-extrabold text-astra-ink">{plan.price}</span>
                   </div>
                 </div>
 

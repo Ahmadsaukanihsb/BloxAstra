@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getSellerWallet } from "@/lib/wallet";
+import { getOpenTopUps } from "@/lib/topup";
 import { getPaymentFees } from "@/lib/payments";
 import { WalletView } from "@/components/wallet/wallet-view";
 import { BuyerWalletView } from "@/components/wallet/buyer-wallet-view";
@@ -38,39 +39,24 @@ export default function DompetPage() {
 async function DompetContent() {
   await connection();
   const user = await requireUser();
-  const [wallet, fees] = await Promise.all([getSellerWallet(user.id), getPaymentFees()]);
+  const [wallet, fees, openTopUps] = await Promise.all([
+    getSellerWallet(user.id),
+    getPaymentFees(),
+    getOpenTopUps(user.id),
+  ]);
   const methodFees = { qris: fees.qris, va: fees.va, ewallet: fees.ewallet };
 
   // Seller keeps the full ledger + withdrawal workspace.
   if (user.role === "seller") {
-    return <WalletView wallet={wallet} methodFees={methodFees} />;
+    return <WalletView wallet={wallet} methodFees={methodFees} openTopUps={openTopUps} />;
   }
 
   // Buyer gets a dedicated spend-focused wallet: no withdrawal traces.
-  const [pending, sums] = await Promise.all([
-    db.topUp.findMany({
-      where: {
-        userId: user.id,
-        status: "pending",
-        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-      },
-      orderBy: { createdAt: "desc" },
-      take: 5,
-      select: {
-        code: true,
-        amount: true,
-        fee: true,
-        paymentMethod: true,
-        checkoutUrl: true,
-        expiresAt: true,
-      },
-    }),
-    db.walletLedger.groupBy({
-      by: ["type"],
-      where: { userId: user.id },
-      _sum: { amount: true },
-    }),
-  ]);
+  const sums = await db.walletLedger.groupBy({
+    by: ["type"],
+    where: { userId: user.id },
+    _sum: { amount: true },
+  });
 
   const sumOf = (type: string) =>
     sums.find((row) => row.type === type)?._sum.amount ?? 0;
@@ -83,14 +69,7 @@ async function DompetContent() {
         totalSpent: Math.abs(Math.min(0, sumOf("purchase"))),
         totalRefund: Math.max(0, sumOf("refund")),
       }}
-      pendingTopUps={pending.map((row) => ({
-        code: row.code,
-        amount: row.amount,
-        fee: row.fee,
-        paymentMethod: row.paymentMethod,
-        checkoutUrl: row.checkoutUrl,
-        expiresAt: row.expiresAt?.toISOString() ?? null,
-      }))}
+      openTopUps={openTopUps}
       entries={wallet.entries}
       methodFees={methodFees}
     />

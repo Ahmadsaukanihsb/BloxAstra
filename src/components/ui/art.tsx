@@ -93,7 +93,7 @@ export function ProductArt({
 
       <div className="absolute inset-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.1),inset_0_-40px_60px_-40px_rgba(0,0,0,0.8)]" />
       {label ? (
-        <span className="absolute bottom-2.5 left-2.5 rounded-full bg-paper/25 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white/80 backdrop-blur-sm">
+        <span className="absolute bottom-2.5 left-2.5 rounded-tag bg-canvas/85 px-2 py-1 tag text-ink backdrop-blur-sm">
           {label}
         </span>
       ) : null}

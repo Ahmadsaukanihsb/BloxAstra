@@ -6,7 +6,7 @@ import { TOPUP_LIMITS } from "@/lib/topup-limits";
 
 export { TOPUP_LIMITS };
 
-/** "TU-" + 6 unambiguous base36 chars — also the Midtrans order_id. */
+/** "TU-" + 6 unambiguous base36 chars — also the gateway merchant_ref. */
 export function generateTopUpCode(): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const bytes = randomBytes(6);
@@ -19,23 +19,38 @@ export interface TopUpLedgerInput {
   userId: string;
   code: string;
   amount: number;
+  /**
+   * True only when a gateway confirmed the settlement (signed webhook or a
+   * Status API answer). It lets a row that was wrongly flagged `failed`
+   * still be credited — the buyer's money really did arrive, and refusing it
+   * would pocket it.
+   */
+  settledByGateway?: boolean;
 }
+
+/** Statuses a top-up can still be credited from. */
+export const CREDITABLE_TOPUP_STATUSES = ["pending", "expired"] as const;
 
 /**
  * Credit a settled top-up to the buyer's wallet ledger. Idempotent: the
  * `@@unique` on (orderCode, type) plus a status guard inside the transaction
  * means a replayed webhook credits exactly once. `expired` rows are still
  * accepted — a gateway settlement that lands just after the expiry sweep is
- * real money and must not be dropped.
+ * real money and must not be dropped — and so is `failed` when the caller
+ * has gateway proof (`settledByGateway`).
  */
 export async function creditTopUp(input: TopUpLedgerInput): Promise<boolean> {
   try {
     return await db.$transaction(async (tx) => {
       const topUp = await tx.topUp.findUnique({
         where: { code: input.code },
-        select: { id: true, status: true, amount: true, userId: true },
+        select: { id: true, status: true, amount: true, userId: true, creditedAt: true },
       });
-      if (!topUp || (topUp.status !== "pending" && topUp.status !== "expired")) return false;
+      const creditable =
+        topUp?.status === "pending" ||
+        topUp?.status === "expired" ||
+        (input.settledByGateway === true && topUp?.status === "failed");
+      if (!topUp || topUp.creditedAt || !creditable) return false;
       if (topUp.userId !== input.userId || topUp.amount !== input.amount) return false;
 
       const aggregate = await tx.walletLedger.aggregate({
@@ -76,6 +91,53 @@ export async function notifyTopUpCredited(userId: string, code: string, amount: 
     body: `Top-up ${code} berhasil. Saldo siap dipakai untuk belanja.`,
     link: "/dompet",
   });
+}
+
+export interface OpenTopUp {
+  code: string;
+  amount: number;
+  fee: number;
+  paymentMethod: string;
+  checkoutUrl: string | null;
+  expiresAt: string | null;
+  status: "pending" | "failed" | "expired";
+}
+
+/**
+ * Top-ups a buyer (or seller) still has to act on: invoices waiting for
+ * payment, plus rows that never got credited. The uncredited group is the
+ * safety net for the "paid but saldo tidak bertambah" case — without it the
+ * money sits invisible in the database with no button to recover it.
+ */
+export async function getOpenTopUps(userId: string): Promise<OpenTopUp[]> {
+  const rows = await db.topUp.findMany({
+    where: {
+      userId,
+      creditedAt: null,
+      status: { in: ["pending", "failed", "expired"] },
+      createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60_000) },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 4,
+    select: {
+      code: true,
+      amount: true,
+      fee: true,
+      paymentMethod: true,
+      checkoutUrl: true,
+      expiresAt: true,
+      status: true,
+    },
+  });
+  return rows.map((row) => ({
+    code: row.code,
+    amount: row.amount,
+    fee: row.fee,
+    paymentMethod: row.paymentMethod,
+    checkoutUrl: row.checkoutUrl,
+    expiresAt: row.expiresAt?.toISOString() ?? null,
+    status: row.status as OpenTopUp["status"],
+  }));
 }
 
 /** Top-ups still waiting after their payment window are marked expired. */

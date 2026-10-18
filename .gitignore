@@ -40,6 +40,13 @@ tmp-*
 
 # agent/tool state
 /.freebuff/
+# artefak sesi Playwright MCP (snapshot/screenshot/log) — bukan bagian proyek.
+/.playwright-mcp/
+
+# WhatsApp bot (Baileys) session — credential-equivalent, never commit.
+/wa-bot/auth/
+# QR sementara untuk pairing (ditulis ulang tiap sesi baru).
+/wa-bot/qr.txt
 
 # env files (can opt-in for committing if needed)
 .env*

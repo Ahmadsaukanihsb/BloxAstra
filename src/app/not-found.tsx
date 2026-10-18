@@ -10,12 +10,12 @@ const SUGGESTED = [
 export default function NotFound() {
   return (
     <div className="mx-auto flex max-w-[640px] flex-col items-center gap-6 px-4 py-24 text-center md:py-32">
-      <span className="grid size-14 place-items-center rounded-well bg-astra-wash text-astra">
+      <span className="grid size-14 place-items-center rounded-well bg-astra-wash text-astra-ink">
         <IconCompass size={26} />
       </span>
 
       <div className="flex flex-col gap-2">
-        <p className="num text-sm font-extrabold tracking-[0.14em] text-astra">404</p>
+        <p className="num text-sm font-extrabold tracking-[0.14em] text-astra-ink">404</p>
  <h1 className="text-page font-extrabold text-ink">
           Halaman tidak ditemukan
         </h1>

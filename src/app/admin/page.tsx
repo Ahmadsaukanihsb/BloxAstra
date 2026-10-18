@@ -2,8 +2,25 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { requireRole } from "@/lib/auth";
-import { getAdminDashboard } from "@/lib/admin";
+import {
+  getAdminDashboard,
+  getAdminProducts,
+  getAdminPromos,
+  getAdminReviews,
+  getAdminTopUps,
+  getAdminUsers,
+  getChatReports,
+  getKycQueue,
+} from "@/lib/admin";
+import { getLandingLayout } from "@/lib/landing-sections";
 import { getActiveRates } from "@/lib/rate-card";
+import { getPaymentFees } from "@/lib/payments";
+import { getBanks, getWithdrawalConfig } from "@/lib/wallet";
+import { getSweepTimeouts } from "@/lib/sweep";
+import { getSiteLogo } from "@/lib/site-logo";
+import { getSiteFavicon } from "@/lib/site-favicon";
+import { getSitePopup, getSitePromo } from "@/lib/site-notice";
+import { getServiceArt } from "@/lib/service-art";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { Skeleton } from "@/components/ui/feedback";
 
@@ -36,7 +53,28 @@ export default function AdminPage() {
 async function AdminContent() {
   await connection();
   const user = await requireRole("admin");
-  const [dashboard, rates] = await Promise.all([getAdminDashboard(), getActiveRates()]);
+  const [dashboard, rates, serviceArt, products, promos, topUps, reports, fees, withdrawal, banks, timeouts, logo, favicon, promo, popup, landing, kyc, users, reviews] =
+    await Promise.all([
+      getAdminDashboard(),
+      getActiveRates(),
+      getServiceArt(),
+      getAdminProducts(),
+      getAdminPromos(),
+      getAdminTopUps(),
+      getChatReports(),
+      getPaymentFees(),
+      getWithdrawalConfig(),
+      getBanks(),
+      getSweepTimeouts(),
+      getSiteLogo(),
+      getSiteFavicon(),
+      getSitePromo(),
+      getSitePopup(),
+      getLandingLayout(),
+      getKycQueue(),
+      getAdminUsers(),
+      getAdminReviews(),
+    ]);
   dashboard.adminName = user.username;
   dashboard.adminEmail = user.email;
 
@@ -48,6 +86,26 @@ async function AdminContent() {
         initialWithdrawals={dashboard.pendingWithdrawals}
         initialAuditLogs={dashboard.auditLogs}
         initialRates={rates}
+        initialServiceArt={serviceArt}
+        initialProducts={products}
+        initialPromos={promos}
+        initialSettings={{
+          fees: { qris: fees.qris, va: fees.va, ewallet: fees.ewallet },
+          withdrawal,
+          banks,
+          timeouts,
+        }}
+        initialTopUps={topUps.rows}
+        initialReports={reports}
+        initialLogo={logo}
+        initialFavicon={favicon}
+        initialPromo={promo}
+        initialPopup={popup}
+        initialLanding={landing}
+        initialKyc={kyc}
+        initialUsers={users.rows}
+        suspendedCount={users.suspendedCount}
+        initialReviews={reviews}
         adminName={dashboard.adminName}
         adminEmail={dashboard.adminEmail}
         totals={{
@@ -55,6 +113,7 @@ async function AdminContent() {
           escrowCount: dashboard.escrowCount,
           openDisputeCount: dashboard.openDisputeCount,
           pendingWithdrawalCount: dashboard.pendingWithdrawalCount,
+          auditTotal: dashboard.auditTotal,
         }}
       />
     </div>

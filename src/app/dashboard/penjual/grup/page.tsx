@@ -31,7 +31,7 @@ export default function SellerGroupPage() {
 async function SellerGroupContent() {
   await connection();
   const user = await requireUser();
-  const messages = await getSellerChat(user.id);
+  const chat = await getSellerChat(user.id);
 
   return (
     <div className="shell pb-20 pt-8 md:pt-10">
@@ -46,11 +46,19 @@ async function SellerGroupContent() {
           </h1>
           <p className="max-w-[62ch] text-[13px] leading-relaxed text-ink-dim">
             Satu ruang untuk semua penjual Blox Astra. Pakai untuk koordinasi serah terima, tanya
-            stok teman seller, atau saling info order Robux yang baru masuk ke pool rebutan.
+            stok teman seller, atau saling info order Robux yang baru masuk ke pool rebutan. Ketik
+            @ lalu nama toko untuk memanggil penjual tertentu — dia dapat notifikasi di kotak
+            masuknya.
           </p>
         </div>
 
-        <SellerChatBox messages={messages} />
+        <SellerChatBox
+          messages={chat.items}
+          unread={chat.unread}
+          mentionable={chat.mentionable}
+          online={chat.online}
+          moderator={user.role === "admin"}
+        />
       </div>
     </div>
   );

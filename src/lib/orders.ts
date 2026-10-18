@@ -156,6 +156,20 @@ function asState(status: string): OrderState {
   return status as OrderState;
 }
 
+/**
+ * `Dispute.evidence` is free-text JSON. A hand-edited or half-written value
+ * must never throw here — an unparsable blob would 500 the whole order room
+ * for buyer, seller and admin at once. Fall back to an empty list.
+ */
+function safeParseEvidence(raw: string): string[] {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    return [];
+  }
+}
+
 function categoryOf(row: ListProjection | OrderRowResult): CategorySlug | null {
   const fromProduct = (row?.product?.category.slug ?? null) as CategorySlug | null;
   if (fromProduct) return fromProduct;
@@ -380,7 +394,7 @@ export async function getOrderRoom(
         reasonLabel: row.dispute.reasonLabel,
         buyerNote: row.dispute.buyerNote,
         sellerReply: row.dispute.sellerReply,
-        evidence: JSON.parse(row.dispute.evidence) as string[],
+        evidence: safeParseEvidence(row.dispute.evidence),
         openedAt: row.dispute.openedAt.toISOString(),
         status: row.dispute.status,
         slaHoursLeft: row.dispute.slaHoursLeft,
@@ -478,10 +492,48 @@ export async function getOrderReview(orderId: string): Promise<OrderReview | nul
   };
 }
 
-/** Public reviews for a product listing (newest first). */
+export interface RecentReview {
+  id: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  buyerName: string;
+  productTitle: string;
+}
+
+/**
+ * Newest buyer reviews across the whole catalog, for the homepage proof
+ * strip. Empty comments are skipped — a star row without words proves
+ * nothing to a first-time visitor.
+ */
+export async function getRecentReviews(limit = 4): Promise<RecentReview[]> {
+  const rows = await db.review.findMany({
+    where: { comment: { not: "" }, hidden: false },
+    orderBy: { createdAt: "desc" },
+    take: Math.max(1, Math.min(limit, 8)),
+    select: {
+      id: true,
+      rating: true,
+      comment: true,
+      createdAt: true,
+      buyer: { select: { username: true } },
+      product: { select: { title: true } },
+    },
+  });
+  return rows.map((row) => ({
+    id: row.id,
+    rating: row.rating,
+    comment: row.comment,
+    createdAt: row.createdAt.toISOString(),
+    buyerName: row.buyer.username,
+    productTitle: row.product?.title ?? "Robux",
+  }));
+}
+
+/** Public reviews for a product listing (newest first, hidden excluded). */
 export async function getProductReviews(productId: string): Promise<OrderReview[]> {
   const rows = await db.review.findMany({
-    where: { productId },
+    where: { productId, hidden: false },
     orderBy: { createdAt: "desc" },
     take: 20,
     select: {

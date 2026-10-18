@@ -11,6 +11,7 @@ import {
   registerBuyerSchema,
   registerSellerSchema,
 } from "@/lib/validation";
+import { turnstileConfigured, verifyTurnstile } from "@/lib/turnstile";
 
 export interface AuthActionState {
   error?: string;
@@ -67,6 +68,17 @@ function isUniqueCollision(error: unknown): boolean {
   );
 }
 
+/**
+ * Anti-bot gate for the password forms. Inactive until Turnstile is
+ * configured; mandatory (fail closed) once it is.
+ */
+async function requireHuman(formData: FormData): Promise<string | null> {
+  if (!turnstileConfigured()) return null;
+  const raw = formData.get("cf-turnstile-response");
+  const ok = await verifyTurnstile(typeof raw === "string" ? raw : null);
+  return ok ? null : "Verifikasi anti-bot gagal. Muat ulang halaman lalu coba lagi.";
+}
+
 export async function loginAction(
   _prev: AuthActionState,
   formData: FormData,
@@ -76,6 +88,9 @@ export async function loginAction(
     password: formData.get("password"),
   });
   if (!parsed.success) return { fieldErrors: fieldErrorsOf(parsed) };
+
+  const botError = await requireHuman(formData);
+  if (botError) return { error: botError };
 
   const { identifier, password } = parsed.data;
   // One bucket per account: lowercase + trim so `User@x` vs `user@x` (or the
@@ -99,12 +114,19 @@ export async function loginAction(
     return { error: "Email/username atau kata sandi salah." };
   }
 
+  // Checked after the password so the lockout state is only revealed to
+  // someone who actually holds the credential (no enumeration oracle).
+  if (user.suspendedAt) {
+    return { error: "Akun ini ditangguhkan. Hubungi admin untuk banding." };
+  }
+
   clearFailures(bucket);
   const session = await getSession();
   session.userId = user.id;
   session.role = user.role as "buyer" | "seller" | "admin";
   session.email = user.email;
   session.username = user.username;
+  session.sessionVersion = user.sessionVersion;
   await session.save();
 
   // Buyers land on the catalog; sellers on their dashboard; admins on /admin.
@@ -124,6 +146,9 @@ export async function registerBuyerAction(
     password: formData.get("password"),
   });
   if (!parsed.success) return { fieldErrors: fieldErrorsOf(parsed) };
+
+  const botError = await requireHuman(formData);
+  if (botError) return { error: botError };
 
   const { email, username, whatsapp, password } = parsed.data;
 
@@ -158,6 +183,7 @@ export async function registerBuyerAction(
   session.role = "buyer";
   session.email = user.email;
   session.username = user.username;
+  session.sessionVersion = user.sessionVersion;
   await session.save();
 
   redirect("/katalog");
@@ -179,6 +205,9 @@ export async function registerSellerAction(
     agreed: formData.get("agreed") === "on",
   });
   if (!parsed.success) return { fieldErrors: fieldErrorsOf(parsed) };
+
+  const botError = await requireHuman(formData);
+  if (botError) return { error: botError };
 
   const { email, username, whatsapp, password, fullName, storeName, idCardImage, selfieImage } =
     parsed.data;
@@ -242,7 +271,7 @@ export async function registerSellerAction(
     kind: "kyc_submitted",
     title: `KYC baru dari ${username}`,
     body: `Toko "${storeName}" menunggu verifikasi identitas.`,
-    link: "/dashboard/admin",
+    link: "/admin?tab=kyc",
   });
 
   const session = await getSession();
@@ -250,6 +279,7 @@ export async function registerSellerAction(
   session.role = "seller";
   session.email = user.email;
   session.username = user.username;
+  session.sessionVersion = user.sessionVersion;
   await session.save();
 
   redirect("/dashboard/penjual");
@@ -266,25 +296,35 @@ export async function adminLoginAction(
   if (!parsed.success) return { fieldErrors: fieldErrorsOf(parsed) };
 
   const { identifier, password } = parsed.data;
-  if (isLocked(identifier)) {
+  const adminBotError = await requireHuman(formData);
+  if (adminBotError) return { error: adminBotError };
+  // Same normalization as loginAction: case/whitespace variants of one email
+  // must share ONE lockout bucket, or `Admin@x`/`aDmin@x`/... brute-forces it.
+  const bucket = identifier.trim().toLowerCase();
+  if (isLocked(bucket)) {
     return { error: "Terlalu banyak percobaan. Coba lagi dalam 15 menit." };
   }
 
   const user = await db.user.findFirst({
-    where: { email: identifier.toLowerCase(), role: "admin" },
+    where: { email: bucket, role: "admin" },
   });
 
   if (!user || !user.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) {
-    recordFailure(identifier);
+    recordFailure(bucket);
     return { error: "Email atau kata sandi salah." };
   }
 
-  clearFailures(identifier);
+  if (user.suspendedAt) {
+    return { error: "Akun ini ditangguhkan. Hubungi admin untuk banding." };
+  }
+
+  clearFailures(bucket);
   const session = await getSession();
   session.userId = user.id;
   session.role = "admin";
   session.email = user.email;
   session.username = user.username;
+  session.sessionVersion = user.sessionVersion;
   await session.save();
 
   return {};

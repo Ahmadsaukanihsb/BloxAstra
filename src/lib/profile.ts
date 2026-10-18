@@ -22,6 +22,11 @@ export interface ProfileView {
   hasPassword: boolean;
   memberSince: string;
   linkedAccounts: LinkedAccountView[];
+  /** Self-view only: KYC status + store handle for the seller's own panel. */
+  kycStatus: string;
+  storeHandle: string | null;
+  /** Why an application may not be offered again (pending review, etc.). */
+  canApplyAsSeller: boolean;
   activeOrders: number;
   completedOrders: number;
   paidTotal: number;
@@ -41,6 +46,8 @@ export async function getProfileView(userId: string): Promise<ProfileView | null
         role: true,
         passwordHash: true,
         createdAt: true,
+        kycStatus: true,
+        sellerProfile: { select: { handle: true } },
       },
     }),
     db.linkedAccount.findMany({
@@ -68,6 +75,10 @@ export async function getProfileView(userId: string): Promise<ProfileView | null
     role: user.role as ProfileView["role"],
     hasPassword: Boolean(user.passwordHash),
     memberSince: user.createdAt.toISOString(),
+    kycStatus: user.kycStatus,
+    storeHandle: user.sellerProfile?.handle ?? null,
+    // Buyers with a clean slate (no pending/rejected review in flight) may apply.
+    canApplyAsSeller: user.role === "buyer" && user.kycStatus === "none",
     linkedAccounts: linked.map((row) => ({
       provider: row.provider,
       email: row.email,

@@ -1,5 +1,14 @@
 # BloxAstra: arah desain ulang dan rencana bertahap
 
+> **Catatan pivot.** Tema yang dijelaskan di bawah ini TERANG; tema yang berjalan
+> sekarang GELAP. Setelah tema terang selesai, penilaiannya terlalu terasa seperti
+> template SaaS dan nuansa gamenya hilang, jadi arahnya diputar ke lobi gelap ala
+> Roblox. Yang tetap berlaku dari dokumen ini: disiplin token, batas jumlah hue,
+> dan standar copy. Yang berubah: semua nilai warna, arah kedalaman (panel kini
+> terangkat di atas lantai gelap, bukan lembar putih di atas putih), dan bentuk
+> kontrol. Rincian tema gelap ada di blok token `src/app/globals.css` — di situlah
+> kebenarannya, karena dokumen ini tidak lagi merinci setiap nilai.
+
 Dokumen keputusan. Pilih satu arah di bagian "Tiga arah", lalu kerjakan fase di bagian "Rencana". Tidak ada kode yang berubah sebelum arah dipilih.
 
 ## Keadaan sekarang

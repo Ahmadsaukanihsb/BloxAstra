@@ -85,6 +85,18 @@ export interface Product {
   sortOrder: number;
   /** landing-shelf placement: "pack" | "limited" | "service" | null */
   shelf: string | null;
+  /** ISO timestamp of the last row write — feeds sitemap `lastModified` */
+  updatedAt: string;
+}
+
+/**
+ * A couple of true numbers about the marketplace, for the home page's empty
+ * states — the moment proof of a working shop matters most. Every field may be
+ * 0: a marketplace with no history must show nothing rather than "0 order".
+ */
+export interface LandingSignals {
+  completedOrders: number;
+  verifiedSellers: number;
 }
 
 export interface WalletEntry {

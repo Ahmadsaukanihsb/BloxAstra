@@ -77,8 +77,14 @@ async function OverviewContent() {
             Dashboard untuk melihat area ini dengan data nyata.
           </Notice>
         ) : (
-          <Notice tone="danger" title="Profil penjual belum dibuat">
-            Akun ini belum memiliki profil toko. Hubungi admin untuk aktivasi penjual.
+          <Notice tone="info" icon={<IconStorefront size={15} />} title="Belum jadi penjual">
+            Akun ini masih pembeli. Ajukan penjual dari halaman profil — unggah KTP dan selfie,
+            lalu tunggu verifikasi admin. Setelah disetujui, dashboard ini terbuka penuh.
+            <span className="mt-3 block">
+              <ButtonLink href="/profil" size="sm" trailingIcon={<IconArrowRight size={14} />}>
+                Ajukan jadi penjual
+              </ButtonLink>
+            </span>
           </Notice>
         )}
       </div>

@@ -3,12 +3,21 @@
 import { z } from "zod";
 import { revalidatePath, updateTag } from "next/cache";
 import { db } from "@/lib/db";
-import { requireRole, requireUser } from "@/lib/auth";
+import { getCurrentUser, requireRole, requireUser } from "@/lib/auth";
 import { slugify } from "@/lib/format";
 import { validImageDataUrl } from "@/lib/images";
 import { sendDiscordTestPing, validDiscordWebhookUrl } from "@/lib/discord";
+import { publishLive } from "@/lib/live-bus";
+import {
+  getMentionDirectory,
+  getSellerChatRevision,
+  getSellerChatUnreadCount,
+  type ChatRevision,
+} from "@/lib/seller";
+import { findMentions } from "@/lib/mentions";
+import { listOnlineSellers, type OnlineSeller } from "@/lib/presence";
 import { checkThrottle } from "@/lib/throttle";
-import { adminUserIds, notifyMany } from "@/lib/notifications";
+import { adminUserIds, notify, notifyMany } from "@/lib/notifications";
 
 export type SellerActionResult =
   | { ok: true }
@@ -20,7 +29,20 @@ export type CreateListingResult =
 
 const chatSchema = z.object({
   body: z.string().trim().min(1).max(1000),
+  /** The message this one answers, when the composer is quoting a reply. */
+  replyToId: z.string().min(1).max(40).optional(),
 });
+
+const messageIdSchema = z.object({ id: z.string().min(1).max(40) });
+const editSchema = messageIdSchema.extend({ body: z.string().trim().min(1).max(1000) });
+
+const REPORT_REASONS = ["spam", "kasar", "pribadi"] as const;
+const REPORT_LABELS: Record<(typeof REPORT_REASONS)[number], string> = {
+  spam: "spam atau jualan berulang",
+  kasar: "kasar, penipuan, atau ancaman",
+  pribadi: "membocorkan data pribadi",
+};
+const reportSchema = messageIdSchema.extend({ reason: z.enum(REPORT_REASONS) });
 
 const CATEGORY_SLUGS = ["gamepass", "item", "gift", "akun", "premium"] as const;
 const DELIVERY_KINDS = ["gamepass_auto", "manual", "instant_code", "credential"] as const;
@@ -41,6 +63,9 @@ const listingSchema = z.object({
   imageUrl: z.string().max(2_100_000).optional(),
 });
 
+/** Call out at most this many shops in one message (keeps a copy-paste bomb sane). */
+const MENTION_LIMIT = 5;
+
 /** Post a message to the global seller group chat. */
 export async function sendSellerChatMessage(rawInput: unknown): Promise<SellerActionResult> {
   const user = await requireUser();
@@ -51,11 +76,11 @@ export async function sendSellerChatMessage(rawInput: unknown): Promise<SellerAc
   }
 
   // Any signed-in user who has ever been a seller (or an admin) may post.
+  const profile = await db.sellerProfile.findUnique({
+    where: { userId: user.id },
+    select: { id: true, kycVerified: true, storeName: true },
+  });
   if (user.role !== "admin") {
-    const profile = await db.sellerProfile.findUnique({
-      where: { userId: user.id },
-      select: { id: true, kycVerified: true },
-    });
     if (!profile) {
       return { ok: false, code: "FORBIDDEN", error: "Hanya penjual yang bisa chat di grup ini." };
     }
@@ -64,11 +89,227 @@ export async function sendSellerChatMessage(rawInput: unknown): Promise<SellerAc
     }
   }
 
-  await db.sellerChatMessage.create({
-    data: { userId: user.id, body: parsed.data.body },
+  // A quote must point at a message that is really there: a client can send any
+  // id, and a dangling `replyToId` would leave the room rendering a quote of
+  // nothing.
+  let replyToId: string | null = null;
+  if (parsed.data.replyToId) {
+    const quoted = await db.sellerChatMessage.findUnique({
+      where: { id: parsed.data.replyToId },
+      select: { id: true },
+    });
+    if (!quoted) {
+      return { ok: false, code: "STATE", error: "Pesan yang kamu balas sudah tidak ada." };
+    }
+    replyToId = quoted.id;
+  }
+
+  const message = await db.sellerChatMessage.create({
+    data: { userId: user.id, body: parsed.data.body, replyToId },
+    select: { id: true },
   });
   revalidatePath("/dashboard/penjual/grup");
+  // Wake every open room — the sender refreshes its own page right after this
+  // action returns, and everyone else's tab updates from the push channel.
+  publishLive("chat", "sellers");
+
+  // A mention is the one thing in this room aimed at a specific person, so it
+  // uses the same inbox path every other ping does — the bell and the
+  // notification page light up, and notify() wakes that user's open streams.
+  const calledOut = findMentions(parsed.data.body, await getMentionDirectory())
+    .filter((target) => target.userId !== user.id)
+    .slice(0, MENTION_LIMIT);
+  if (calledOut.length > 0) {
+    const sender = profile?.storeName ?? user.username;
+    const preview = parsed.data.body.replace(/\s+/g, " ").slice(0, 120);
+    for (const target of calledOut) {
+      await notify({
+        userId: target.userId,
+        kind: "chat_message",
+        title: `${sender} menyebut @${target.storeName ?? target.username} di grup seller`,
+        body: preview,
+        // Straight to the message itself: `#chat-<id>` is the anchor the room
+        // gives every bubble, so a mention lands on the sentence that named you
+        // instead of the top of a 200-message room.
+        link: `/dashboard/penjual/grup#chat-${message.id}`,
+      });
+    }
+  }
+
   return { ok: true };
+}
+
+/**
+ * Rewrite one of your own messages. The row keeps the original `createdAt`, so
+ * the room's order never shifts; `editedAt` is what tells readers it changed.
+ */
+export async function editSellerChatMessage(rawInput: unknown): Promise<SellerActionResult> {
+  const user = await requireUser();
+  const parsed = editSchema.safeParse(rawInput);
+  if (!parsed.success) return { ok: false, code: "STATE", error: "Pesan tidak valid." };
+  if (!checkThrottle(`seller-chat-edit:${user.id}`, 3000)) {
+    return { ok: false, code: "STATE", error: "Terlalu cepat. Tunggu 3 detik." };
+  }
+
+  const message = await db.sellerChatMessage.findUnique({
+    where: { id: parsed.data.id },
+    select: { id: true, userId: true, body: true, deletedAt: true },
+  });
+  if (!message) return { ok: false, code: "STATE", error: "Pesan sudah tidak ada." };
+  if (message.userId !== user.id) {
+    return { ok: false, code: "FORBIDDEN", error: "Hanya pesanmu sendiri yang bisa diedit." };
+  }
+  if (message.deletedAt) {
+    return { ok: false, code: "STATE", error: "Pesan yang sudah dihapus tidak bisa diedit." };
+  }
+  // Saving without a change is not an edit — do not stamp the message.
+  if (message.body === parsed.data.body) return { ok: true };
+
+  await db.sellerChatMessage.update({
+    where: { id: message.id },
+    data: { body: parsed.data.body, editedAt: new Date() },
+  });
+  revalidatePath("/dashboard/penjual/grup");
+  publishLive("chat", "sellers");
+  return { ok: true };
+}
+
+/**
+ * Soft-delete a message. The body stays in the row for moderation, but every
+ * reader gets a tombstone instead, and replies that quote it say so.
+ *
+ * Your own messages are always yours to remove; an admin can remove anyone's,
+ * which is where a report ends up.
+ */
+export async function deleteSellerChatMessage(rawInput: unknown): Promise<SellerActionResult> {
+  const user = await requireUser();
+  const parsed = messageIdSchema.safeParse(rawInput);
+  if (!parsed.success) return { ok: false, code: "STATE", error: "Pesan tidak valid." };
+
+  const message = await db.sellerChatMessage.findUnique({
+    where: { id: parsed.data.id },
+    select: { id: true, userId: true, deletedAt: true },
+  });
+  if (!message) return { ok: false, code: "STATE", error: "Pesan sudah tidak ada." };
+  if (message.userId !== user.id && user.role !== "admin") {
+    return { ok: false, code: "FORBIDDEN", error: "Hanya pesanmu sendiri yang bisa dihapus." };
+  }
+  if (message.deletedAt) return { ok: true };
+
+  await db.sellerChatMessage.update({
+    where: { id: message.id },
+    data: { deletedAt: new Date() },
+  });
+  revalidatePath("/dashboard/penjual/grup");
+  publishLive("chat", "sellers");
+  return { ok: true };
+}
+
+/**
+ * Flag someone else's message for the admins. One report per message per
+ * seller: the second attempt is refused with words rather than paging every
+ * admin again.
+ */
+export async function reportSellerChatMessage(rawInput: unknown): Promise<SellerActionResult> {
+  const user = await requireUser();
+  const parsed = reportSchema.safeParse(rawInput);
+  if (!parsed.success) return { ok: false, code: "STATE", error: "Alasan laporan tidak valid." };
+  if (!checkThrottle(`seller-chat-report:${user.id}`, 5000)) {
+    return { ok: false, code: "STATE", error: "Terlalu cepat. Tunggu 5 detik." };
+  }
+
+  const message = await db.sellerChatMessage.findUnique({
+    where: { id: parsed.data.id },
+    select: {
+      id: true,
+      userId: true,
+      body: true,
+      createdAt: true,
+      user: {
+        select: { username: true, sellerProfile: { select: { storeName: true } } },
+      },
+    },
+  });
+  if (!message) return { ok: false, code: "STATE", error: "Pesan sudah tidak ada." };
+  if (message.userId === user.id) {
+    return { ok: false, code: "STATE", error: "Pesanmu sendiri tidak perlu dilaporkan." };
+  }
+
+  const already = await db.sellerChatReport.findUnique({
+    where: { messageId_reporterId: { messageId: message.id, reporterId: user.id } },
+    select: { id: true },
+  });
+  if (already) {
+    return { ok: false, code: "STATE", error: "Kamu sudah melaporkan pesan ini. Admin sedang meninjaunya." };
+  }
+
+  await db.sellerChatReport.create({
+    data: { messageId: message.id, reporterId: user.id, reason: parsed.data.reason },
+  });
+
+  const reporter = await db.sellerProfile.findUnique({
+    where: { userId: user.id },
+    select: { storeName: true },
+  });
+  const reporterName = reporter?.storeName ?? user.username;
+  const authorName = message.user.sellerProfile?.storeName ?? message.user.username;
+  await notifyMany(await adminUserIds(), {
+    kind: "chat_report",
+    title: `Laporan grup seller: ${REPORT_LABELS[parsed.data.reason]}`,
+    body: `${reporterName} melaporkan pesan ${authorName} — "${message.body.replace(/\s+/g, " ").slice(0, 120)}"`,
+    link: `/dashboard/penjual/grup#chat-${message.id}`,
+  });
+  return { ok: true };
+}
+
+/** Who is online in the room right now, for the live presence strip. */
+export async function fetchSellerChatPresence(): Promise<OnlineSeller[]> {
+  try {
+    const user = await getCurrentUser();
+    if (!user || (user.role !== "seller" && user.role !== "admin")) return [];
+    return listOnlineSellers(user.id);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Move this viewer's read cursor to now — called by the open room once it has
+ * actually rendered the newest message on screen. The divider the reader is
+ * looking at comes from the cursor as it was at page load, so advancing it here
+ * never yanks the line out from under them; it only changes the NEXT visit.
+ */
+export async function markSellerChatSeen(): Promise<void> {
+  try {
+    const user = await requireUser();
+    await db.user.update({ where: { id: user.id }, data: { groupChatSeenAt: new Date() } });
+  } catch {
+    // Signed out or a transient blip: the divider simply reappears next visit.
+  }
+}
+
+/** Unread group-room count for the nav badge, refreshed by the live channel. */
+export async function fetchSellerChatUnread(): Promise<number> {
+  try {
+    const user = await getCurrentUser();
+    if (!user || user.role !== "seller") return 0;
+    return await getSellerChatUnreadCount(user.id);
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Change signal for the seller room. An open chat polls this and only
+ * refetches the room when another seller actually posted — no reload needed.
+ */
+export async function fetchSellerChatRevision(): Promise<ChatRevision> {
+  try {
+    await requireUser();
+    return await getSellerChatRevision();
+  } catch {
+    return { count: 0, latestId: null };
+  }
 }
 
 /** Create a new product listing owned by the logged-in seller. */
@@ -417,10 +658,10 @@ export async function resubmitKyc(rawInput: unknown): Promise<SellerActionResult
     kind: "kyc_submitted",
     title: `KYC diajukan ulang oleh ${account.username}`,
     body: `Toko "${account.sellerProfile.storeName}" mengirim berkas baru.`,
-    link: "/dashboard/admin",
+    link: "/admin?tab=kyc",
   });
   revalidatePath("/dashboard/penjual");
-  revalidatePath("/dashboard/admin");
+  revalidatePath("/admin");
   return { ok: true };
 }
 
@@ -463,8 +704,135 @@ export async function activateAdminSeller(): Promise<SellerActionResult> {
     },
   });
 
-  revalidatePath("/dashboard/admin");
+  revalidatePath("/admin");
   revalidatePath("/dashboard/penjual");
+  return { ok: true };
+}
+
+const applySellerSchema = z.object({
+  storeName: z.string().trim().min(3, "Nama toko minimal 3 karakter.").max(60),
+  fullName: z.string().trim().min(3, "Nama lengkap minimal 3 karakter.").max(100),
+  idCardImage: z.string().min(100, "Foto KTP wajib diunggah.").max(1_800_000),
+  selfieImage: z.string().min(100, "Selfie + KTP wajib diunggah.").max(1_800_000),
+});
+
+/**
+ * Self-service: an existing buyer applies to become a seller.
+ *
+ * This is the missing door the profile page never had — before, the only paths
+ * to selling were registering a brand-new account or asking an admin, so a
+ * signed-in buyer was stuck at "Hubungi admin". Here the account keeps its
+ * history and gains a SellerProfile in `pending`:
+ *
+ *   - role flips to `seller` immediately (so the dashboard is reachable), but
+ *     `kycStatus` is `pending` and the profile's `kycVerified` is false, and the
+ *     seller can already see the "KYC menunggu" gate — no listing, no online
+ *     toggle until an admin approves. That matches `registerSellerAction`, which
+ *     also creates a pending profile and waits for review.
+ *   - documents are validated the same way KYC does (real image bytes, 1MB cap),
+ *     because `approveKyc` refuses doc-less approvals.
+ *   - an existing profile (e.g. re-applying after a demote) is reused rather than
+ *     duplicated — `SellerProfile.userId` is unique.
+ */
+export async function applyAsSeller(rawInput: unknown): Promise<SellerActionResult> {
+  const user = await requireUser();
+
+  const parsed = applySellerSchema.safeParse(rawInput);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      code: "STATE",
+      error: parsed.error.issues[0]?.message ?? "Input tidak valid.",
+    };
+  }
+  if (user.role === "seller") {
+    return { ok: false, code: "STATE", error: "Akun ini sudah penjual." };
+  }
+  if (user.role === "admin") {
+    return { ok: false, code: "FORBIDDEN", error: "Admin memakai aktivasi dari Super Dashboard." };
+  }
+
+  const { storeName, fullName, idCardImage, selfieImage } = parsed.data;
+  if (!validImageDataUrl(idCardImage, 1_000_000) || !validImageDataUrl(selfieImage, 1_000_000)) {
+    return {
+      ok: false,
+      code: "STATE",
+      error: "Dokumen harus gambar PNG/JPEG/GIF/WebP, maksimal 1MB per file.",
+    };
+  }
+
+  const account = await db.user.findUnique({
+    where: { id: user.id },
+    select: { username: true, kycStatus: true, sellerProfile: { select: { id: true } } },
+  });
+  if (!account) return { ok: false, code: "FORBIDDEN", error: "Akun tidak ditemukan." };
+  if (account.kycStatus === "pending") {
+    return { ok: false, code: "STATE", error: "Pengajuanmu masih menunggu review admin." };
+  }
+
+  const handleBase = account.username.toLowerCase().replace(/[^a-z0-9]/g, "") || "toko";
+  let handle = handleBase;
+  let suffix = 0;
+  while (await db.sellerProfile.findUnique({ where: { handle }, select: { id: true } })) {
+    suffix += 1;
+    handle = `${handleBase}${suffix}`;
+  }
+
+  await db.$transaction(async (tx) => {
+    const updated = await tx.user.updateMany({
+      where: { id: user.id, role: "buyer" },
+      data: { role: "seller", kycStatus: "pending" },
+    });
+    if (updated.count === 0) throw new Error("stale");
+    if (account.sellerProfile) {
+      await tx.sellerProfile.update({
+        where: { id: account.sellerProfile.id },
+        data: {
+          storeName,
+          fullName,
+          idCardImage,
+          selfieImage,
+          kycVerified: false,
+          kycRejectReason: null,
+          isOnline: false,
+        },
+      });
+    } else {
+      await tx.sellerProfile.create({
+        data: {
+          userId: user.id,
+          storeName,
+          handle,
+          tier: 1,
+          city: "-",
+          bio: "Toko baru, menunggu verifikasi KYC.",
+          fullName,
+          idCardImage,
+          selfieImage,
+        },
+      });
+    }
+    await tx.adminAuditLog.create({
+      data: {
+        actionType: "kyc.apply",
+        targetResource: "users",
+        targetId: user.id,
+        diffPayload: `{ role: "buyer → seller", kyc_status: "none → pending", username: "${account.username}", store: "${storeName}" }`,
+        ipAddress: "0.0.0.0",
+        actor: user.email,
+      },
+    });
+  });
+
+  await notifyMany(await adminUserIds(), {
+    kind: "kyc_submitted",
+    title: `Pengajuan penjual baru dari ${account.username}`,
+    body: `Toko "${storeName}" mengajukan diri sebagai penjual dan menunggu verifikasi identitas.`,
+    link: "/admin?tab=kyc",
+  });
+  revalidatePath("/profil");
+  revalidatePath("/dashboard/penjual");
+  revalidatePath("/admin");
   return { ok: true };
 }
 

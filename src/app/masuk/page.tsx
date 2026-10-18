@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getSiteLogo } from "@/lib/site-logo";
 import { AuthPanel } from "@/components/auth/auth-shell";
 
 export const metadata: Metadata = {
@@ -8,12 +9,13 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const logo = await getSiteLogo();
   return (
     <div className="shell pb-24 pt-24 md:pt-28">
       <div className="bezel-shell p-1.5">
         <div className="bezel-core overflow-hidden">
-          <AuthPanel mode="login" />
+          <AuthPanel mode="login" logo={logo} />
         </div>
       </div>
     </div>

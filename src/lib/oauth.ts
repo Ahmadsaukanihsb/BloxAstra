@@ -1,6 +1,10 @@
 import "server-only";
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { sealSecret } from "@/lib/session";
+import { validImageDataUrl } from "@/lib/images";
+
+/** Cap for a downloaded provider avatar — same budget as custom uploads. */
+const OAUTH_AVATAR_MAX_BYTES = 500_000;
 
 /**
  * Minimal OAuth 2.0 Authorization Code + PKCE helpers for Discord and Google.
@@ -190,6 +194,48 @@ export function deriveUsername(seed: string, taken: (candidate: string) => Promi
 export function sealOAuthState(payload: string): string {
   const sig = createHmac("sha256", sealSecret()).update(payload).digest("hex");
   return `${payload}.${sig}`;
+}
+
+/**
+ * Download a provider avatar (Google/Discord picture URL) as a data URL for
+ * `User.avatarImage`. Never throws — returns null when the download fails,
+ * is too large, or is not a genuine image. Login must never depend on a
+ * third-party CDN being reachable.
+ *
+ * Google serves size-tunable pictures (`...=s96-c`); requesting the small
+ * variant keeps the DB row lean. Other hosts are taken as-is and still pass
+ * the same magic-bytes + size gate every upload goes through.
+ */
+export async function fetchProviderAvatar(remoteUrl: string | null): Promise<string | null> {
+  if (!remoteUrl || !remoteUrl.startsWith("https://")) return null;
+  // Google picture URLs end in `=sNN-c` (pixel size). Ask for 192px: crisp
+  // on retina, still far under the 500KB budget.
+  const sized = remoteUrl.replace(/=s\d+(-c)?$/, "=s192-c");
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  try {
+    const response = await fetch(sized, { signal: controller.signal, cache: "no-store" });
+    if (!response.ok) return null;
+    const contentType = response.headers.get("content-type") ?? "";
+    if (!contentType.startsWith("image/")) return null;
+    const buffer = Buffer.from(await response.arrayBuffer());
+    if (buffer.length === 0 || buffer.length > OAUTH_AVATAR_MAX_BYTES) return null;
+    const subtype = contentType.split("/")[1]?.split(";")[0]?.trim().toLowerCase();
+    const prefix =
+      subtype === "png"
+        ? "data:image/png;base64,"
+        : subtype === "gif"
+          ? "data:image/gif;base64,"
+          : subtype === "webp"
+            ? "data:image/webp;base64,"
+            : "data:image/jpeg;base64,";
+    const dataUrl = `${prefix}${buffer.toString("base64")}`;
+    return validImageDataUrl(dataUrl, OAUTH_AVATAR_MAX_BYTES) ? dataUrl : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /** Returns the payload, or null when the seal is missing/forged. */

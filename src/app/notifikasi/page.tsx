@@ -8,6 +8,7 @@ import { formatDateTime } from "@/lib/format";
 import { cx } from "@/lib/cx";
 import { Skeleton, EmptyState } from "@/components/ui/feedback";
 import { MarkReadButton } from "@/components/site/mark-read-button";
+import { LiveInboxRefresh } from "@/components/site/live-inbox-refresh";
 import { IconBell } from "@/components/ui/icons";
 
 export const metadata: Metadata = {
@@ -56,7 +57,10 @@ async function NotificationsContent() {
                 : "Semua sudah dibaca. Aktivitas baru soal pembayaran, pesanan, dan dompet masuk ke sini."}
             </p>
           </div>
-          <MarkReadButton disabled={unread === 0} />
+          <div className="flex items-center gap-3">
+            <LiveInboxRefresh />
+            <MarkReadButton disabled={unread === 0} />
+          </div>
         </div>
 
         {items.length === 0 ? (

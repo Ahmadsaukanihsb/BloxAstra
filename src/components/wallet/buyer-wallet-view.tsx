@@ -1,38 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { formatIDR, formatDateTime } from "@/lib/format";
+import type { OpenTopUp } from "@/lib/topup";
 import type { WalletEntryView } from "@/lib/wallet";
-import { reconcileTopUp } from "@/app/actions/topup";
 import { cx } from "@/lib/cx";
 import { Badge } from "@/components/ui/badge";
-import { Button, ButtonLink } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button";
 import { EmptyState, Notice } from "@/components/ui/feedback";
 import { TopUpPanel } from "@/components/wallet/topup-panel";
+import { TopUpQueue } from "@/components/wallet/topup-queue";
 import {
   IconAlert,
   IconArrowRight,
   IconCheckCircle,
-  IconClock,
   IconHexCoin,
   IconInfo,
   IconReceipt,
-  IconRefresh,
   IconTrendUp,
   IconWallet,
 } from "@/components/ui/icons";
-
-export interface BuyerPendingTopUp {
-  code: string;
-  amount: number;
-  fee: number;
-  paymentMethod: string;
-  checkoutUrl: string | null;
-  expiresAt: string | null;
-}
 
 export interface BuyerWalletStats {
   totalTopUp: number;
@@ -40,90 +29,11 @@ export interface BuyerWalletStats {
   totalRefund: number;
 }
 
-const METHOD_LABEL: Record<string, string> = {
-  qris: "QRIS",
-  va: "Virtual Account",
-  ewallet: "E-Wallet",
-};
-
 const TYPE_META: Record<string, { label: string; tone: "astra" | "danger" | "info" | "robux" }> = {
   topup: { label: "Top-up masuk", tone: "astra" },
   purchase: { label: "Belanja saldo", tone: "info" },
   refund: { label: "Refund masuk", tone: "robux" },
 };
-
-function PendingTopUpRow({ item }: { item: BuyerPendingTopUp }) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
-
-  function checkStatus() {
-    setMessage(null);
-    startTransition(async () => {
-      const result = await reconcileTopUp(item.code);
-      if (!result.ok) {
-        setMessage({ ok: false, text: result.error });
-        return;
-      }
-      if (result.credited) {
-        setMessage({ ok: true, text: "Saldo masuk. Mutasi diperbarui." });
-        router.refresh();
-      } else {
-        setMessage({ ok: false, text: "Belum ada pembayaran masuk. Selesaikan pembayaran dulu." });
-      }
-    });
-  }
-
-  return (
-    <div className="flex flex-col gap-3 rounded-well bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-col gap-1">
-          <span className="flex flex-wrap items-center gap-2">
-            <span className="num text-[13px] font-extrabold text-ink">{item.code}</span>
-            <Badge tone="warn">menunggu bayar</Badge>
-          </span>
-          <span className="text-[11px] text-ink-mute">
-            {METHOD_LABEL[item.paymentMethod] ?? item.paymentMethod}
-            {item.expiresAt ? ` · berlaku hingga ${formatDateTime(item.expiresAt)}` : ""}
-          </span>
-        </div>
-        <span className="num text-[15px] font-extrabold text-astra-ink">
-          {formatIDR(item.amount + item.fee)}
-        </span>
-      </div>
-
-      {message ? (
-        <Notice
-          tone={message.ok ? "astra" : "danger"}
-          icon={message.ok ? <IconCheckCircle size={15} /> : <IconAlert size={15} />}
-        >
-          {message.text}
-        </Notice>
-      ) : null}
-
-      <div className="flex flex-wrap items-center gap-2">
-        {item.checkoutUrl ? (
-          <Button
-            size="sm"
-            onClick={() => window.location.assign(item.checkoutUrl as string)}
-            trailingIcon={<IconArrowRight size={14} />}
-          >
-            Lanjutkan bayar
-          </Button>
-        ) : null}
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={isPending}
-          onClick={checkStatus}
-          leadingIcon={<IconRefresh size={14} />}
-        >
-          {isPending ? "Mengecek…" : "Cek status"}
-        </Button>
-      </div>
-    </div>
-  );
-}
 
 /**
  * Dompet khusus buyer: saldo untuk belanja, top-up, tagihan yang belum
@@ -132,13 +42,13 @@ function PendingTopUpRow({ item }: { item: BuyerPendingTopUp }) {
 export function BuyerWalletView({
   balanceAvailable,
   stats,
-  pendingTopUps,
+  openTopUps,
   entries,
   methodFees,
 }: {
   balanceAvailable: number;
   stats: BuyerWalletStats;
-  pendingTopUps: BuyerPendingTopUp[];
+  openTopUps: OpenTopUp[];
   entries: WalletEntryView[];
   methodFees: Record<"qris" | "va" | "ewallet", number>;
 }) {
@@ -252,21 +162,7 @@ export function BuyerWalletView({
           </div>
         </div>
 
-        {pendingTopUps.length > 0 ? (
-          <div className="bezel-shell p-1.5">
-            <div className="bezel-core flex flex-col gap-4 p-5">
-              <span className="flex items-center gap-2.5 text-[13px] font-bold text-ink">
-                <IconClock size={16} className="text-astra-ink" />
-                Menunggu pembayaran ({pendingTopUps.length})
-              </span>
-              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                {pendingTopUps.map((item) => (
-                  <PendingTopUpRow key={item.code} item={item} />
-                ))}
-              </div>
-            </div>
-          </div>
-        ) : null}
+        <TopUpQueue items={openTopUps} />
 
         <div id="topup" className="bezel-shell scroll-mt-28 p-1.5">
           <div className="bezel-core p-5">

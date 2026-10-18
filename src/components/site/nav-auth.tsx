@@ -25,5 +25,13 @@ export async function NavAuth() {
     );
   }
 
-  return <UserDropdown username={user.username} role={user.role} />;
+  return (
+    <UserDropdown
+      username={user.username}
+      role={user.role}
+      hasAvatar={user.hasAvatar}
+      avatarVersion={user.avatarVersion}
+      canApplyAsSeller={user.canApplyAsSeller}
+    />
+  );
 }

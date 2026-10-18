@@ -14,6 +14,11 @@ const tones: Record<Tone, string> = {
   success: "bg-success/10 text-success outline-success/25",
 };
 
+// Labels are angular chips, not pills. A pill is the default shape for a
+// generated badge and it also collides with the two shapes that DO mean
+// something here (controls and the round avatars), so the tight `tag` radius
+// keeps "this is a label" distinct from "this is pressable".
+
 export function Badge({
   children,
   tone = "neutral",
@@ -28,7 +33,7 @@ export function Badge({
   return (
     <span
       className={cx(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold outline outline-1 -outline-offset-1",
+        "inline-flex items-center gap-1.5 rounded-tag px-2 py-1 tag outline outline-1 -outline-offset-1",
         tones[tone],
         className,
       )}
@@ -60,7 +65,7 @@ export function LivePill({
   return (
     <span
       className={cx(
-        "inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[11px] font-bold",
+        "inline-flex items-center gap-2 rounded-tag px-2 py-1 tag outline outline-1 -outline-offset-1",
         tones[tone === "neutral" ? "muted" : tone],
         className,
       )}
@@ -82,7 +87,7 @@ export function TierBadge({ tier }: { tier: 1 | 2 | 3 }) {
   }[tier];
 
   return (
-    <Badge tone={map.tone} className="num uppercase tracking-wider">
+    <Badge tone={map.tone} className="num">
       Tier {tier} · {map.label}
     </Badge>
   );

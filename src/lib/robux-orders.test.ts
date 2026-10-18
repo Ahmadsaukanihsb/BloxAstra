@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_ORDER_RATES,
+  ROBUX_AMOUNT_PARAM,
+  clampRobuxAmount,
   gamepassQuote,
+  gamepassRate,
   premiumSubtotal,
+  robuxOrderConfig,
+  robuxOrderHref,
   robuxOrderPrice,
   robuxOrderTotal,
   type RobuxOrderConfig,
@@ -30,6 +36,44 @@ describe("robuxOrderPrice / robuxOrderTotal", () => {
 
   it("adds the flat admin fee on top", () => {
     expect(robuxOrderTotal(CONFIG, 500)).toBe(80564);
+  });
+});
+
+describe("clampRobuxAmount / robuxOrderHref", () => {
+  it("snaps a nominal onto the flow's step and keeps it in range", () => {
+    expect(clampRobuxAmount(CONFIG, 1700)).toBe(1700);
+    expect(clampRobuxAmount(CONFIG, "1700")).toBe(1700);
+    expect(clampRobuxAmount(CONFIG, 1234)).toBe(1230);
+    expect(clampRobuxAmount(CONFIG, 50)).toBe(100);
+    expect(clampRobuxAmount(CONFIG, 999_999)).toBe(5_000);
+  });
+
+  it("falls back to the flow default for junk instead of zero", () => {
+    for (const junk of [undefined, null, "", "abc", 0, -20, Number.NaN]) {
+      expect(clampRobuxAmount(CONFIG, junk)).toBe(CONFIG.initialRobux);
+    }
+  });
+
+  it("takes the first value when a query key repeats", () => {
+    expect(clampRobuxAmount(CONFIG, ["800", "100"])).toBe(800);
+  });
+
+  it("carries the chosen nominal into the buy link", () => {
+    expect(robuxOrderHref(CONFIG, 1700)).toBe(
+      `${CONFIG.href}?${ROBUX_AMOUNT_PARAM}=1700`,
+    );
+    // No nominal asked for: a clean link, not a default stuffed into the URL.
+    expect(robuxOrderHref(CONFIG)).toBe(CONFIG.href);
+    // Out-of-range values never reach the link unclamped.
+    expect(robuxOrderHref(CONFIG, 12)).toBe(`${CONFIG.href}?${ROBUX_AMOUNT_PARAM}=100`);
+  });
+
+  it("round-trips: a link's nominal comes back the same on the order page", () => {
+    for (const amount of [100, 500, 800, 1700, 4500]) {
+      const href = robuxOrderHref(CONFIG, amount);
+      const params = new URLSearchParams(href.slice(href.indexOf("?")));
+      expect(clampRobuxAmount(CONFIG, params.get(ROBUX_AMOUNT_PARAM))).toBe(amount);
+    }
   });
 });
 
@@ -63,6 +107,43 @@ describe("gamepassQuote", () => {
       expect(gamepassQuote("cover", input).netRobux).toBe(0);
       expect(gamepassQuote("no_cover", input).netRobux).toBe(0);
     }
+  });
+});
+
+describe("gamepass rates per tax mode", () => {
+  it("picks the rate that matches who swallows the 30% cut", () => {
+    const rates = { ...DEFAULT_ORDER_RATES, gamepassCover: 100, gamepassNoCover: 70 };
+    expect(gamepassRate(rates, "cover")).toBe(100);
+    expect(gamepassRate(rates, "no_cover")).toBe(70);
+    expect(robuxOrderConfig("gamepass", rates, "cover").rate).toBe(100);
+    expect(robuxOrderConfig("gamepass", rates, "no_cover").rate).toBe(70);
+  });
+
+  it("defaults to the cover rate for lobby quotes", () => {
+    expect(robuxOrderConfig("gamepass").rate).toBe(DEFAULT_ORDER_RATES.gamepassCover);
+  });
+
+  it("keeps the other flows on their own single rate", () => {
+    const rates = { ...DEFAULT_ORDER_RATES, username: 123 };
+    expect(robuxOrderConfig("username", rates, "no_cover").rate).toBe(123);
+  });
+
+  it("ships a no-cover default 30% under the cover rate", () => {
+    expect(DEFAULT_ORDER_RATES.gamepassNoCover).toBeCloseTo(
+      DEFAULT_ORDER_RATES.gamepassCover * 0.7,
+      2,
+    );
+  });
+
+  it("prices the same net Robux the same under both default rates", () => {
+    const cover = robuxOrderConfig("gamepass", DEFAULT_ORDER_RATES, "cover");
+    const noCover = robuxOrderConfig("gamepass", DEFAULT_ORDER_RATES, "no_cover");
+    const coverQuote = gamepassQuote("cover", 1_000);
+    const noCoverQuote = gamepassQuote("no_cover", 1_429);
+    expect(coverQuote.netRobux).toBe(noCoverQuote.netRobux);
+    const coverPrice = robuxOrderPrice(cover, coverQuote.billableRobux);
+    const noCoverPrice = robuxOrderPrice(noCover, noCoverQuote.billableRobux);
+    expect(Math.abs(coverPrice - noCoverPrice)).toBeLessThan(100);
   });
 });
 

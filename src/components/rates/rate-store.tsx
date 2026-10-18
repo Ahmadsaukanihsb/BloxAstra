@@ -13,6 +13,7 @@ import { DEFAULT_RATE_CARD, repriceCatalog, type RateCard } from "@/lib/robux-pr
 import {
   DEFAULT_ORDER_RATES,
   robuxOrderConfig,
+  type GamepassTaxMode,
   type RobuxOrderConfig,
   type RobuxOrderKind,
   type RobuxOrderRates,
@@ -69,7 +70,8 @@ function sanitize(value: unknown): AdminRates | null {
     !isNonNeg(card.volume.at10000) ||
     !isNum(orders.username) ||
     !isNum(orders.login) ||
-    !isNum(orders.gamepass) ||
+    !isNum(orders.gamepassCover) ||
+    !isNum(orders.gamepassNoCover) ||
     !isNum(orders.adminFee)
   ) {
     return null;
@@ -87,7 +89,8 @@ function sanitize(value: unknown): AdminRates | null {
     orders: {
       username: orders.username,
       login: orders.login,
-      gamepass: orders.gamepass,
+      gamepassCover: orders.gamepassCover,
+      gamepassNoCover: orders.gamepassNoCover,
       premium: orders.premium,
       adminFee: orders.adminFee,
     },
@@ -101,7 +104,11 @@ export function ratesEqual(a: AdminRates, b: AdminRates): boolean {
 /* ─── tiny localStorage-backed store (no effects, no cascading renders) ─── */
 
 let cache: AdminRates = DEFAULT_RATES;
-let cacheRaw: string | null = null;
+// `undefined` means "not read yet". It must not start as `null`: null is also
+// the raw value when the admin has no localStorage override, and treating the
+// initial state as already-cached makes the store serve DEFAULT_RATES forever
+// instead of the server-seeded card — buyers would silently see default rates.
+let cacheRaw: string | null | undefined = undefined;
 const listeners = new Set<() => void>();
 
 function readRaw(): string | null {
@@ -221,10 +228,19 @@ export function useOrderRates(): RobuxOrderRates {
   return useRateStore().rates.orders;
 }
 
-/** Flow config (rate + admin fee) with the applied card baked in. */
-export function useRobuxOrder(kind: RobuxOrderKind): RobuxOrderConfig {
+/**
+ * Flow config (rate + admin fee) with the applied card baked in. The gamepass
+ * flow passes its tax mode because each mode has its own rate.
+ */
+export function useRobuxOrder(
+  kind: RobuxOrderKind,
+  taxMode: GamepassTaxMode = "cover",
+): RobuxOrderConfig {
   const { rates } = useRateStore();
-  return useMemo(() => robuxOrderConfig(kind, rates.orders), [kind, rates.orders]);
+  return useMemo(
+    () => robuxOrderConfig(kind, rates.orders, taxMode),
+    [kind, rates.orders, taxMode],
+  );
 }
 
 /** Catalog with robux listings re-quoted under the applied card. */

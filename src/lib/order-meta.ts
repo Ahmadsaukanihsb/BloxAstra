@@ -78,6 +78,33 @@ export const ESCROW_ORDER_STATES: OrderState[] = ["paid", "processing", "shipped
 export const REFUNDED_ORDER_STATES: OrderState[] = ["cancelled", "refunded"];
 
 /**
+ * Dispute lifecycle vocabulary.
+ *
+ * A dispute is created as `open`, and the seller's first reply moves it to
+ * `under_review`. Both mean "waiting for an admin decision" — the admin queue,
+ * the arbitration action, the seller reply lock, and the buyer room all read
+ * this one list. They used to restate the literals, which is how a replied
+ * dispute ended up missing from the arbitration queue while its escrow stayed
+ * frozen: the queue asked for `open`, and the panel's action refused anything
+ * that was not `open`, so nobody could decide the case.
+ */
+export const DISPUTE_OPEN_STATE = "open";
+export const DISPUTE_SELLER_REPLIED_STATE = "under_review";
+
+/** Still awaiting a decision — the states an admin may act on. */
+export const DECIDABLE_DISPUTE_STATES = [
+  DISPUTE_OPEN_STATE,
+  DISPUTE_SELLER_REPLIED_STATE,
+] as const;
+
+/** Decided by an admin; the case is closed and money has moved. */
+export const RESOLVED_DISPUTE_STATES = ["resolved_refund", "resolved_release"] as const;
+
+export function isDecidableDispute(status: string): boolean {
+  return (DECIDABLE_DISPUTE_STATES as readonly string[]).includes(status);
+}
+
+/**
  * Delivery-speed threshold behind the "Kilat 10 Menit" badge and the express
  * filter. Single source so catalog, cards, and rows never drift apart.
  */

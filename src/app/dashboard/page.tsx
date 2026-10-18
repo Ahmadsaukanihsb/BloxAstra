@@ -7,7 +7,7 @@ export default async function DashboardPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/masuk");
 
-  if (user.role === "admin") redirect("/dashboard/admin");
+  if (user.role === "admin") redirect("/admin");
   if (user.role === "seller") redirect("/dashboard/penjual");
   // Buyer has no dashboard — orders are home.
   redirect("/pesanan");

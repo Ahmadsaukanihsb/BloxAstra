@@ -25,7 +25,7 @@ export interface WalletView {
 const DEFAULT_BANKS = ["BCA", "BNI", "Mandiri", "BRI", "CIMB Niaga", "GoPay", "OVO", "DANA"];
 const DEFAULT_WITHDRAWAL = { minAmount: 20_000, fee: 2_500 };
 
-async function getBanks(): Promise<string[]> {
+export async function getBanks(): Promise<string[]> {
   const setting = await db.setting.findUnique({ where: { key: "banks" } });
   if (!setting) return DEFAULT_BANKS;
   try {

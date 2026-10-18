@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cx } from "@/lib/cx";
 import { formatIDR, formatNumber } from "@/lib/format";
-import { ROBUX_ORDERS, robuxOrderPrice } from "@/lib/robux-orders";
+import { ROBUX_ORDERS, clampRobuxAmount, robuxOrderPrice } from "@/lib/robux-orders";
 import { useRobuxOrder } from "@/components/rates/rate-store";
 import { createRobuxOrder } from "@/app/actions/orders";
 import {
@@ -49,13 +49,19 @@ const USERNAME_RE = /^[A-Za-z0-9_]{3,20}$/;
 export function RobuxUsernameOrder({
   isLoggedIn,
   walletBalance = 0,
+  initialRobux = baseConfig.initialRobux,
 }: {
   isLoggedIn: boolean;
   walletBalance?: number;
+  /** Nominal the buyer already picked in the lobby's quick-buy counter. */
+  initialRobux?: number;
 }) {
   const router = useRouter();
-  const [robux, setRobux] = useState(500);
-  const [inputValue, setInputValue] = useState("500");
+  // Snapped onto this flow's grid so the number in the box is always one a
+  // slider value could actually hold.
+  const startRobux = clampRobuxAmount(baseConfig, initialRobux);
+  const [robux, setRobux] = useState(startRobux);
+  const [inputValue, setInputValue] = useState(String(startRobux));
   const [username, setUsername] = useState("");
   const [verifiedName, setVerifiedName] = useState<string | null>(null);
   const [verifiedAvatar, setVerifiedAvatar] = useState<string | null>(null);
@@ -181,7 +187,7 @@ export function RobuxUsernameOrder({
                   Via Username: Robux langsung masuk ke akun kamu tanpa pending.
                 </span>
               </div>
-              <span className="shrink-0 rounded-full bg-success px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-xs">
+              <span className="shrink-0 rounded-full bg-success px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-on-bright shadow-xs">
                 Langsung Masuk
               </span>
             </div>
@@ -194,7 +200,7 @@ export function RobuxUsernameOrder({
               <span className="num font-display text-[2.75rem] font-extrabold leading-none tracking-tight text-ink">
                 {formatNumber(robux)}
               </span>
-              <span className="num rounded-full border border-astra/25 bg-astra/[0.06] px-3.5 py-1 text-[14px] font-extrabold text-astra">
+              <span className="num rounded-full border border-astra/25 bg-astra/[0.06] px-3.5 py-1 text-[14px] font-extrabold text-astra-ink">
                 = {formatIDR(price)}
               </span>
             </div>
@@ -276,7 +282,7 @@ export function RobuxUsernameOrder({
                     <span
                       className={cx(
                         "num text-[17px] font-extrabold",
-                        isSelected ? "text-astra" : "text-ink",
+                        isSelected ? "text-astra-ink" : "text-ink",
                       )}
                     >
                       {formatNumber(pack.robux)}
@@ -332,7 +338,7 @@ export function RobuxUsernameOrder({
                   <h3 className="text-[13px] font-extrabold text-warn">
                     Akun Roblox Penerima Wajib Menyalakan 2-Step Verification
                   </h3>
-                  <span className="rounded bg-warn px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">
+                  <span className="rounded bg-warn px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-on-bright">
                     Wajib
                   </span>
                 </div>
@@ -364,7 +370,7 @@ export function RobuxUsernameOrder({
                 href="https://www.roblox.com/my/account#!/security"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-control bg-robux px-4 py-2.5 text-[12px] font-bold text-white shadow-sm transition-[transform,translate,scale,rotate,background-color] hover:bg-warn active:scale-[0.98]"
+                className="inline-flex items-center gap-2 rounded-control bg-robux px-4 py-2.5 text-[12px] font-bold text-on-bright shadow-sm transition-[transform,translate,scale,rotate,background-color] hover:bg-warn active:scale-[0.98]"
               >
                 Buka Pengaturan Keamanan Roblox
                 <IconGlobe size={14} />
@@ -387,7 +393,7 @@ export function RobuxUsernameOrder({
                       className={cx(
                         "rounded-well border-2 py-3.5 text-center text-[13px] font-bold transition-all duration-200",
                         isSelected
-                          ? "border-astra bg-astra/[0.06] text-astra shadow-xs"
+                          ? "border-astra bg-astra/[0.06] text-astra-ink shadow-xs"
                           : "border-line bg-paper text-ink-dim hover:border-line-strong",
                       )}
                     >
@@ -450,7 +456,7 @@ export function RobuxUsernameOrder({
                     className={cx(
                       "flex items-center justify-center gap-2 rounded-well border-2 px-3 py-3.5 text-[12px] font-bold transition-all duration-200",
                       isSelected
-                        ? "border-astra bg-paper text-astra"
+                        ? "border-astra bg-paper text-astra-ink"
                         : "border-line bg-paper text-ink-dim hover:border-line-strong",
                     )}
                   >
@@ -470,7 +476,7 @@ export function RobuxUsernameOrder({
                   className="rounded-well border border-success/25 bg-success/[0.06] p-4 text-success"
                 >
                   <div className="flex items-start gap-3">
-                    <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-success text-white">
+                    <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-success text-on-bright">
                       <IconCheck size={12} />
                     </span>
                     <div className="flex flex-col gap-1">
@@ -490,7 +496,7 @@ export function RobuxUsernameOrder({
                   className="rounded-well border border-info/25 bg-info/[0.06] p-4 text-info"
                 >
                   <div className="flex items-start gap-3">
-                    <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-info text-white">
+                    <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-info text-on-bright">
                       <IconCheck size={12} />
                     </span>
                     <div className="flex flex-col gap-1">
@@ -510,7 +516,7 @@ export function RobuxUsernameOrder({
                   className="rounded-well border border-info/25 bg-info/[0.06] p-4 text-info"
                 >
                   <div className="flex items-start gap-3">
-                    <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-info text-white">
+                    <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-info text-on-bright">
                       <IconCheck size={12} />
                     </span>
                     <div className="flex flex-col gap-1">
@@ -561,7 +567,7 @@ export function RobuxUsernameOrder({
                     }}
                   />
                 ) : (
-                  <span className="grid size-11 shrink-0 place-items-center rounded-well bg-astra/10 text-[12px] font-black text-astra">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-well bg-astra/10 text-[12px] font-black text-astra-ink">
                     RBX
                   </span>
                 )}
@@ -624,7 +630,7 @@ export function RobuxUsernameOrder({
                     {formatIDR(totalPrice)}
                   </div>
                 ) : null}
-                <div className="num mt-1 text-[1.85rem] font-black tracking-tight text-astra">
+                <div className="num mt-1 text-[1.85rem] font-black tracking-tight text-astra-ink">
                   {formatIDR(finalPrice)}
                 </div>
                 {promoCut ? (

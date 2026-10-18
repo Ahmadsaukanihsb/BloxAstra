@@ -2,8 +2,9 @@ import { ProductCard } from "@/components/product/product-card";
 import { SectionHeading } from "@/components/ui/surface";
 import { Reveal, RevealGroup, RevealItem } from "@/components/ui/reveal";
 import { ButtonLink } from "@/components/ui/button";
-import { IconArrowRight } from "@/components/ui/icons";
-import type { Product, Seller } from "@/lib/types";
+import { IconArrowRight, IconStar } from "@/components/ui/icons";
+import { ShelfEmpty } from "@/components/landing/shelf-empty";
+import type { LandingSignals, Product, Seller } from "@/lib/types";
 
 /**
  * A single calm grid. Leaderboards and vendor lists live on the catalog and
@@ -14,13 +15,32 @@ import type { Product, Seller } from "@/lib/types";
 export function FeaturedListings({
   products,
   sellers,
+  signals,
 }: {
   products: Product[];
   sellers: Record<string, Seller>;
+  signals?: LandingSignals;
 }) {
   const featured = products.filter((product) => product.featured).slice(0, 4);
 
-  if (!featured.length) return null;
+  // The closing shelf of the page. With nothing curated it still closes the
+  // page: the proof line lands here a second time (see the note in page.tsx)
+  // and the seller door stays open, because an empty shelf here is a supply
+  // problem, not a demand one.
+  if (!featured.length) {
+    return (
+      <ShelfEmpty
+        title="Listing pilihan minggu ini"
+        description="Kurasi manual dari stok yang aktif — belum ada listing yang bisa dipilih minggu ini."
+        action={{ href: "/katalog", label: "Jelajahi katalog" }}
+        label="Rak pilihan masih kosong"
+        body="Top up Robux lewat username, login, atau gamepass tetap bisa dibeli sekarang — jalur itu tidak menunggu stok penjual."
+        icon={<IconStar size={17} />}
+        signals={signals}
+        secondary={{ href: "/dashboard/penjual", label: "Jual listing pertamamu" }}
+      />
+    );
+  }
 
   return (
     <section className="px-4 py-14 md:px-8 md:py-20">
@@ -28,7 +48,6 @@ export function FeaturedListings({
         <Reveal>
           <SectionHeading
             align="between"
-            eyebrow="Listing aktif"
             title="Listing pilihan minggu ini"
             description="Dipilih manual dari stok yang aktif, lengkap dengan status verifikasi penjual dan catatan waktu serah terima."
             action={

@@ -2,14 +2,24 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
-import { getNotifications, getUnreadCount, markAllRead, type NotificationItem } from "@/lib/notifications";
+import {
+  getInboxRevision,
+  getNotifications,
+  markAllRead,
+  type InboxRevision,
+  type NotificationItem,
+} from "@/lib/notifications";
 
-export async function fetchUnreadCount(): Promise<number> {
+/**
+ * Change signal for the bell. Cheap enough to poll every few seconds; the
+ * client only refetches the panel when this actually moves.
+ */
+export async function fetchInboxRevision(): Promise<InboxRevision> {
   try {
     const user = await requireUser();
-    return await getUnreadCount(user.id);
+    return await getInboxRevision(user.id);
   } catch {
-    return 0;
+    return { unread: 0, latestId: null };
   }
 }
 

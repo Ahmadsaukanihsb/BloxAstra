@@ -33,7 +33,8 @@ export async function getActiveOrderRates(): Promise<RobuxOrderRates> {
   return {
     username: row.orderUsername,
     login: row.orderLogin,
-    gamepass: row.orderGamepass,
+    gamepassCover: row.orderGamepassCover,
+    gamepassNoCover: row.orderGamepassNoCover,
     premium: row.orderPremium,
     adminFee: row.adminFee,
   };
@@ -55,7 +56,8 @@ export async function getActiveRates(): Promise<{ card: RateCard; orders: RobuxO
     orders: {
       username: row.orderUsername,
       login: row.orderLogin,
-      gamepass: row.orderGamepass,
+      gamepassCover: row.orderGamepassCover,
+      gamepassNoCover: row.orderGamepassNoCover,
       premium: row.orderPremium,
       adminFee: row.adminFee,
     },

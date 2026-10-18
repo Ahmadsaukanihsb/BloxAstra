@@ -8,8 +8,8 @@ import { cx } from "@/lib/cx";
 import { formatIDR } from "@/lib/format";
 import type { Category } from "@/lib/types";
 import { NotifBell } from "@/components/site/notif-bell";
+import { BrandMark } from "@/components/site/brand-mark";
 import {
-  AstraMark,
   RobuxGlyph,
   IconAlert,
   IconArrowRight,
@@ -57,12 +57,15 @@ export function TopNav({
   isLoggedIn,
   userRole,
   balance,
+  logo,
 }: {
   authSlot?: ReactNode;
   categories: Category[];
   isLoggedIn?: boolean;
   userRole?: "buyer" | "seller" | "admin" | null;
   balance?: number | null;
+  /** Custom logo data URL (null = built-in mark), read server-side in layout. */
+  logo?: string | null;
 }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -89,12 +92,15 @@ export function TopNav({
             onClick={closeMenus}
             className="group flex items-center gap-2.5 pr-1"
           >
-            <span className="text-astra-ink transition-transform duration-500 ease-[var(--ease-astra)] group-hover:rotate-[18deg]">
-              <AstraMark size={26} />
+            <span className="text-astra-ink">
+              <BrandMark logo={logo ?? null} size={26} />
             </span>
-            <span className="font-display text-[15px] font-extrabold tracking-tight text-ink">
-              Blox<span className="text-astra-ink">Astra</span>
-            </span>
+            {/* A custom logo is complete on its own; the text only backs the built-in mark. */}
+            {!logo ? (
+              <span className="font-display text-[15px] font-extrabold tracking-tight text-ink">
+                Blox<span className="text-astra-ink">Astra</span>
+              </span>
+            ) : null}
           </Link>
 
           <form
@@ -218,12 +224,12 @@ export function TopNav({
 
             {userRole === "admin" ? (
               <Link
-                href="/dashboard/admin"
+                href="/admin"
                 onClick={closeMenus}
                 className="hidden items-center gap-2 rounded-full px-3 py-2 text-[13px] font-bold text-ink-dim transition-colors duration-300 hover:bg-canvas hover:text-ink lg:flex"
               >
                 <IconCrown size={16} />
-                Super Dashboard
+                Panel Admin
               </Link>
             ) : userRole === "seller" ? (
               <Link
@@ -284,10 +290,12 @@ export function TopNav({
           >
             <div className="flex items-center justify-between px-4 pt-4">
               <span className="flex items-center gap-2.5 text-astra-ink">
-                <AstraMark size={26} />
-                <span className="font-display text-[15px] font-extrabold text-ink">
-                  Blox<span className="text-astra-ink">Astra</span>
-                </span>
+                <BrandMark logo={logo ?? null} size={26} />
+                {!logo ? (
+                  <span className="font-display text-[15px] font-extrabold text-ink">
+                    Blox<span className="text-astra-ink">Astra</span>
+                  </span>
+                ) : null}
               </span>
               <button
                 type="button"
@@ -319,7 +327,7 @@ export function TopNav({
                           ]
                         : []),
                       ...(userRole === "admin"
-                        ? [{ href: "/dashboard/admin", label: "Super Dashboard" }]
+                        ? [{ href: "/admin", label: "Panel Admin" }]
                         : []),
                     ]
                   : []),

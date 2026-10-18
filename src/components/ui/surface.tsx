@@ -43,14 +43,18 @@ export function Surface({
   );
 }
 
+/**
+ * Shelf header. There is deliberately no eyebrow label above the title: a
+ * tracked-out small-caps marker above every heading is the single most common
+ * generated-page tell, and on a storefront it told the reader nothing the
+ * title did not. The title states the shelf; the description explains it.
+ */
 export function SectionHeading({
-  eyebrow,
   title,
   description,
   align = "left",
   action,
 }: {
-  eyebrow?: string;
   title: ReactNode;
   description?: ReactNode;
   align?: "left" | "between";
@@ -63,16 +67,8 @@ export function SectionHeading({
         align === "between" && "md:flex-row md:items-end md:justify-between",
       )}
     >
-      <div className="flex max-w-2xl flex-col gap-3">
-        {eyebrow ? (
-          <span className="flex w-fit items-center gap-2 eyebrow text-astra-ink">
-            <span aria-hidden className="h-0.5 w-4 rounded-full bg-current" />
-            {eyebrow}
-          </span>
-        ) : null}
-        <h2 className="text-title font-extrabold   text-ink md:text-title">
-          {title}
-        </h2>
+      <div className="flex max-w-2xl flex-col gap-2.5">
+        <h2 className="text-title font-extrabold text-ink">{title}</h2>
         {description ? (
           <p className="max-w-[58ch] text-[13px] leading-relaxed text-ink-dim md:text-sm">
             {description}

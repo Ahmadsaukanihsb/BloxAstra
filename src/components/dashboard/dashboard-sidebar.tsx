@@ -4,22 +4,26 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType } from "react";
 import { cx } from "@/lib/cx";
-import { AstraMark } from "@/components/ui/icons";
+import { useGroupChatUnread } from "@/lib/chat-unread";
+import { BrandMark } from "@/components/site/brand-mark";
 import {
   IconCrown,
   IconChat,
-  IconCompass,
   IconHexCoin,
+  IconHome,
   IconLogout,
   IconPackage,
   IconReceipt,
-  IconShieldCheck,
+  IconSearch,
   IconSliders,
   IconStorefront,
   IconWallet,
 } from "@/components/ui/icons";
 
 type Role = "buyer" | "seller" | "admin";
+
+/** The one nav row that carries a live count (see useGroupChatUnread). */
+const GROUP_HREF = "/dashboard/penjual/grup";
 
 interface NavItem {
   href: string;
@@ -35,8 +39,10 @@ interface NavSection {
 function buildSections(role: Role): NavSection[] {
   const dash: NavItem[] = [];
   if (role === "admin") {
-    dash.push({ href: "/dashboard/admin", label: "Super dashboard", icon: IconCrown });
-    dash.push({ href: "/admin", label: "Panel admin", icon: IconShieldCheck });
+    dash.push({ href: "/admin", label: "Panel admin", icon: IconCrown });
+    // Sits with the panel rather than at the end: when a queue is showing less
+    // than it holds, this is where the admin is sent to find the rest.
+    dash.push({ href: "/admin/cari", label: "Pencarian", icon: IconSearch });
     dash.push({ href: "/dashboard/penjual", label: "Preview penjual", icon: IconStorefront });
   } else if (role === "seller") {
     // Ordered by how often a seller needs them: queue first, admin-ish last.
@@ -45,7 +51,7 @@ function buildSections(role: Role): NavSection[] {
     dash.push({ href: "/dashboard/penjual/listing", label: "Listing & stok", icon: IconPackage });
     dash.push({ href: "/dashboard/penjual/dompet", label: "Dompet & penarikan", icon: IconWallet });
     dash.push({ href: "/dashboard/penjual/order-robux", label: "Order rebutan", icon: IconHexCoin });
-    dash.push({ href: "/dashboard/penjual/grup", label: "Grup seller", icon: IconChat });
+    dash.push({ href: GROUP_HREF, label: "Grup seller", icon: IconChat });
     dash.push({ href: "/dashboard/penjual/pengaturan", label: "Pengaturan toko", icon: IconSliders });
   }
   // The rail is a seller/admin workspace. Buyer accounts are redirected out of
@@ -54,7 +60,7 @@ function buildSections(role: Role): NavSection[] {
     { title: "Dashboard", items: dash },
     {
       title: "Situs",
-      items: [{ href: "/katalog", label: "Lihat katalog", icon: IconCompass }],
+      items: [{ href: "/", label: "Beranda", icon: IconHome }],
     },
   ].filter((section) => section.items.length > 0);
 
@@ -81,7 +87,19 @@ const ROLE_LABEL: Record<Role, string> = {
   buyer: "pembeli",
 };
 
-export function DashboardSidebar({ username, role }: { username: string; role: Role }) {
+export function DashboardSidebar({
+  username,
+  role,
+  groupUnread = 0,
+  logo,
+}: {
+  username: string;
+  role: Role;
+  /** Unread group-room messages, rendered by the server so the first paint is right. */
+  groupUnread?: number;
+  /** Custom logo data URL (null = built-in mark), read server-side in layout. */
+  logo?: string | null;
+}) {
   const pathname = usePathname();
   const sections = buildSections(role);
   const initials = username.slice(0, 2).toUpperCase();
@@ -90,6 +108,8 @@ export function DashboardSidebar({ username, role }: { username: string; role: R
     pathname,
     flat.map((item) => item.href),
   );
+  const unread = useGroupChatUnread(groupUnread, role === "seller");
+  const unreadLabel = unread > 99 ? "99+" : String(unread);
 
   return (
     <>
@@ -100,11 +120,13 @@ export function DashboardSidebar({ username, role }: { username: string; role: R
           className="flex h-14 shrink-0 items-center gap-2.5 border-b border-line px-4"
         >
           <span className="text-astra-ink">
-            <AstraMark size={24} />
+            <BrandMark logo={logo ?? null} size={24} />
           </span>
-          <span className="font-display text-[15px] font-extrabold tracking-tight text-ink">
-            Blox<span className="text-astra-ink">Astra</span>
-          </span>
+          {!logo ? (
+            <span className="font-display text-[15px] font-extrabold tracking-tight text-ink">
+              Blox<span className="text-astra-ink">Astra</span>
+            </span>
+          ) : null}
           <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-ink-mute">
             dashboard
           </span>
@@ -132,6 +154,14 @@ export function DashboardSidebar({ username, role }: { username: string; role: R
                   >
                     <Icon size={17} className={active ? "text-astra-ink" : "text-ink-mute"} />
                     {item.label}
+                    {item.href === GROUP_HREF && unread > 0 ? (
+                      <span
+                        aria-label={`${unread} pesan grup belum dibaca`}
+                        className="num ml-auto grid min-w-5 place-items-center rounded-full bg-astra px-1.5 py-0.5 text-[10px] font-extrabold text-on-bright"
+                      >
+                        {unreadLabel}
+                      </span>
+                    ) : null}
                   </Link>
                 );
               })}
@@ -166,11 +196,13 @@ export function DashboardSidebar({ username, role }: { username: string; role: R
         <div className="flex h-14 items-center justify-between px-4">
           <Link href="/dashboard" className="flex items-center gap-2">
             <span className="text-astra-ink">
-              <AstraMark size={22} />
+              <BrandMark logo={logo ?? null} size={22} />
             </span>
-            <span className="font-display text-[14px] font-extrabold tracking-tight text-ink">
-              Blox<span className="text-astra-ink">Astra</span>
-            </span>
+            {!logo ? (
+              <span className="font-display text-[14px] font-extrabold tracking-tight text-ink">
+                Blox<span className="text-astra-ink">Astra</span>
+              </span>
+            ) : null}
             <span className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-ink-mute">
               dashboard
             </span>
@@ -202,7 +234,19 @@ export function DashboardSidebar({ username, role }: { username: string; role: R
                     : "bg-canvas text-ink-dim outline outline-1 -outline-offset-1 outline-line",
                 )}
               >
-                {item.label}
+                <span className="flex items-center gap-1.5">
+                  {item.label}
+                  {item.href === GROUP_HREF && unread > 0 ? (
+                    <span
+                      className={cx(
+                        "num rounded-full px-1.5 text-[10px] font-extrabold",
+                        active ? "bg-paper text-astra-ink" : "bg-astra text-on-bright",
+                      )}
+                    >
+                      {unreadLabel}
+                    </span>
+                  ) : null}
+                </span>
               </Link>
             );
           })}

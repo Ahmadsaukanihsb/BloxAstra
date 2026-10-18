@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { getSellerIdentity } from "@/lib/seller";
 import { getSellerWallet } from "@/lib/wallet";
+import { getOpenTopUps } from "@/lib/topup";
 import { getPaymentFees } from "@/lib/payments";
 import { Notice, Skeleton } from "@/components/ui/feedback";
 import { WalletView } from "@/components/wallet/wallet-view";
@@ -52,7 +53,11 @@ async function WalletContent() {
     );
   }
 
-  const [wallet, fees] = await Promise.all([getSellerWallet(user.id), getPaymentFees()]);
+  const [wallet, fees, openTopUps] = await Promise.all([
+    getSellerWallet(user.id),
+    getPaymentFees(),
+    getOpenTopUps(user.id),
+  ]);
 
   return (
     <div className="shell pb-20 pt-8 md:pt-10">
@@ -65,6 +70,7 @@ async function WalletContent() {
         <WalletView
           wallet={wallet}
           methodFees={{ qris: fees.qris, va: fees.va, ewallet: fees.ewallet }}
+          openTopUps={openTopUps}
           embedded
         />
       </SellerStack>

@@ -104,8 +104,15 @@ export async function requestWithdrawal(rawInput: unknown): Promise<WithdrawalRe
   for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
       const outcome = await db.$transaction(async (tx) => {
-        // Balance is re-read *inside* the transaction so two concurrent
-        // withdrawals can never both see the same pre-deduction balance.
+        // Serialize concurrent withdrawals for the same seller: touching the
+        // User row takes a row lock in Postgres, so the second withdrawal
+        // waits for the first to commit before reading the balance. A plain
+        // re-read inside the tx is NOT enough under read-committed — both
+        // tx could see the same pre-deduction balance and both succeed.
+        await tx.user.update({
+          where: { id: user.id },
+          data: { updatedAt: new Date() },
+        });
         const aggregate = await tx.walletLedger.aggregate({
           where: { userId: user.id },
           _sum: { amount: true },

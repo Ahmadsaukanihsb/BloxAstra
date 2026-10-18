@@ -1,14 +1,20 @@
 import "server-only";
 
 /**
- * WhatsApp OTP delivery. Production sends via Fonnte (`FONNTE_TOKEN`);
- * without a token the flow runs in sim mode — the code is returned to the
- * caller so demo/testing still works, and production refuses cleanly instead
- * of pretending a message was sent.
+ * WhatsApp OTP delivery.
+ *
+ * Sending goes to our OWN Baileys bot (the "bloxastra-wa" PM2 process), which
+ * listens on 127.0.0.1 and is authenticated with WA_BOT_TOKEN. We never talk
+ * to WhatsApp directly from the web app: the WA socket must stay out of the
+ * Next runtime, and a dead/absent socket must not hang a request.
+ *
+ * Sim mode (no WA_BOT_TOKEN) returns the code to the caller for local dev;
+ * production refuses it (see actions/whatsapp.ts) so it can never be a
+ * self-verify bypass.
  */
 
 export function isWhatsappSimMode(): boolean {
-  return !process.env.FONNTE_TOKEN;
+  return !process.env.WA_BOT_TOKEN;
 }
 
 /** Normalize Indonesian numbers to msisdn: 08xx / 8xx / 628xx → 628xx. Null when invalid. */
@@ -30,25 +36,41 @@ export async function sendWhatsappOtp(
     return { sent: true, sim: true };
   }
 
+  const base = process.env.WA_BOT_URL ?? "http://127.0.0.1:3140";
+  // Bounded wait: a missing/hung bot must not stall the server action. The
+  // token check in production has already refused the sim path, so a failure
+  // here is a real send failure the user can retry.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10_000);
   try {
-    const res = await fetch("https://api.fonnte.com/send", {
+    const res = await fetch(`${base}/send`, {
       method: "POST",
       headers: {
-        Authorization: process.env.FONNTE_TOKEN as string,
+        Authorization: `Bearer ${process.env.WA_BOT_TOKEN as string}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        target: phone,
+        to: phone,
         message: `Kode verifikasi Blox Astra: ${code}. Berlaku 5 menit. Jangan bagikan ke siapa pun.`,
       }),
+      signal: controller.signal,
     });
     if (!res.ok) {
       console.error("sendWhatsappOtp failed", res.status, await res.text().catch(() => ""));
-      return { sent: false, sim: false, error: "Gagal mengirim pesan WhatsApp." };
+      const notConnected = res.status === 502;
+      return {
+        sent: false,
+        sim: false,
+        error: notConnected
+          ? "Bot WhatsApp sedang tidak terhubung. Coba lagi sebentar lagi."
+          : "Gagal mengirim pesan WhatsApp.",
+      };
     }
     return { sent: true, sim: false };
   } catch (error) {
     console.error("sendWhatsappOtp failed", error);
     return { sent: false, sim: false, error: "Gagal menghubungi layanan WhatsApp." };
+  } finally {
+    clearTimeout(timer);
   }
 }

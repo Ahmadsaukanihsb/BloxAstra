@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatChatDay,
   formatClock,
   formatDateTime,
   formatDuration,
@@ -101,6 +102,24 @@ describe("slugify", () => {
     expect(slugify("Vault Nusantara!!")).toBe("vault-nusantara");
     expect(slugify("  A  B  ")).toBe("a-b");
     expect(slugify("robux_1000")).toBe("robux-1000");
+  });
+});
+
+describe("formatChatDay", () => {
+  // 2026-10-12 04:00 Jakarta = still the 11th in UTC, which is exactly the
+  // boundary bug a naive "compare UTC dates" implementation would hit.
+  const now = Date.UTC(2026, 9, 11, 21, 0, 0);
+
+  it("labels the same Jakarta day as today", () => {
+    expect(formatChatDay(new Date(Date.UTC(2026, 9, 11, 20, 30)).toISOString(), now)).toBe("Hari ini");
+  });
+
+  it("labels the previous Jakarta day as yesterday", () => {
+    expect(formatChatDay(new Date(Date.UTC(2026, 9, 10, 20, 0)).toISOString(), now)).toBe("Kemarin");
+  });
+
+  it("falls back to the full date for older messages", () => {
+    expect(formatChatDay(new Date(Date.UTC(2026, 9, 8, 10, 0)).toISOString(), now)).toContain("2026");
   });
 });
 

@@ -2,7 +2,12 @@ import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { applyPaymentNotification } from "@/lib/payments";
 import { creditTopUp, notifyTopUpCredited } from "@/lib/topup";
-import { verifyMidtransSignature, type MidtransNotificationPayload } from "@/lib/midtrans";
+import {
+  classifyMidtransStatus,
+  retiredTopUpStatus,
+  verifyMidtransSignature,
+  type MidtransNotificationPayload,
+} from "@/lib/midtrans";
 
 /**
  * Midtrans payment notification webhook. Verifies the SHA-512 signature,
@@ -57,21 +62,38 @@ export async function POST(request: NextRequest) {
     if (grossAmount !== topUp.amount + topUp.fee) {
       return NextResponse.json({ message: "amount_mismatch", handled: false }, { status: 200 });
     }
-    const settled = payload.transaction_status === "settlement" || payload.transaction_status === "capture";
-    if (settled && payload.fraud_status !== "deny") {
+    const verdict = classifyMidtransStatus(payload.transaction_status, payload.fraud_status);
+    if (verdict === "settled") {
       const credited = await creditTopUp({
         userId: topUp.userId,
         code: payload.order_id,
         amount: topUp.amount,
+        // Signed notification = gateway proof. A row that an earlier
+        // notification wrongly flagged `failed` still gets its money.
+        settledByGateway: true,
       });
       if (credited) await notifyTopUpCredited(topUp.userId, payload.order_id, topUp.amount);
       return NextResponse.json({ message: "ok", handled: true, credited });
     }
-    await db.topUp.updateMany({
-      where: { code: payload.order_id, status: "pending" },
-      data: { status: "failed" },
+
+    // Only a terminal gateway state may retire an invoice. `pending` is
+    // Midtrans' first notification — the VA/QRIS charge was just issued and
+    // the invoice is still payable. Retiring it there used to kill the
+    // invoice, and the settlement minutes later was then refused by
+    // creditTopUp: the buyer paid and the saldo never moved.
+    if (verdict === "retired") {
+      await db.topUp.updateMany({
+        where: { code: payload.order_id, status: "pending" },
+        data: { status: retiredTopUpStatus(payload.transaction_status) },
+      });
+    }
+    // Anything else (refund, partial_refund, unknown) leaves the invoice as
+    // is; a credited top-up is never silently un-credited by a webhook.
+    return NextResponse.json({
+      message: "ok",
+      handled: verdict === "retired",
+      credited: false,
     });
-    return NextResponse.json({ message: "ok", handled: true, credited: false });
   }
 
   const result = await applyPaymentNotification({

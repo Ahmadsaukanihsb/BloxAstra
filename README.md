@@ -85,12 +85,25 @@ pm2 restart bloxastra-web --update-env && pm2 save   # habis ganti .env / deploy
 ## Perimeter: CSP + WAF Cloudflare
 
 - CSP berjalan **report-only** (`content-security-policy-report-only`, nonce per-request via `src/proxy.ts`). Pelanggaran masuk `logs/` PM2 dengan prefix `[csp]`.
-- Setelah 1 minggu log bersih: ganti nama header di `proxy.ts` menjadi `content-security-policy` (enforce). Jangan enforce sebelum itu — inline script yang terlewat akan memecahkan halaman diam-diam.
+- Nonce dikirim di **request header** dan response header. Next tidak membaca `x-nonce` sama sekali; ia mengambil nonce dengan mengurai header CSP pada request yang masuk (`next/dist/server/route-modules/app-page/parse-request-headers.js`, yang membaca `content-security-policy` lalu `…-report-only`). Tanpa header itu, skrip framework dirender tanpa nonce dan tiap satunya dilaporkan sebagai pelanggaran.
+- **Jangan enforce selama `cacheComponents` (PPR) menyala.** Diukur 2026-10-12 pada build produksi: tiga skrip inline tetap tanpa nonce — `requestAnimationFrame(…$RT…)`, `$RB/$RV` (skrip pembuka shell PPR), dan `_R_` (daftar chunk Turbopack). Ketiganya ditulis saat build, jadi nonce per-request tidak bisa menempelinya; `_R_` lagi memuat nama chunk yang berubah tiap build, jadi hash statis juga tidak bisa dipakai. Enforce = shell PPR tidak pernah terbuka dan isi halaman ikut hilang. Dua jalan bila memang mau enforce: matikan PPR untuk rute terkait (nonce menempel ke semua skrip saat render dinamis), atau terima tiga skrip itu sebagai pengecualian permanen dan tetap report-only.
+- Rencana lama "setelah 1 minggu log bersih, ganti ke enforce" tidak bisa tercapai selama tiga skrip di atas ada — lognya tidak akan pernah bersih, jadi jangan menunggu sinyal itu.
 - WAF Cloudflare (dashboard, tanpa kode):
   1. Rate limit `POST /api/payments/midtrans`: >30 req/mnt per IP → block 10 mnt.
   2. Rate limit `POST` ke `/masuk` + `/daftar`: >10 req/mnt per IP → Managed Challenge.
   3. (Opsional) `POST /api/*` hanya dari ID.
 - JSON-LD inline memakai `nonce` dari header `x-nonce` (`layout.tsx`, `produk/[slug]/page.tsx`) — jangan hapus atributnya.
+
+## Deploy
+
+`npm run deploy` ([tools/deploy.mjs](tools/deploy.mjs)) — bukan `pm2 restart` saja, karena `next start` hanya menyajikan isi `.next` apa adanya:
+
+1. build ke `.next-verify`; server lama tetap melayani, `.next` tidak pernah setengah jadi,
+2. build gagal → staging dihapus, keluar kode 1, situs tidak tersentuh sama sekali,
+3. build sukses → `bloxastra-web` dihentikan, `.next` ditukar, build lama disimpan di `.next-prev`,
+4. proses dinyalakan lalu ditunggu sampai membalas HTTP 200; kalau tidak pernah siap, build lama dipasang kembali dan proses dijalankan ulang supaya situs tidak mati.
+
+Catatan Windows: penukaran folder ditolak (`EPERM`) bila ada proses lain yang memegang `.next` — paling sering `next start` sisa di port lain yang bukan bagian dari `ecosystem.config.js`. Skrip menuliskan PID proses asing itu sebelum menukar, dan tetap menyalakan kembali web dengan build lama bila penukaran gagal; hentikan dulu proses tersebut, lalu jalankan deploy lagi.
 
 ## Troubleshooting 502 (Cloudflare Host Error)
 

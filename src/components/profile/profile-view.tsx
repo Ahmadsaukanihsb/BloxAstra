@@ -3,12 +3,21 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatIDR, formatDateTime } from "@/lib/format";
-import { updateProfile, updateAvatar, changePassword } from "@/app/actions/profile";
+import {
+  updateProfile,
+  updateAvatar,
+  changePassword,
+  unlinkProvider,
+  adoptProviderAvatar,
+  logoutAllDevices,
+} from "@/app/actions/profile";
 import { requestWhatsappOtp, verifyWhatsappOtp } from "@/app/actions/whatsapp";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Notice } from "@/components/ui/feedback";
 import { Field, TextInput } from "@/components/ui/field";
+import { AvatarCropper } from "@/components/profile/avatar-cropper";
+import { SellerApplication } from "@/components/profile/seller-application";
 import {
   IconArrowRight,
   IconCheckCircle,
@@ -45,6 +54,13 @@ function roleLabel(role: ProfileView["role"]) {
   }
 }
 
+const KYC_LABEL: Record<string, string> = {
+  none: "Belum mengajukan",
+  pending: "Menunggu verifikasi",
+  verified: "Terverifikasi",
+  rejected: "Ditolak",
+};
+
 const LINK_ERROR_MESSAGE: Record<string, string> = {
   taken: "Akun provider tersebut sudah tertaut ke akun Blox Astra lain.",
   oauth_session: "Sesi berakhir saat menautkan. Masuk lagi lalu ulangi.",
@@ -79,13 +95,23 @@ export function ProfileView({
   const [waMsg, setWaMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
-  const [avatarDraft, setAvatarDraft] = useState<string | null | undefined>(undefined);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarMsg, setAvatarMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  // File waiting to be cropped. Non-null = the cropper modal is open.
+  const [avatarToCrop, setAvatarToCrop] = useState<File | null>(null);
+
+  const [linking, setLinking] = useState<string | null>(null);
+  const [linkMsg, setLinkMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [signingOutAll, setSigningOutAll] = useState(false);
+  const [sessionMsg, setSessionMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [waReverify, setWaReverify] = useState(false);
 
   const initials = profile.username.slice(0, 2).toUpperCase();
-  const shownAvatar = avatarDraft === undefined ? profile.avatarUrl : avatarDraft;
+  const shownAvatar = profile.avatarUrl;
 
+  // Hand the raw file to the cropper instead of saving it as-is: the stored
+  // image is always a square 512px JPEG, so an oversized phone photo still
+  // lands well under the server's 500KB limit and never gets a distorted crop.
   function pickAvatar(file: File | undefined) {
     if (!file) return;
     setAvatarMsg(null);
@@ -93,14 +119,7 @@ export function ProfileView({
       setAvatarMsg({ ok: false, text: "File harus berupa gambar." });
       return;
     }
-    if (file.size > 500_000) {
-      setAvatarMsg({ ok: false, text: "Foto maksimal 500KB. Kompres dulu." });
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => setAvatarDraft(String(reader.result));
-    reader.onerror = () => setAvatarMsg({ ok: false, text: "Gagal membaca file." });
-    reader.readAsDataURL(file);
+    setAvatarToCrop(file);
   }
 
   async function saveAvatar(image: string | null) {
@@ -112,8 +131,52 @@ export function ProfileView({
       setAvatarMsg({ ok: false, text: result.error ?? "Gagal menyimpan foto." });
       return;
     }
-    setAvatarDraft(undefined);
+    setAvatarToCrop(null);
     router.refresh();
+  }
+
+  async function handleUnlink(provider: "google" | "discord") {
+    setLinking(provider);
+    setLinkMsg(null);
+    const result = await unlinkProvider({ provider });
+    setLinking(null);
+    if (!result.ok) {
+      setLinkMsg({ ok: false, text: result.error ?? "Gagal melepas tautan." });
+      return;
+    }
+    setLinkMsg({
+      ok: true,
+      text: `Tautan ${PROVIDER_LABELS[provider]} dilepas.`,
+    });
+    router.refresh();
+  }
+
+  async function handleUseProviderAvatar(provider: "google" | "discord") {
+    setLinking(provider);
+    setLinkMsg(null);
+    const result = await adoptProviderAvatar({ provider });
+    setLinking(null);
+    if (!result.ok) {
+      setLinkMsg({ ok: false, text: result.error ?? "Gagal mengambil foto provider." });
+      return;
+    }
+    setLinkMsg({ ok: true, text: `Foto profil diganti dengan foto ${PROVIDER_LABELS[provider]}.` });
+    router.refresh();
+  }
+
+  async function handleLogoutAll() {
+    setSigningOutAll(true);
+    setSessionMsg(null);
+    const result = await logoutAllDevices();
+    setSigningOutAll(false);
+    if (!result.ok) {
+      setSessionMsg({ ok: false, text: result.error ?? "Gagal keluar dari perangkat lain." });
+      return;
+    }
+    setSessionMsg({
+      ok: true,
+      text: "Semua perangkat lain sudah keluar. Perangkat ini tetap aktif.",
+    });
   }
 
   async function handleSaveProfile(event: React.FormEvent) {
@@ -195,6 +258,8 @@ export function ProfileView({
           </p>
         </div>
 
+        <SellerApplication canApply={profile.canApplyAsSeller} />
+
         <div className="bezel-shell bg-astra/[0.03] p-1.5">
           <div className="bezel-core flex flex-col gap-5 p-5 md:flex-row md:items-center md:p-6">
             <div className="flex shrink-0 flex-col items-center gap-2">
@@ -233,30 +298,8 @@ export function ProfileView({
                     event.target.value = "";
                   }}
                 />
-              </div>
-              {avatarDraft !== undefined ? (
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    disabled={avatarBusy}
-                    onClick={() => void saveAvatar(avatarDraft)}
-                    className="rounded-full bg-astra px-3 py-1 text-[11px] font-extrabold text-white transition-colors hover:bg-astra-bright disabled:opacity-50"
-                  >
-                    {avatarBusy ? "…" : "Simpan"}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={avatarBusy}
-                    onClick={() => {
-                      setAvatarDraft(undefined);
-                      setAvatarMsg(null);
-                    }}
-                    className="rounded-full bg-canvas px-3 py-1 text-[11px] font-bold text-ink-dim outline outline-1 -outline-offset-1 outline-line"
-                  >
-                    Batal
-                  </button>
-                </div>
-              ) : profile.avatarImage ? (
+</div>
+              {profile.avatarImage ? (
                 <button
                   type="button"
                   disabled={avatarBusy}
@@ -453,7 +496,11 @@ export function ProfileView({
                       autoComplete="current-password"
                     />
                   </Field>
-                  <Field label="Kata sandi baru" htmlFor="new-password">
+                  <Field
+                    label="Kata sandi baru"
+                    htmlFor="new-password"
+                    hint="Mengubah kata sandi otomatis mengeluarkan semua perangkat lain."
+                  >
                     <TextInput
                       id="new-password"
                       type="password"
@@ -487,11 +534,26 @@ export function ProfileView({
               <IconCheckCircle size={16} className="text-astra-ink" />
               Verifikasi WhatsApp
             </span>
-            {profile.whatsappVerified && profile.whatsapp ? (
-              <Notice tone="astra" icon={<IconCheckCircle size={15} />}>
-                Nomor {profile.whatsapp} sudah terverifikasi. Mengubah nomor di Data Pribadi akan
-                menghapus status ini sampai nomor baru diverifikasi.
-              </Notice>
+            {profile.whatsappVerified && profile.whatsapp && !waReverify ? (
+              <>
+                <Notice tone="astra" icon={<IconCheckCircle size={15} />}>
+                  Nomor {profile.whatsapp} sudah terverifikasi. Mengubah nomor di Data Pribadi akan
+                  menghapus status ini sampai nomor baru diverifikasi.
+                </Notice>
+                <div>
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setWaReverify(true);
+                      setWaPhone("");
+                      setWaSent(false);
+                      setWaMsg(null);
+                    }}
+                  >
+                    Ganti nomor & verifikasi ulang
+                  </Button>
+                </div>
+              </>
             ) : (
               <form onSubmit={waSent ? handleVerifyOtp : handleSendOtp} className="flex flex-col gap-4">
                 <Field
@@ -532,26 +594,94 @@ export function ProfileView({
                     {waMsg.text}
                   </Notice>
                 ) : null}
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button type="submit" disabled={waBusy}>
-                    {waBusy ? "Memproses…" : waSent ? "Verifikasi kode" : "Kirim kode verifikasi"}
-                  </Button>
-                  {waSent ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      disabled={waBusy}
-                      onClick={() => {
-                        setWaSent(false);
-                        setWaCode("");
-                        setWaMsg(null);
-                      }}
-                    >
-                      Ganti nomor
+<div className="flex flex-wrap items-center gap-2">
+                    <Button type="submit" disabled={waBusy}>
+                      {waBusy ? "Memproses..." : waSent ? "Verifikasi kode" : "Kirim kode verifikasi"}
                     </Button>
+                    {waSent ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        disabled={waBusy}
+                        onClick={() => {
+                          setWaSent(false);
+                          setWaCode("");
+                          setWaMsg(null);
+                        }}
+                      >
+                        Ketik ulang nomor
+                      </Button>
+                    ) : null}
+                    {waReverify ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        disabled={waBusy}
+                        onClick={() => {
+                          setWaReverify(false);
+                          setWaPhone(profile.whatsapp ?? "");
+                          setWaSent(false);
+                          setWaCode("");
+                          setWaMsg(null);
+                        }}
+                      >
+                        Batal
+                      </Button>
+                    ) : null}
+                  </div>
+              </form>
+            )}
+          </div>
+        </div>
+
+        <div className="bezel-shell p-1.5">
+          <div className="bezel-core flex flex-col gap-5 p-5">
+            <span className="flex items-center gap-2.5 text-[13px] font-bold text-ink">
+              <IconUserSquare size={16} className="text-astra-ink" />
+              Verifikasi penjual (KYC)
+            </span>
+            {profile.role === "seller" ? (
+              <>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <Badge
+                    tone={
+                      profile.kycStatus === "verified"
+                        ? "success"
+                        : profile.kycStatus === "pending"
+                          ? "warn"
+                          : profile.kycStatus === "rejected"
+                            ? "danger"
+                            : "muted"
+                    }
+                  >
+                    {KYC_LABEL[profile.kycStatus] ?? profile.kycStatus}
+                  </Badge>
+                  <span className="text-[11px] text-ink-mute">
+                    {profile.kycStatus === "verified"
+                      ? "Toko terverifikasi. Listing, pool rebutan, dan penarikan terbuka."
+                      : profile.kycStatus === "pending"
+                        ? "Berkasmu sedang ditinjau admin. Biasanya selesai dalam 1×24 jam."
+                        : profile.kycStatus === "rejected"
+                          ? "Pengajuan ditolak. Ajukan ulang dari dashboard penjual dengan berkas baru."
+                          : "Belum mengajukan KYC. Lengkapi dari dashboard penjual."}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <ButtonLink href="/dashboard/penjual" variant="secondary" size="sm">
+                    Buka dashboard penjual
+                  </ButtonLink>
+                  {profile.storeHandle ? (
+                    <span className="inline-flex items-center rounded-full bg-canvas-2 px-3 text-[11px] font-bold text-ink-mute">
+                      @{profile.storeHandle}
+                    </span>
                   ) : null}
                 </div>
-              </form>
+              </>
+            ) : (
+              <p className="text-[12px] leading-relaxed text-ink-mute">
+                KYC hanya berlaku untuk penjual. Daftar sebagai penjual dari /daftar (mode penjual)
+                untuk membuka toko.
+              </p>
             )}
           </div>
         </div>
@@ -579,6 +709,14 @@ export function ProfileView({
                   "Gagal menautkan akun. Coba lagi sebentar lagi."}
               </Notice>
             ) : null}
+            {linkMsg ? (
+              <Notice
+                tone={linkMsg.ok ? "astra" : "danger"}
+                icon={linkMsg.ok ? <IconCheckCircle size={15} /> : <IconShieldCheck size={15} />}
+              >
+                {linkMsg.text}
+              </Notice>
+            ) : null}
             {profile.linkedAccounts.length === 0 &&
             !linkable.google &&
             !linkable.discord ? (
@@ -589,23 +727,44 @@ export function ProfileView({
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {profile.linkedAccounts.map((account) => {
                   const Icon = PROVIDER_ICONS[account.provider] ?? IconGoogle;
+                  const provider = account.provider === "discord" ? "discord" : "google";
                   return (
                     <div
                       key={account.provider}
-                      className="flex items-center gap-3 rounded-well bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line"
+                      className="flex flex-col gap-3 rounded-well bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line"
                     >
-                      <span className="grid size-10 shrink-0 place-items-center rounded-control bg-paper text-ink outline outline-1 -outline-offset-1 outline-line">
-                        <Icon size={19} />
-                      </span>
-                      <div className="flex min-w-0 flex-1 flex-col">
-                        <span className="text-[13px] font-bold text-ink">
-                          {PROVIDER_LABELS[account.provider] ?? account.provider}
+                      <div className="flex items-center gap-3">
+                        <span className="grid size-10 shrink-0 place-items-center rounded-control bg-paper text-ink outline outline-1 -outline-offset-1 outline-line">
+                          <Icon size={19} />
                         </span>
-                        <span className="truncate text-[11px] text-ink-dim">
-                          {account.email ?? "Tertaut"}
-                        </span>
+                        <div className="flex min-w-0 flex-1 flex-col">
+                          <span className="text-[13px] font-bold text-ink">
+                            {PROVIDER_LABELS[account.provider] ?? account.provider}
+                          </span>
+                          <span className="truncate text-[11px] text-ink-dim">
+                            {account.email ?? "Tertaut"}
+                          </span>
+                        </div>
+                        <Badge tone="astra">aktif</Badge>
                       </div>
-                      <Badge tone="astra">aktif</Badge>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          disabled={linking !== null}
+                          onClick={() => void handleUseProviderAvatar(provider)}
+                        >
+                          {linking === provider ? "…" : "Pakai fotonya"}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={linking !== null}
+                          onClick={() => void handleUnlink(provider)}
+                        >
+                          Lepas tautan
+                        </Button>
+                      </div>
                     </div>
                   );
                 })}
@@ -656,14 +815,39 @@ export function ProfileView({
                 Keluar dari akun di perangkat yang sedang dipakai.
               </span>
             </div>
-            <form action="/api/auth/logout" method="get">
-              <Button type="submit" variant="secondary">
-                Keluar
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="secondary"
+                disabled={signingOutAll}
+                onClick={() => void handleLogoutAll()}
+              >
+                {signingOutAll ? "Memproses…" : "Keluar dari semua perangkat"}
               </Button>
-            </form>
+              <form action="/api/auth/logout" method="get">
+                <Button type="submit" variant="ghost">
+                  Keluar
+                </Button>
+              </form>
+            </div>
           </div>
+          {sessionMsg ? (
+            <Notice
+              tone={sessionMsg.ok ? "astra" : "danger"}
+              icon={sessionMsg.ok ? <IconCheckCircle size={15} /> : <IconShieldCheck size={15} />}
+            >
+              {sessionMsg.text}
+            </Notice>
+          ) : null}
         </div>
       </div>
+      {avatarToCrop ? (
+        <AvatarCropper
+          file={avatarToCrop}
+          busy={avatarBusy}
+          onCancel={() => setAvatarToCrop(null)}
+          onConfirm={(dataUrl) => void saveAvatar(dataUrl)}
+        />
+      ) : null}
     </div>
   );
 }

@@ -25,6 +25,16 @@ model User {
   whatsapp     String?
   whatsappVerified Boolean @default(false)
   kycStatus   String   @default("none") // none | pending | verified | rejected
+  /// Account suspension by admin. Set = locked out everywhere (session +
+  /// login + OAuth). Null = active.
+  suspendedAt    DateTime?
+  suspendReason  String?
+  /// Session generation. Bumped on "log out of all devices" and password
+  /// change; any cookie carrying an older value is treated as signed out.
+  sessionVersion Int      @default(0)
+  /// When this user last had the seller group room open. Null until the first
+  /// visit, so a brand-new account never opens the room with 200 unread.
+  groupChatSeenAt DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -37,6 +47,7 @@ model User {
   linkedAccounts LinkedAccount[]
   whatsappOtps   WhatsappOtp[]
   sellerChat    SellerChatMessage[]
+  chatReports   SellerChatReport[]
   buyerReviews  Review[]    @relation("BuyerReviews")
   notifications Notification[]
 
@@ -184,7 +195,13 @@ model RateCard {
   vol10000    Float   @default(0.06)
   orderUsername Float @default(160)
   orderLogin    Float @default(150)
-  orderGamepass Float @default(89.6)
+  /// Rp per net Robux when Blox Astra swallows Roblox's 30% gamepass cut.
+  /// The DB column keeps its legacy name so the running production build can
+  /// still read it while this card is being upgraded.
+  orderGamepassCover Float @default(89.6) @map("orderGamepass")
+  /// Rp per raw gamepass Robux when the buyer swallows the 30% cut — 30%
+  /// lower than the cover rate so the same net Robux costs the same money.
+  orderGamepassNoCover Float @default(62.72)
   /// Rp per bulan for the standalone Roblox Premium flow.
   orderPremium  Float @default(185000)
   adminFee      Float @default(564)
@@ -293,12 +310,40 @@ model SellerChatMessage {
   id        String   @id @default(cuid())
   userId    String
   body      String
+  /// Soft delete. The row survives because replies quote it and reports point
+  /// at it; `body` is simply never sent to another reader once this is set.
+  deletedAt DateTime?
+  /// Set on every edit, so the room can mark the message as changed.
+  editedAt  DateTime?
+  /// The message this one is answering.
+  replyToId String?
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  replyTo SellerChatMessage? @relation("ChatReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies SellerChatMessage[] @relation("ChatReplies")
+  reports SellerChatReport[]
 
   @@index([createdAt])
   @@index([userId])
+  @@index([replyToId])
+}
+
+/// A seller flagging a group-room message for an admin to look at. One row per
+/// (message, reporter) — the unique key is what stops a repeat report from
+/// paging every admin again.
+model SellerChatReport {
+  id         String   @id @default(cuid())
+  messageId  String
+  reporterId String
+  reason     String // spam | kasar | pribadi
+  createdAt  DateTime @default(now())
+
+  message  SellerChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  reporter User              @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, reporterId])
+  @@index([createdAt])
 }
 
 model Dispute {
@@ -330,6 +375,9 @@ model Review {
   buyerId   String
   rating    Int // 1–5
   comment   String   @default("")
+  /// Hidden by admin moderation: invisible on public surfaces, still
+  /// stored (and reversible). Excluded from seller rating aggregates.
+  hidden    Boolean  @default(false)
   createdAt DateTime @default(now())
 
   order   Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)

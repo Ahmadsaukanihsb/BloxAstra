@@ -43,9 +43,14 @@ function snapBaseUrl(): string {
     : SNAP_BASE_URLS.sandbox;
 }
 
-/** True whenever orders must be settled locally instead of via Midtrans. */
+/**
+ * True whenever orders must be settled locally instead of via a gateway.
+ * Any provider that is neither Midtrans (legacy) nor Tripay falls back to
+ * sim — including an unset PAYMENT_PROVIDER in development.
+ */
 export function isSimMode(): boolean {
-  return process.env.PAYMENT_PROVIDER !== "midtrans";
+  const provider = process.env.PAYMENT_PROVIDER;
+  return provider !== "midtrans" && provider !== "tripay";
 }
 
 export interface SnapTransactionInput {
@@ -55,6 +60,11 @@ export interface SnapTransactionInput {
   itemName: string;
   customerName: string;
   customerEmail: string;
+  /**
+   * Where Snap sends the buyer back. Defaults to the order room; wallet
+   * top-ups pass /dompet because there is no order room for a TU- code.
+   */
+  returnPath?: string;
 }
 
 export interface SnapTransactionResult {
@@ -112,12 +122,12 @@ export async function createSnapTransaction(
       // actually validate (OAuth users often have no email on file).
       customer_details: buildCustomerDetails(input.customerName, input.customerEmail),
       // After paying (or abandoning) Snap, the buyer always lands back in
-      // their own order room — never on a generic list page.
+      // the surface that can still act on this invoice — never on a 404.
       expiry: { unit: "minutes", duration: 15 },
       callbacks: {
-        finish: absoluteUrl(`/pesanan/${input.orderId}`),
-        unfinish: absoluteUrl(`/pesanan/${input.orderId}`),
-        error: absoluteUrl(`/pesanan/${input.orderId}`),
+        finish: absoluteUrl(input.returnPath ?? `/pesanan/${input.orderId}`),
+        unfinish: absoluteUrl(input.returnPath ?? `/pesanan/${input.orderId}`),
+        error: absoluteUrl(input.returnPath ?? `/pesanan/${input.orderId}`),
       },
     }),
   });
@@ -134,6 +144,18 @@ export interface MidtransStatusResult {
   transactionStatus: string;
   fraudStatus?: string;
   grossAmount: number;
+}
+
+/**
+ * Midtrans has no record of this order_id — the buyer never opened the Snap
+ * page, so nothing was ever charged. Distinguished from transport failures so
+ * callers do not tell a buyer "coba lagi" for an invoice that does not exist.
+ */
+export class MidtransNotFoundError extends Error {
+  constructor(orderId: string) {
+    super(`Midtrans tidak mengenal transaksi ${orderId}.`);
+    this.name = "MidtransNotFoundError";
+  }
 }
 
 function statusBaseUrl(): string {
@@ -158,6 +180,9 @@ export async function fetchMidtransStatus(orderId: string): Promise<MidtransStat
       Authorization: `Basic ${Buffer.from(`${serverKey}:`).toString("base64")}`,
     },
   });
+  if (response.status === 404) {
+    throw new MidtransNotFoundError(orderId);
+  }
   if (!response.ok) {
     throw new Error(`Midtrans status ${response.status}: ${await response.text()}`);
   }
@@ -165,9 +190,14 @@ export async function fetchMidtransStatus(orderId: string): Promise<MidtransStat
     transaction_status?: string;
     fraud_status?: string;
     gross_amount?: string;
+    status_code?: string;
   };
+  // Midtrans sometimes answers 200 with a body-only 404 for unknown ids.
+  if (data.status_code === "404" || !data.transaction_status) {
+    throw new MidtransNotFoundError(orderId);
+  }
   const grossAmount = Number(data.gross_amount);
-  if (!data.transaction_status || !Number.isFinite(grossAmount)) {
+  if (!Number.isFinite(grossAmount)) {
     throw new Error("Respons status Midtrans tidak valid.");
   }
   return {
@@ -175,6 +205,35 @@ export async function fetchMidtransStatus(orderId: string): Promise<MidtransStat
     fraudStatus: data.fraud_status,
     grossAmount,
   };
+}
+
+/**
+ * What one gateway status means for whoever owns the money.
+ *
+ * `unpaid` is the trap this exists to prevent: `pending` is Midtrans' first
+ * notification (the VA/QRIS charge was just issued) and is NOT a failure —
+ * retiring the invoice there loses a settlement that arrives a minute later.
+ */
+export type MidtransVerdict = "settled" | "unpaid" | "retired";
+
+const RETIRING_STATUSES = ["deny", "cancel", "expire", "failure", "refund", "partial_refund"];
+
+export function classifyMidtransStatus(status: string, fraudStatus?: string): MidtransVerdict {
+  // `settlement` means the money already moved — always settled.
+  if (status === "settlement" && fraudStatus !== "deny") return "settled";
+  // `capture` is a card authorization still under fraud review: only `accept`
+  // (or no verdict) is money. `challenge` is held, not credited — otherwise a
+  // challenged capture is paid out and a later deny has no clawback path.
+  if (status === "capture" && (fraudStatus === undefined || fraudStatus === "accept")) {
+    return "settled";
+  }
+  if (fraudStatus === "deny" || RETIRING_STATUSES.includes(status)) return "retired";
+  return "unpaid";
+}
+
+/** Local DB status to park a retired invoice in. */
+export function retiredTopUpStatus(status: string): "failed" | "expired" {
+  return status === "expire" ? "expired" : "failed";
 }
 
 export interface MidtransNotificationPayload {

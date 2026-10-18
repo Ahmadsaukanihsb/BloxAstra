@@ -157,6 +157,42 @@ export const IconTimer = (p: IconProps) => (
   </Svg>
 );
 
+export const IconAt = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="4" />
+    <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94" />
+  </Svg>
+);
+
+export const IconReply = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M9.5 6 4.6 10.4a1.2 1.2 0 0 0 0 1.8L9.5 16.6" />
+    <path d="M4.8 11.3h8.4a5.6 5.6 0 0 1 5.6 5.6v1.3" />
+  </Svg>
+);
+
+export const IconPencil = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M15.6 4.6a2 2 0 0 1 2.9 2.9L8.4 17.6l-3.9 1 1-3.9z" />
+    <path d="M14.2 6 18 9.8" />
+  </Svg>
+);
+
+export const IconTrash = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4.6 6.9h14.8M9.6 6.9V5.1a1.2 1.2 0 0 1 1.2-1.2h2.4a1.2 1.2 0 0 1 1.2 1.2v1.8" />
+    <path d="M6.5 6.9l.8 11.3a1.6 1.6 0 0 0 1.6 1.5h6.2a1.6 1.6 0 0 0 1.6-1.5l.8-11.3" />
+    <path d="M10.2 10.4v6M13.8 10.4v6" />
+  </Svg>
+);
+
+export const IconFlag = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M6 21V4" />
+    <path d="M6 4.8h11.4l-1.9 4 1.9 4H6z" />
+  </Svg>
+);
+
 export const IconChat = (p: IconProps) => (
   <Svg {...p}>
     <path d="M20.2 12.4c0 3.9-3.7 7-8.2 7-1 0-1.9-.1-2.7-.4L4.6 20.6l1.3-3.4a6.6 6.6 0 0 1-2.3-4.8c0-3.9 3.7-7 8.2-7s8.4 3.1 8.4 7z" />

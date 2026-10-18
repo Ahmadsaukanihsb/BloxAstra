@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { formatIDR, formatDateTime } from "@/lib/format";
+import type { OpenTopUp } from "@/lib/topup";
 import type { WalletView as WalletData } from "@/lib/wallet";
 import { cx } from "@/lib/cx";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Field, Select, TextInput } from "@/components/ui/field";
 import { EmptyState, Notice } from "@/components/ui/feedback";
 import { TopUpPanel } from "@/components/wallet/topup-panel";
+import { TopUpQueue } from "@/components/wallet/topup-queue";
 import { requestWithdrawal } from "@/app/actions/wallet";
 import {
   IconArrowRight,
@@ -37,10 +39,13 @@ const TYPE_META: Record<
 export function WalletView({
   wallet,
   methodFees,
+  openTopUps,
   embedded = false,
 }: {
   wallet: WalletData;
   methodFees: Record<"qris" | "va" | "ewallet", number>;
+  /** Top-ups this account still has to pay for or claim back. */
+  openTopUps: OpenTopUp[];
   /**
    * Rendered inside the seller dashboard shell, which already supplies the
    * page container, spacing and heading. Standalone /dompet keeps its own.
@@ -173,6 +178,8 @@ export function WalletView({
             pelunasan.
           </Notice>
         ) : null}
+
+        <TopUpQueue items={openTopUps} />
 
         <div className="bezel-shell p-1.5">
           <div className="bezel-core p-5">

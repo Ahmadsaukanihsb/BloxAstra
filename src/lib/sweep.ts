@@ -28,7 +28,15 @@ export interface SweepTimeouts {
   assignedHours: number;
 }
 
-const DEFAULT_TIMEOUTS: SweepTimeouts = { poolHours: 24, processingDays: 7, assignedHours: 72 };
+/// Exported so the policy pages can state the same windows the sweep actually
+/// enforces, instead of a number typed twice and left to drift.
+export const DEFAULT_TIMEOUTS: SweepTimeouts = { poolHours: 24, processingDays: 7, assignedHours: 72 };
+
+/// How long a completed order keeps the credentials the buyer handed over.
+/// Exported for the same reason as the windows above: the promise "dihapus
+/// permanen N hari setelah selesai" is made to buyers on several surfaces, and
+/// a number typed once per surface is a number that drifts.
+export const CREDENTIAL_WIPE_DAYS = 7;
 
 /** Sweep windows, tunable via the `sweep.timeouts` setting row. */
 export async function getSweepTimeouts(): Promise<SweepTimeouts> {
@@ -181,6 +189,7 @@ async function expireStalePayments(now: Date): Promise<string[]> {
       buyerId: true,
       productId: true,
       quantity: true,
+      promoCode: true,
       payment: { select: { id: true } },
     },
     take: EXPIRE_BATCH,
@@ -215,6 +224,14 @@ async function expireStalePayments(now: Date): Promise<string[]> {
           await tx.product.update({
             where: { id: order.productId },
             data: { stock: { increment: order.quantity } },
+          });
+        }
+        // Release the promo redemption: the buyer never completed this
+        // invoice, so a limited code must not lose a slot to the expiry.
+        if (order.promoCode) {
+          await tx.promoCode.updateMany({
+            where: { code: order.promoCode, usedCount: { gt: 0 } },
+            data: { usedCount: { decrement: 1 } },
           });
         }
       });
@@ -260,10 +277,12 @@ export async function runSweep(): Promise<SweepResult> {
  * fail cleanly with "tidak punya kredensial".
  */
 async function wipeOldCredentials(now: Date): Promise<number> {
-  const cutoff = new Date(now.getTime() - 7 * 24 * 3_600_000);
+  const cutoff = new Date(now.getTime() - CREDENTIAL_WIPE_DAYS * 24 * 3_600_000);
   const result = await db.order.updateMany({
+    // Any terminal state, not just `completed`: a refunded/cancelled order
+    // must not keep an encrypted Roblox password/PIN around forever.
     where: {
-      status: "completed",
+      status: { in: ["completed", "refunded", "cancelled"] },
       updatedAt: { lte: cutoff },
       credentialsEnc: { not: null },
     },
@@ -279,8 +298,18 @@ async function wipeOldCredentials(now: Date): Promise<number> {
  */
 async function refundStalePoolOrders(now: Date, poolHours: number): Promise<string[]> {
   const cutoff = new Date(now.getTime() - poolHours * 3_600_000);
+  // Cutoff lives in the WHERE + ORDER BY asc, not a post-fetch JS filter:
+  // with `take: 20` and no ordering, a batch of 20 *fresh* paid orders would
+  // fill every pass and the older refundable ones would never be selected —
+  // escrow locked forever. Oldest-first guarantees progress.
   const stale = await db.order.findMany({
-    where: { status: "paid", sellerId: null, isPoolOrder: true },
+    where: {
+      status: "paid",
+      sellerId: null,
+      isPoolOrder: true,
+      createdAt: { lte: cutoff },
+    },
+    orderBy: { createdAt: "asc" },
     select: {
       id: true,
       code: true,
@@ -365,8 +394,11 @@ async function refundStalePoolOrders(now: Date, poolHours: number): Promise<stri
  */
 async function refundStuckProcessingOrders(now: Date, processingDays: number): Promise<string[]> {
   const cutoff = new Date(now.getTime() - processingDays * 24 * 3_600_000);
+  // Oldest-first + date cutoff in the query (see refundStalePoolOrders): the
+  // batch must always hold the orders most likely to be refundable.
   const stuck = await db.order.findMany({
-    where: { status: "processing", dispute: { is: null } },
+    where: { status: "processing", dispute: { is: null }, createdAt: { lte: cutoff } },
+    orderBy: { createdAt: "asc" },
     select: {
       id: true,
       code: true,
@@ -461,8 +493,10 @@ async function refundStuckProcessingOrders(now: Date, processingDays: number): P
  */
 async function refundIdleAssignedOrders(now: Date, assignedHours: number): Promise<string[]> {
   const cutoff = new Date(now.getTime() - assignedHours * 3_600_000);
+  // Oldest-first + date cutoff in the query (see refundStalePoolOrders).
   const idle = await db.order.findMany({
-    where: { status: "paid", sellerId: { not: null } },
+    where: { status: "paid", sellerId: { not: null }, createdAt: { lte: cutoff } },
+    orderBy: { createdAt: "asc" },
     select: {
       id: true,
       code: true,

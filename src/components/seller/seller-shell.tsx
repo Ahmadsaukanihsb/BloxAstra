@@ -114,91 +114,149 @@ export function SellerStats({ stats }: { stats: SellerStatsData }) {
   const peakLabel = peakIndex >= 0 ? stats.weekLabels[peakIndex] : "—";
   const max = Math.max(...stats.weekSeries, 1);
   const dayCount = stats.weekSeries.length || 7;
-  const perDay = Math.round(weekOrders / dayCount);
+  const perDayRaw = weekOrders / dayCount;
+  // Rounding to a whole number would print "rata-rata 0 per hari" for a store
+  // with a handful of orders in the window; keep one decimal until it counts.
+  const perDay = perDayRaw < 1 && weekOrders > 0 ? perDayRaw.toFixed(1).replace(".", ",") : formatNumber(Math.round(perDayRaw));
   // The 7-day window in lib/seller.ts ends today, so the last bucket is today.
   const ordersToday = stats.weekSeries[dayCount - 1] ?? 0;
   const hasReviews = stats.reviewCount > 0;
 
-  const metrics: { label: string; value: string; note: string; tone?: "ink" | "astra" }[] = [
-    {
-      label: "Pesanan masuk hari ini",
-      value: formatNumber(ordersToday),
-      note: `${formatNumber(stats.completedToday)} selesai hari ini`,
-    },
-    {
-      label: "Pesanan 7 hari",
-      value: formatNumber(weekOrders),
-      note: `rata-rata ${formatNumber(perDay)} per hari`,
-    },
+  /*
+   * Two registers in one panel: today's queue at display scale — the number a
+   * seller actually reacts to — then the slower signals as a quiet definition
+   * list instead of four look-alike boxes. The bars print their own values and
+   * give empty days a visible baseline, because a chart whose zero days render
+   * as nothing reads as broken rather than as zero.
+   */
+  const slowSignals = [
     {
       label: "Penilaian toko",
       value: hasReviews ? `${stats.rating.toFixed(1).replace(".", ",")} / 5` : "—",
       note: hasReviews ? `${formatNumber(stats.reviewCount)} ulasan pembeli` : "belum ada ulasan",
-      tone: hasReviews ? "astra" : "ink",
+      highlight: hasReviews,
     },
     {
-      label: "Pesanan sepanjang waktu",
+      label: "Pesanan 7 hari",
+      value: formatNumber(weekOrders),
+      note: peakOrders > 0 ? `terbanyak ${peakLabel} · ${peakOrders} order` : "belum ada order",
+      highlight: false,
+    },
+    {
+      label: "Sepanjang waktu",
       value: formatNumber(stats.ordersTotal),
       note: "termasuk yang dibatalkan & direfund",
+      highlight: false,
     },
   ];
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-4">
-        {metrics.map((metric) => (
-          <div
-            key={metric.label}
-            className="flex flex-col gap-3 rounded-card bg-canvas p-4 outline outline-1 -outline-offset-1 outline-line"
-          >
-            <span className="text-[10px] leading-snug uppercase tracking-[0.16em] text-ink-mute">
-              {metric.label}
-            </span>
-            <span
-              className={cx(
-                "num text-[24px] font-extrabold leading-none",
-                metric.tone === "astra" ? "text-astra-ink" : "text-ink",
-              )}
-            >
-              {metric.value}
-            </span>
-            <span className="mt-auto border-t border-line pt-3 text-[11px] leading-relaxed text-ink-mute">
-              {metric.note}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      <div className="bezel-shell p-1.5">
-        <div className="bezel-core flex flex-col gap-5 p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <span className="flex items-center gap-2.5 text-[13px] font-bold text-ink">
-              <IconChartBars size={16} className="text-astra-ink" />
-              Volume pesanan 7 hari terakhir
-            </span>
+    <div className="bezel-shell p-1.5">
+      <div className="bezel-core flex flex-col gap-6 p-5 md:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <span className="flex items-center gap-2.5 text-[13px] font-bold text-ink">
+            <IconChartBars size={16} className="text-astra-ink" />
+            Ringkasan
+          </span>
+          {peakOrders > 0 ? (
             <Badge tone="astra">
               Puncak {peakLabel} · {peakOrders} order
             </Badge>
+          ) : (
+            <span className="text-[11px] text-ink-mute">
+              {dayCount} hari terakhir · zona Asia/Jakarta
+            </span>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:gap-8">
+          <div className="flex flex-col gap-5">
+            <div className="flex flex-wrap items-end gap-4">
+              <span className="num text-[46px] font-extrabold leading-[0.85] text-ink">
+                {formatNumber(ordersToday)}
+              </span>
+              <span className="flex flex-col gap-1.5 pb-1">
+                <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-ink-mute">
+                  Pesanan masuk hari ini
+                </span>
+                <span className="text-[12px] text-ink-dim">
+                  {formatNumber(stats.completedToday)} selesai hari ini
+                </span>
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-2.5">
+              <div className="grid grid-cols-7 gap-2">
+                {stats.weekSeries.map((value, index) => (
+                  <span
+                    key={stats.weekLabels[index] ?? index}
+                    className={cx(
+                      "num text-center text-[10px]",
+                      value > 0 ? "text-ink-dim" : "text-ink-mute/60",
+                    )}
+                  >
+                    {value}
+                  </span>
+                ))}
+              </div>
+
+              <div className="grid h-24 grid-cols-7 items-end gap-2">
+                {stats.weekSeries.map((value, index) => (
+                  <motion.div
+                    key={`bar-${stats.weekLabels[index] ?? index}`}
+                    initial={{ height: 0 }}
+                    animate={{ height: `${Math.max((value / max) * 100, value > 0 ? 8 : 2)}%` }}
+                    transition={{ duration: 0.7, delay: index * 0.05, ease: [0.16, 1, 0.3, 1] }}
+                    className={cx(
+                      "w-full rounded-t-xl",
+                      value === peakOrders && peakOrders > 0 ? "bg-astra" : value > 0 ? "bg-astra/30" : "bg-line",
+                    )}
+                  />
+                ))}
+              </div>
+
+              <div className="grid grid-cols-7 gap-2">
+                {stats.weekLabels.map((label, index) => (
+                  <span
+                    key={`day-${label ?? index}`}
+                    className={cx(
+                      "num text-center text-[10px]",
+                      index === dayCount - 1 ? "font-extrabold text-astra-ink" : "text-ink-mute",
+                    )}
+                  >
+                    {label}
+                  </span>
+                ))}
+              </div>
+
+              <p className="text-[11px] leading-relaxed text-ink-mute">
+                Rata-rata {perDay} pesanan per hari
+                {peakOrders > 0 ? ` · puncak ${peakLabel} dengan ${peakOrders} pesanan` : ""}
+              </p>
+            </div>
           </div>
 
-          <div className="grid h-40 grid-cols-7 items-end gap-2.5">
-            {stats.weekSeries.map((value, index) => (
-              <div key={stats.weekLabels[index] ?? index} className="flex h-full flex-col justify-end gap-2">
-                <motion.div
-                  initial={{ height: 0 }}
-                  animate={{ height: `${(value / max) * 100}%` }}
-                  transition={{ duration: 0.7, delay: index * 0.05, ease: [0.16, 1, 0.3, 1] }}
-                  className={cx(
-                    "w-full rounded-t-xl",
-                    value === peakOrders && peakOrders > 0 ? "bg-astra" : "bg-astra/25",
-                  )}
-                />
-                <span className="num text-center text-[10px] text-ink-mute">
-                  {stats.weekLabels[index]}
-                </span>
+          <dl className="flex flex-col divide-y divide-line lg:border-l lg:border-line lg:pl-8">
+            {slowSignals.map((signal) => (
+              <div
+                key={signal.label}
+                className="flex items-baseline justify-between gap-4 py-3.5 first:pt-0 last:pb-0"
+              >
+                <dt className="text-[11px] text-ink-mute">{signal.label}</dt>
+                <dd className="flex flex-col items-end gap-1 text-right">
+                  <span
+                    className={cx(
+                      "num text-[17px] font-extrabold leading-none",
+                      signal.highlight ? "text-astra-ink" : "text-ink",
+                    )}
+                  >
+                    {signal.value}
+                  </span>
+                  <span className="text-[10.5px] leading-relaxed text-ink-mute">{signal.note}</span>
+                </dd>
               </div>
             ))}
-          </div>
+          </dl>
         </div>
       </div>
     </div>

@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { formatIDR } from "@/lib/format";
-import type { CategorySlug, Product } from "@/lib/types";
+import type { CategorySlug, LandingSignals, Product } from "@/lib/types";
 import { ProductArt } from "@/components/ui/art";
 import { SectionHeading } from "@/components/ui/surface";
 import { Reveal } from "@/components/ui/reveal";
 import { ButtonLink } from "@/components/ui/button";
-import { IconArrowRight } from "@/components/ui/icons";
+import { IconArrowRight, IconCompass } from "@/components/ui/icons";
+import { ShelfEmpty } from "@/components/landing/shelf-empty";
 import { useCatalog } from "@/components/rates/rate-store";
 
 /**
@@ -16,7 +17,13 @@ import { useCatalog } from "@/components/rates/rate-store";
  * `game` in the products becomes a card; counts, starting price, and the art
  * category all come from the data so nothing can go stale.
  */
-export function GameRail({ products }: { products: Product[] }) {
+export function GameRail({
+  products,
+  signals,
+}: {
+  products: Product[];
+  signals?: LandingSignals;
+}) {
   const catalog = useCatalog(products);
   const rail = useMemo(() => {
     const byGame = new Map<
@@ -39,7 +46,23 @@ export function GameRail({ products }: { products: Product[] }) {
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
   }, [catalog]);
 
-  if (!rail.length) return null;
+  // A bare rail keeps the section: the heading still promises a way in, the
+  // line under it says the catalog is empty, and the one door that works today
+  // is offered instead of the doorway that has nothing behind it.
+  if (!rail.length) {
+    return (
+      <ShelfEmpty
+        title="Mulai dari game yang kamu mainkan"
+        description="Pintu masuk per game dihitung langsung dari listing aktif — hari ini belum ada satu pun yang dipasang penjual."
+        action={{ href: "/beli/robux-username", label: "Top up langsung", variant: "primary" }}
+        label="Rak per game masih kosong"
+        body="Jalur username tidak menunggu stok siapa pun: pilih nominal, bayar, dan Robux dikirim dari pool platform."
+        icon={<IconCompass size={17} />}
+        signals={signals}
+        secondary={{ href: "/katalog", label: "Lihat katalog" }}
+      />
+    );
+  }
 
   return (
     <section className="px-4 pb-4 pt-16 md:px-8 md:pt-20">
@@ -47,7 +70,6 @@ export function GameRail({ products }: { products: Product[] }) {
         <Reveal>
           <SectionHeading
             align="between"
-            eyebrow="Game populer"
             title="Mulai dari game yang kamu mainkan"
             description="Setiap pintu masuk katalog dihitung langsung dari listing aktif hari ini, lengkap dengan harga terendah."
             action={
@@ -65,7 +87,11 @@ export function GameRail({ products }: { products: Product[] }) {
         </Reveal>
 
         <Reveal delay={0.06}>
-          <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:px-0">
+          {/* `pt-2 -mt-2` exists so the 4px hover lift has room: `overflow-x-auto`
+              clips the vertical axis as well, so without it the top of a tile
+              was cut off the moment you pointed at it. The negative margin
+              cancels the padding's shift, leaving the row where it was. */}
+          <div className="no-scrollbar -mx-4 -mt-2 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 pt-2 md:mx-0 md:px-0">
             {rail.map((game) => (
               <Link
                 key={game.name}

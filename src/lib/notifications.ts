@@ -1,5 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
+import { publishLive } from "@/lib/live-bus";
 
 export type NotificationKind =
   | "order_paid"
@@ -14,10 +15,12 @@ export type NotificationKind =
   | "withdrawal_decided"
   | "review_received"
   | "chat_message"
+  | "chat_report"
   | "pool_refunded"
   | "kyc_submitted"
   | "kyc_approved"
   | "kyc_rejected"
+  | "role_changed"
   | "topup_paid";
 export interface NotifyInput {
   userId: string;
@@ -37,7 +40,14 @@ export interface NotificationItem {
   createdAt: string;
 }
 
-/** Drop one inbox row. Fire-and-forget safe — never throws. */
+/**
+ * Drop one inbox row. Fire-and-forget safe — never throws.
+ *
+ * On success it also pings that user's open SSE streams, so the bell and the
+ * inbox page update instantly instead of waiting for their fallback poll. The
+ * publish is inside the try on purpose: a notification that reached the
+ * database must never be reported as failed just because no tab was listening.
+ */
 export async function notify(input: NotifyInput): Promise<void> {
   try {
     await db.notification.create({
@@ -49,6 +59,7 @@ export async function notify(input: NotifyInput): Promise<void> {
         link: input.link ?? null,
       },
     });
+    publishLive("inbox", `user:${input.userId}`);
   } catch (error) {
     console.error("notify failed", input.kind, input.userId, error);
   }
@@ -67,6 +78,10 @@ export async function notifyMany(userIds: string[], input: Omit<NotifyInput, "us
         link: input.link ?? null,
       })),
     });
+    publishLive(
+      "inbox",
+      userIds.map((userId) => `user:${userId}`),
+    );
   } catch (error) {
     console.error("notifyMany failed", input.kind, error);
   }
@@ -101,6 +116,28 @@ export async function getNotifications(userId: string, limit = 60): Promise<Noti
 
 export async function getUnreadCount(userId: string): Promise<number> {
   return db.notification.count({ where: { userId, readAt: null } });
+}
+
+export interface InboxRevision {
+  unread: number;
+  latestId: string | null;
+}
+
+/**
+ * Fingerprint of an inbox: how many are unread plus the newest id. Two small
+ * indexed reads instead of shipping the whole list, so the bell can ask every
+ * few seconds and only pull the items when the answer actually moved.
+ */
+export async function getInboxRevision(userId: string): Promise<InboxRevision> {
+  const [unread, latest] = await Promise.all([
+    db.notification.count({ where: { userId, readAt: null } }),
+    db.notification.findFirst({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      select: { id: true },
+    }),
+  ]);
+  return { unread, latestId: latest?.id ?? null };
 }
 
 export async function markAllRead(userId: string): Promise<void> {

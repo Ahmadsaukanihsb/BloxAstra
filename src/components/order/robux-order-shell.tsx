@@ -37,14 +37,14 @@ export function RobuxServiceTabs({ current }: { current: RobuxOrderKind }) {
             className={cx(
               "group relative flex w-full items-center justify-center gap-2 rounded-full border-2 px-4 py-2.5 text-[13px] font-bold transition-all duration-200",
               active
-                ? "border-astra bg-paper text-astra ring-4 ring-astra/10"
+                ? "border-astra bg-paper text-astra-ink ring-4 ring-astra/10"
                 : "border-line bg-paper text-ink-dim shadow-xs hover:border-line-strong hover:text-ink",
             )}
           >
             <span
               className={cx(
                 "grid size-6 place-items-center rounded-full transition-colors",
-                active ? "bg-astra/[0.06] text-astra" : "bg-canvas-2 text-ink-mute",
+                active ? "bg-astra/[0.06] text-astra-ink" : "bg-canvas-2 text-ink-mute",
               )}
             >
               <IconHexCoin size={15} />
@@ -52,7 +52,9 @@ export function RobuxServiceTabs({ current }: { current: RobuxOrderKind }) {
             <span>{meta.label}</span>
             <span
               className={cx(
-                "rounded-full px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white shadow-xs",
+                // The fill arrives from `meta.badgeColor` on another line, so this
+                // label cannot be found by scanning a single line for a fill class.
+                "rounded-full px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-on-bright shadow-xs",
                 meta.badgeColor,
               )}
             >
@@ -185,7 +187,7 @@ export function LoginRequiredNotice() {
       </div>
       <Link
         href="/masuk"
-        className="shrink-0 rounded-control bg-robux px-3.5 py-1.5 text-[11px] font-extrabold text-white transition-colors hover:bg-warn"
+        className="shrink-0 rounded-control bg-robux px-3.5 py-1.5 text-[11px] font-extrabold text-on-bright transition-colors hover:bg-warn"
       >
         Login
       </Link>
@@ -280,7 +282,7 @@ export function UsernameVerifyField({
           type="button"
           onClick={() => void check()}
           disabled={checking || value.trim().length === 0}
-          className="shrink-0 rounded-well bg-ink px-4 text-[12px] font-extrabold uppercase tracking-wide text-white transition-all hover:bg-ink-dim active:scale-95 disabled:opacity-40"
+          className="shrink-0 rounded-well bg-ink px-4 text-[12px] font-extrabold uppercase tracking-wide text-on-bright transition-all hover:bg-ink-dim active:scale-95 disabled:opacity-40"
         >
           {checking ? "…" : "Cek"}
         </button>
@@ -310,7 +312,7 @@ export function UsernameVerifyField({
               <span className="num truncate text-[13px] font-extrabold text-ink">
                 @{verifiedName}
               </span>
-              <span className="flex items-center gap-1 rounded-full bg-success px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white">
+              <span className="flex items-center gap-1 rounded-full bg-success px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-on-bright">
                 <IconCheck size={10} />
                 Terverifikasi
               </span>

@@ -4,7 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { cx } from "@/lib/cx";
+import { useGroupChatUnread } from "@/lib/chat-unread";
 import {
+  IconChat,
   IconCompass,
   IconHome,
   IconReceipt,
@@ -16,10 +18,9 @@ interface Tab {
   href: string;
   label: string;
   icon: typeof IconHome;
-  badge?: string;
 }
 
-const tabs: Tab[] = [
+const BASE_TABS: Tab[] = [
   { href: "/", label: "Beranda", icon: IconHome },
   { href: "/katalog", label: "Jelajah", icon: IconCompass },
   { href: "/katalog?kategori=item", label: "Item", icon: IconStorefront },
@@ -27,8 +28,24 @@ const tabs: Tab[] = [
   { href: "/dompet", label: "Dompet", icon: IconWallet },
 ];
 
-export function BottomNav() {
+/** The seller group room is the one tab only sellers have any business in. */
+const GROUP_TAB: Tab = { href: "/dashboard/penjual/grup", label: "Grup", icon: IconChat };
+
+export function BottomNav({
+  role = null,
+  groupUnread = 0,
+}: {
+  role?: "buyer" | "seller" | "admin" | null;
+  /** Unread group messages, read on the server so the tab is never a surprise. */
+  groupUnread?: number;
+}) {
   const pathname = usePathname();
+  const isSeller = role === "seller";
+  const unread = useGroupChatUnread(groupUnread, isSeller);
+
+  const tabs: Tab[] = isSeller
+    ? [...BASE_TABS.slice(0, 4), GROUP_TAB, BASE_TABS[4]]
+    : BASE_TABS;
 
   // One tab lights up at a time: the first matching entry wins, so the
   // category shortcut `/katalog?kategori=item` never shadows `/katalog`.
@@ -65,9 +82,12 @@ export function BottomNav() {
               ) : null}
               <span className="relative">
                 <Icon size={20} />
-                {tab.badge ? (
-                  <span className="num absolute -right-2.5 -top-1.5 grid min-w-4 place-items-center rounded-full bg-gold px-1 text-[9px] font-extrabold text-ink">
-                    {tab.badge}
+                {tab.href === GROUP_TAB.href && unread > 0 ? (
+                  <span
+                    aria-label={`${unread} pesan grup belum dibaca`}
+                    className="num absolute -right-2.5 -top-1.5 grid min-w-4 place-items-center rounded-full bg-astra px-1 text-[9px] font-extrabold text-on-bright"
+                  >
+                    {unread > 99 ? "99+" : unread}
                   </span>
                 ) : null}
               </span>

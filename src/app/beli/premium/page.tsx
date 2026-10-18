@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   title: "Beli Roblox Premium",
   description:
     "Langganan Roblox Premium 1, 3, atau 12 bulan diproses penjual terverifikasi. Kredensial dienkripsi AES-256 di Blox Astra.",
+  alternates: { canonical: "/beli/premium" },
 };
 
 export default function PremiumPage() {

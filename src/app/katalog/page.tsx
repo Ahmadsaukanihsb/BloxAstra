@@ -12,6 +12,11 @@ export const metadata: Metadata = {
   title: "Katalog listing Roblox",
   description:
     "Jelajahi listing Robux gamepass, item in-game, Gift Card, akun, dan Roblox Premium dari penjual terverifikasi dengan penahanan dana Blox Astra.",
+  // The catalog is filtered entirely by query string (?kategori=, ?penjual=,
+  // ?page=). Every filtered URL renders the same page, so without a canonical
+  // Google treats each combination as a separate near-duplicate and dilutes
+  // the one page that should rank. Point them all at the bare catalog.
+  alternates: { canonical: "/katalog" },
 };
 
 function first(value: string | string[] | undefined): string {

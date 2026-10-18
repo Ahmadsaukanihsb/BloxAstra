@@ -5,11 +5,13 @@ import Link from "next/link";
 import { cx } from "@/lib/cx";
 import { formatIDR } from "@/lib/format";
 import { TIER_DAILY_CAPS } from "@/lib/order-meta";
-import { AstraMark, IconBell, IconCheck, IconLock, IconUpload } from "@/components/ui/icons";
+import { BrandMark } from "@/components/site/brand-mark";
+import { IconBell, IconCheck, IconLock, IconUpload } from "@/components/ui/icons";
 import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Checkbox, Field, OptionCard, TextInput } from "@/components/ui/field";
 import { Notice, ProgressBar } from "@/components/ui/feedback";
+import { TurnstileWidget } from "@/components/auth/turnstile-widget";
 import { loginAction, registerBuyerAction, registerSellerAction } from "@/app/actions/auth";
 import {
   IconAlert,
@@ -28,16 +30,18 @@ Username: [Username Akun Penjual]
 Tanggal: [YYYY-MM-DD]
 Pernyataan: Saya bertanggung jawab penuh atas barang yang saya jual.`;
 
-export function AuthPanel({ mode }: { mode: "login" | "register" }) {
+export function AuthPanel({ mode, logo }: { mode: "login" | "register"; logo?: string | null }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.05fr]">
       <div className="flex flex-col justify-center gap-10 border-b border-line p-7 md:p-10 lg:border-b-0 lg:border-r">
         <div className="flex flex-col gap-6">
           <span className="flex items-center gap-2.5 text-astra-ink">
-            <AstraMark size={28} />
-            <span className="font-display text-base font-extrabold tracking-tight text-ink">
-              Blox<span className="text-astra-ink">Astra</span>
-            </span>
+            <BrandMark logo={logo ?? null} size={28} />
+            {!logo ? (
+              <span className="font-display text-base font-extrabold tracking-tight text-ink">
+                Blox<span className="text-astra-ink">Astra</span>
+              </span>
+            ) : null}
           </span>
 
  <h2 className="max-w-[24ch] font-display text-title font-extrabold text-ink md:text-title">
@@ -169,6 +173,8 @@ function LoginForm() {
             </button>
           </div>
         </Field>
+
+        <TurnstileWidget />
 
         {state.error ? (
           <Notice tone="danger" icon={<IconAlert size={15} />}>
@@ -505,6 +511,8 @@ function RegisterForm() {
             </>
           ) : null}
 
+          <TurnstileWidget />
+
           {sellerState.error ? (
             <Notice tone="danger" icon={<IconAlert size={15} />}>
               {sellerState.error}
@@ -620,6 +628,7 @@ function RegisterForm() {
                 invalid={Boolean(buyerState.fieldErrors?.password)}
               />
             </Field>
+            <TurnstileWidget />
             {buyerState.error ? (
               <Notice tone="danger" icon={<IconAlert size={15} />}>
                 {buyerState.error}

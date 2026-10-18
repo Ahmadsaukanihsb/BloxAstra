@@ -7,6 +7,12 @@ export interface SessionData {
   role?: "buyer" | "seller" | "admin";
   email?: string;
   username?: string;
+  /**
+   * Generation of this session, mirrored from User.sessionVersion at sign-in.
+   * A mismatch means the user logged out everywhere (or changed password)
+   * and this cookie is stale — auth treats it as signed out.
+   */
+  sessionVersion?: number;
 }
 
 const isProd = process.env.NODE_ENV === "production";

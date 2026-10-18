@@ -1,32 +1,35 @@
 import Link from "next/link";
-import { IconArrowRight, RobuxGlyph } from "@/components/ui/icons";
+import { RobuxGlyph } from "@/components/ui/icons";
 
 /**
- * Top announcement strip — soft mint gradient, one line, one link.
- * Kept as a server component: no state, no motion, no layout shift.
+ * Announcement rail. A solid red band with a dark chip, not a pastel gradient:
+ * on the dark theme a tinted wash put dark red text on a dark red ground and
+ * the line became unreadable. White on the brand red measures 4.68:1, which is
+ * legal for a 12px bold label.
+ *
+ * Copy and link come from the admin panel (`/admin` → Notifikasi) and are read
+ * through `getSitePromo()`; hiding the strip is the same toggle. Kept as a
+ * server component: no state, no motion, no layout shift.
  */
-export function PromoStrip() {
+export function PromoStrip({
+  message,
+  ctaLabel,
+  ctaHref,
+}: {
+  message: string;
+  ctaLabel: string;
+  ctaHref: string;
+}) {
   return (
-    <div className="accent-wash relative z-30">
-      <div className="mx-auto flex max-w-[1180px] items-center justify-center gap-2.5 px-4 py-2">
-        <RobuxGlyph size={14} className="shrink-0 text-astra-deep" />
-        <p className="truncate text-[12px] font-bold text-astra-deep">
-          <span className="hidden sm:inline">
-            Bonus seller baru untuk orderan pertama. Dana ditahan platform, garansi pengembalian dana 100%
-          </span>
-          <span className="sm:hidden">
-            Bonus seller baru
-          </span>
-        </p>
+    <div className="relative z-30 bg-astra">
+      <div className="mx-auto flex max-w-[1180px] items-center justify-center gap-3 px-4 py-2">
+        <RobuxGlyph size={14} className="shrink-0 text-white" />
+        <p className="truncate text-[12px] font-bold text-white">{message}</p>
         <Link
-          href="/daftar"
-          className="group flex shrink-0 items-center gap-1 rounded-full bg-paper/80 px-2.5 py-0.5 text-[11px] font-extrabold text-astra-deep transition-colors duration-300 hover:bg-paper"
+          href={ctaHref}
+          className="shrink-0 rounded-tag bg-canvas-2 px-2.5 py-1 tag text-ink transition-transform duration-200 ease-[var(--ease-astra)] hover:-translate-y-px active:translate-y-px"
         >
-          Klaim
-          <IconArrowRight
-            size={12}
-            className="transition-transform duration-300 ease-[var(--ease-astra)] group-hover:translate-x-0.5"
-          />
+          {ctaLabel}
         </Link>
       </div>
     </div>

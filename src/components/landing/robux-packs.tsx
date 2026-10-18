@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { formatIDR } from "@/lib/format";
 import { listingQuote } from "@/lib/robux-pricing";
 import type { Product } from "@/lib/types";
@@ -9,13 +9,11 @@ import { useRateCard } from "@/components/rates/rate-store";
 import { SectionHeading } from "@/components/ui/surface";
 import { Reveal, RevealGroup, RevealItem } from "@/components/ui/reveal";
 import { ButtonLink } from "@/components/ui/button";
-import { IconArrowRight, RobuxGlyph } from "@/components/ui/icons";
+import { IconArrowRight, IconPackage, RobuxGlyph } from "@/components/ui/icons";
+import { ShelfEmpty } from "@/components/landing/shelf-empty";
 
 export function RobuxPacks({ products }: { products: Product[] }) {
   const rateCard = useRateCard();
-  const [custom, setCustom] = useState("100");
-  const customValue = Number(custom.replace(/\D/g, "") || "0");
-  const customPrice = listingQuote(customValue, "cover", 1, rateCard).totalIdr;
 
   const packs = useMemo(() => {
     const shelfPacks = products
@@ -42,7 +40,26 @@ export function RobuxPacks({ products }: { products: Product[] }) {
     });
   }, [products, rateCard]);
 
-  if (!packs.length) return null;
+  // The packs shelf is seller stock, but Robux itself is not: the platform's
+  // own gamepass flow keeps selling with an empty catalog, so that is what this
+  // section offers the moment it has no packs of its own to show.
+  if (!packs.length) {
+    return (
+      <ShelfEmpty
+        title={
+          <>
+            Robux <span className="text-astra-ink">Bersih</span>
+          </>
+        }
+        description="Paket di rak ini dipasang penjual dari stok mereka — belum ada yang aktif hari ini."
+        action={{ href: "/beli/robux-gamepass", label: "Beli via gamepass", variant: "primary" }}
+        label="Belum ada paket dari penjual"
+        body="Gamepass milik platform selalu tersedia: pajak 30% kami yang tanggung dan Robux masuk ke akunmu sendiri."
+        icon={<IconPackage size={17} />}
+        secondary={{ href: "/katalog?kategori=gamepass", label: "Lihat katalog" }}
+      />
+    );
+  }
 
   return (
     <section className="px-4 py-14 md:px-8 md:py-16">
@@ -52,10 +69,10 @@ export function RobuxPacks({ products }: { products: Product[] }) {
             align="between"
             title={
               <>
-                Robux <span className="text-astra">Bersih</span>
+                Paket Robux <span className="text-astra-ink">dari penjual</span>
               </>
             }
-            description="Pajak 30% sudah dicover • Robux masuk ke akunmu sendiri"
+            description="Stok milik toko terverifikasi — harga dan pengiriman mengikuti masing-masing penjual. Mau instan tanpa pilih toko? Pakai kalkulator di atas."
             action={
               <ButtonLink
                 href="/katalog?kategori=gamepass"
@@ -73,42 +90,6 @@ export function RobuxPacks({ products }: { products: Product[] }) {
           className="grid grid-cols-2 gap-3.5 lg:grid-cols-5 lg:gap-4"
           stagger={0.05}
         >
-          {/* custom nominal */}
-          <RevealItem className="h-full">
-            <div className="relative flex h-full flex-col items-center gap-3 rounded-card border-2 border-astra bg-paper px-4 pb-4 pt-6 text-center">
-              <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-astra px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-[0.06em] text-white">
-                Bebas
-              </span>
-              <span className="flex flex-col gap-0.5">
-                <span className="text-[17px] font-extrabold text-ink">Custom</span>
-                <span className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-astra">
-                  Nominal
-                </span>
-              </span>
-              <label className="flex w-full items-center gap-2 rounded-well border border-line bg-paper px-3 py-2">
-                <input
-                  value={custom}
-                  onChange={(event) => setCustom(event.target.value.replace(/\D/g, "").slice(0, 6))}
-                  inputMode="numeric"
-                  aria-label="Nominal Robux"
-                  className="num w-full bg-transparent text-center text-[15px] font-extrabold text-ink outline-none"
-                />
-              </label>
-              <span className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-ink-mute">
-                Robux
-              </span>
-              <span className="num mt-auto text-[15px] font-extrabold text-astra">
-                {formatIDR(customPrice)}
-              </span>
-              <Link
-                href="/katalog?kategori=gamepass"
-                className="accent-fill flex h-10 w-full items-center justify-center rounded-control text-[11px] font-extrabold uppercase tracking-[0.06em] text-white transition-[filter] duration-300 hover:brightness-[1.08]"
-              >
-                Beli sekarang
-              </Link>
-            </div>
-          </RevealItem>
-
           {packs.map((pack) => (
             <RevealItem key={pack.slug} className="h-full">
               <div className="relative flex h-full flex-col items-center gap-3 rounded-card border border-line bg-paper px-4 pb-4 pt-6 text-center">
@@ -119,14 +100,14 @@ export function RobuxPacks({ products }: { products: Product[] }) {
                   <span className="num text-[19px] font-extrabold text-ink">
                     {pack.robux.toLocaleString("id-ID")}
                   </span>
-                  <span className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-astra">
+                  <span className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-astra-ink">
                     Robux
                   </span>
                 </span>
                 <span className="grid size-11 place-items-center rounded-control bg-canvas-2 text-robux">
                   <RobuxGlyph size={22} />
                 </span>
-                <span className="num mt-auto text-[15px] font-extrabold text-astra">
+                <span className="num mt-auto text-[15px] font-extrabold text-astra-ink">
                   {formatIDR(pack.price)}
                 </span>
                 <Link

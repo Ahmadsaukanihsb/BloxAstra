@@ -3,8 +3,8 @@
 /* ============================================================
    BLOX ASTRA — DESIGN TOKENS
    This is a Roblox marketplace, so the palette is Roblox's own: red, black,
-   white, and Robux gold. Colour is spent on meaning, not decoration, so the
-   whole app runs on three hues plus neutral:
+   white, and Robux gold — turned into a dark game lobby. Colour is spent on
+   meaning, not decoration, so the whole app runs on three hues plus neutral:
 
      red     brand CTA and negative state
      gold    Robux, and anything that needs attention
@@ -14,55 +14,85 @@
    There is no fourth hue. Adding one (a teal, a violet, a second amber) is
    how this UI got noisy before; use weight, size, and space instead.
 
-   Radius has three values only: card (containers), well (inner block),
-   control (inputs and buttons). Do not hand-roll `rounded-[1.4rem]`.
+   Depth runs on lightness direction: the page floor is the darkest tone and
+   every panel sits above it, so a card is a block standing on the floor
+   rather than a white sheet on a white wall.
+
+   Radius has four values only: card (containers), well (inner block),
+   control (inputs and buttons), tag (small angular labels). Do not
+   hand-roll `rounded-[1.4rem]`.
    ============================================================ */
 
 @theme {
-  /* --- surfaces: untinted, because Roblox's own UI is black on white --- */
-  --color-paper: #ffffff;
-  --color-canvas: #f6f6f7;
-  --color-canvas-2: #eeeeef;
+  /* --- surfaces: a dark lobby, never pure black --- */
+  /* the floor (page background) */
+  --color-canvas: #0d0d11;
+  /* everything raised above the floor: cards, nav, panels */
+  --color-paper: #17171d;
+  /* a well punched into a raised surface */
+  --color-canvas-2: #08080b;
 
   /* --- hairlines --- */
-  --color-line: #e5e5e7;
-  --color-line-strong: #d0d0d4;
+  /* On a dark surface the brighter tone is the one that reads as an edge, so
+     these run the opposite direction to the light theme they replaced. */
+  --color-line: #2b2b34;
+  --color-line-strong: #3d3d49;
 
-  /* --- ink: near-black, not blue-black --- */
-  --color-ink: #16161a;
-  --color-ink-dim: #53535c;
-  /* Lightest text allowed at 11px. It has to clear AA on paper, canvas, and
-     canvas-2 — including muted labels that sit inside a well. Measured with
-     tools/contrast.mjs, not eyeballed. */
-  --color-ink-mute: #6b6b74;
+  /* --- ink: near-white, never pure white (it glares on charcoal) --- */
+  --color-ink: #f2f2f5;
+  --color-ink-dim: #a6a6b2;
+  /* Lightest text allowed at 11px, including muted labels inside a well.
+     Measured against `paper` — on a dark theme the lightest surface is the
+     binding constraint, not the darkest. tools/contrast.mjs, not eyeballed. */
+  --color-ink-mute: #8e8e99;
 
   /* --- Roblox red: the brand, and the primary action --- */
   /* white on this fill measures 4.69:1, so it is legal for a button label */
   --color-astra: #e2231a;
-  /* text-safe red for links, numerals and brand chips (7:1 on white) */
-  --color-astra-ink: #b3120a;
-  --color-astra-bright: #b3120a;
-  --color-astra-deep: #a30d05;
-  --color-astra-wash: #fdefee;
-  --color-astra-mint: #fbdcd9;
+  /* Text-safe red for links, numerals and brand chips (5.6:1 on paper). Chosen
+     as the most saturated red that still clears AA as text on the dark floor —
+     a lighter salmon would pass more easily but reads pink, not Roblox. */
+  --color-astra-ink: #ff5347;
+  /* The deeper red used for fills that carry a WHITE label and for hover. On a
+     dark theme a brighter red cannot hold a white label: at #ff382b the label
+     measured 3.59:1 and failed. This value keeps it at 5.2:1. */
+  --color-astra-bright: #c9352c;
+  /* The block edge under a red button. A red this dark is only ever an edge
+     (a shadow), never a fill, so it cannot be mistaken for a real surface. */
+  --color-astra-deep: #8c0f08;
+  --color-astra-wash: #2a1114;
+  --color-astra-mint: #3a161a;
 
   /* --- Robux gold: one amber for the whole app --- */
   --color-gold: #f5b100;
-  --color-gold-wash: #fff8e6;
+  --color-gold-wash: #2a2110;
+  /* text sitting on a bright gold fill is always dark, which is the one place
+     the dark theme keeps a dark label */
+  --color-on-gold: #1a1408;
+  /* The light theme got away with ONE value per semantic hue because a dark
+     green served both as readable text on white and as a fill under a white
+     label. On a dark theme that is impossible: readable text has to be light,
+     and a fill under a light label has to be dark. So a label colour is its
+     own token. Anything that fills with a bright hue (gold, success, danger,
+     warn, info, or an inverted ink block) labels itself with this. */
+  --color-on-bright: #0d0d11;
 
-  /* --- radius: three values, no more --- */
-  --radius-card: 20px;
-  --radius-well: 14px;
-  --radius-control: 12px;
+  /* --- radius: four values, no more --- */
+  --radius-card: 16px;
+  --radius-well: 12px;
+  --radius-control: 10px;
+  /* small angular labels (shelf tags, tiers). Deliberately tighter than a
+     control so a tag never reads as a pill. */
+  --radius-tag: 6px;
 
   /* --- type scale: three heading steps, then the body scale ---
      Both heading steps are fluid so no page needs `sm:`/`md:` size overrides. */
   /* marketing titles + hero headline. Montserrat is wider than the display
      face this replaced, so the clamp tops out lower and tracks in tighter to
      keep the hero headline on the same two lines. */
-  --text-display: clamp(1.9rem, 1.4rem + 1.9vw, 2.4rem);
-  --text-display--line-height: 1.06;
-  --text-display--letter-spacing: -0.032em;
+  --text-display: clamp(2.1rem, 1.3rem + 2.7vw, 3.05rem);
+  --text-display--line-height: 1.02;
+  --text-display--letter-spacing: -0.042em;
   /* app page titles (dashboard, admin, dompet, pesanan) */
   --text-page: clamp(1.5rem, 1.3rem + 0.7vw, 1.85rem);
   --text-page--line-height: 1.1;
@@ -75,20 +105,21 @@
   /* --- semantic --- */
   /* Robux amounts share the gold amber with warning: two ambers side by side
      were indistinguishable anyway, and one token is one less hue to reason
-     about. 5.3:1 on white. */
-  --color-robux: #8a5a00;
-  --color-robux-wash: #fff8e6;
-  --color-warn: #8a5a00;
+     about. 9.5:1 on paper. */
+  --color-robux: #f5b100;
+  --color-robux-wash: #2a2110;
+  --color-warn: #f5b100;
   /* the only green in the app: confirmed, settled, verified */
-  --color-success: #166534;
-  /* deeper than the brand red on purpose. Filled red = do the primary thing;
-     this deep red = destructive or negative, and it is never used for a
-     primary action, so the two never compete. 7.0:1 on white. */
-  --color-danger: #b3120a;
-  --color-danger-wash: #fdefee;
+  --color-success: #4ed894;
+  /* Negative states stay the brand red, exactly as the light theme had them
+     (#b3120a served as both). A separate red hue for errors bought nothing
+     and cost a hue; destructive weight comes from the fill and outline
+     treatment instead. 5.6:1 on paper. */
+  --color-danger: #ff5347;
+  --color-danger-wash: #2a1114;
   /* Informational notices are neutral on purpose. A third tinted hue for
      "here is some context" was the noisiest thing in the old palette. */
-  --color-info: #53535c;
+  --color-info: #a6a6b2;
 
   /* --- type --- */
   /* Display is Montserrat, which is the mapping Roblox published when they
@@ -200,13 +231,15 @@
 
 @layer base {
   html {
-    color-scheme: light;
+    color-scheme: dark;
     scroll-behavior: smooth;
     -webkit-tap-highlight-color: transparent;
   }
 
   body {
-    background-color: var(--color-paper);
+    /* The floor, not `paper`: panels stand above the page instead of merging
+       into it, which is what gives the lobby its depth. */
+    background-color: var(--color-canvas);
     color: var(--color-ink);
     font-family: var(--font-sans);
     font-feature-settings: "ss01";
@@ -214,8 +247,8 @@
   }
 
   ::selection {
-    background-color: var(--color-astra-mint);
-    color: var(--color-astra-deep);
+    background-color: var(--color-astra-deep);
+    color: var(--color-ink);
   }
 
   h1,
@@ -249,7 +282,7 @@
   }
   ::-webkit-scrollbar-thumb {
     background: var(--color-line-strong);
-    border: 3px solid var(--color-canvas);
+    border: 3px solid var(--color-canvas-2);
     border-radius: 999px;
   }
   ::-webkit-scrollbar-thumb:hover {
@@ -261,19 +294,95 @@
    UTILITIES
    ============================================================ */
 
-/* Card shell: flat white surface, hairline edge, one radius */
+/* Raised panel: one surface standing on the floor. The lit top edge is the
+   only light in the theme, and it is cast from one direction everywhere —
+   from above. */
 @utility bezel-shell {
   border-radius: var(--radius-card);
   background-color: var(--color-paper);
   outline: 1px solid var(--color-line);
   outline-offset: -1px;
-  box-shadow: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
 }
 
-/* Inner core stays flat so nested shells read as one card */
+/* Inner core stays flat so nested shells read as one block */
 @utility bezel-core {
   border-radius: var(--radius-well);
   background-color: transparent;
+}
+
+/* THE signature control: a solid block with a coloured edge under it that
+   collapses on press, so a click feels like pressing a physical button. Set
+   `--press-edge` per variant to the darkened version of that fill. */
+@utility press {
+  --press-edge: var(--color-canvas-2);
+  box-shadow:
+    0 3px 0 0 var(--press-edge),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  transition:
+    transform var(--dur-fast) var(--ease-astra),
+    box-shadow var(--dur-fast) var(--ease-astra),
+    background-color var(--dur-base) var(--ease-astra),
+    color var(--dur-base) var(--ease-astra),
+    outline-color var(--dur-base) var(--ease-astra);
+  &:hover {
+    transform: translate3d(0, -1px, 0);
+    box-shadow:
+      0 4px 0 0 var(--press-edge),
+      inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  }
+  &:active {
+    transform: translate3d(0, 3px, 0);
+    box-shadow:
+      0 0 0 0 var(--press-edge),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+}
+
+/* Small angular label. Tighter than a control on purpose so a tag never
+   reads as a pill. */
+@utility tag {
+  border-radius: var(--radius-tag);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+
+/* Money. Display face rather than mono, so a price reads as a price tag and
+   not as terminal output. */
+@utility price {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Lobby floor: a faint tiled dot grid for large dark bands. A radial gradient
+   rather than an image, so it costs no request and tiles at any size. */
+@utility lobby-grid {
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    rgba(255, 255, 255, 0.055) 1px,
+    transparent 0
+  );
+  background-size: 22px 22px;
+}
+
+/* Film grain. A tiny feTurbulence SVG inlined as a data URI — no request, no
+   asset to ship — to break the flat-digital feel of large dark fills. */
+@utility grain {
+  position: relative;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.045;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/></filter><rect width='140' height='140' filter='url(%23n)'/></svg>");
+    background-size: 140px 140px;
+  }
 }
 
 /* Page container: one max width and one gutter pair for the whole app */
@@ -349,7 +458,9 @@
   }
 }
 
-/* Card lift: 3px rise on hover, transform only. */
+/* Card lift: 3px rise on hover, transform only. The lift reads against the
+   floor, so it is paired with the panel's own lit top edge rather than a
+   blurred drop shadow. */
 @utility lift {
   transition: transform var(--dur-base) var(--ease-astra);
   &:hover {

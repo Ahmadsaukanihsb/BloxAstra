@@ -1,0 +1,11 @@
+-- Blox Astra — second rate for the gamepass flow: cover tax vs no cover tax.
+--
+-- The legacy `orderGamepass` column stays untouched (Prisma now reads it as
+-- `orderGamepassCover` via @map) so the production build that is already
+-- running keeps serving the same rate while this migration is applied.
+-- Only an additive column is needed: no table rebuild, no downtime.
+--
+-- 62.72 = 89.6 × 0.7 — Roblox keeps 30% of every gamepass sale, so billing the
+-- raw gamepass price needs a rate 30% lower for the same net Robux to cost the
+-- buyer the same as the cover-tax mode.
+ALTER TABLE "RateCard" ADD COLUMN "orderGamepassNoCover" REAL NOT NULL DEFAULT 62.72;

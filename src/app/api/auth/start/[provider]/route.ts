@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getSession } from "@/lib/session";
+import { getCurrentUser } from "@/lib/auth";
 import { buildAuthorizeUrl, isOAuthConfigured, sealOAuthState, type OAuthProvider } from "@/lib/oauth";
 import { requestOrigin } from "@/lib/site";
 
@@ -33,11 +33,15 @@ export async function GET(
   const linkMode = new URL(req.url).searchParams.get("mode") === "link";
   let linkUserId: string | undefined;
   if (linkMode) {
-    const session = await getSession();
-    if (!session.userId) {
+    // Resolve through getCurrentUser, not a raw cookie read: a stale session
+    // (logged out everywhere / password changed / suspended) must NOT be able
+    // to mint a link target, or a stolen cookie could attach an attacker's
+    // provider to the victim's account permanently.
+    const user = await getCurrentUser();
+    if (!user) {
       return NextResponse.redirect(new URL("/masuk", origin));
     }
-    linkUserId = session.userId;
+    linkUserId = user.id;
   }
 
   const { url, state, codeVerifier } = buildAuthorizeUrl(typed);

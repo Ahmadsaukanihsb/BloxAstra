@@ -91,6 +91,7 @@ function mapProduct(row: ProductRow): Product {
     imageUrl: row.imageUrl ?? undefined,
     sortOrder: row.sortOrder,
     shelf: row.shelf,
+    updatedAt: row.updatedAt.toISOString(),
   };
 }
 

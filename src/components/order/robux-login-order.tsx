@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cx } from "@/lib/cx";
 import { formatIDR, formatNumber } from "@/lib/format";
-import { ROBUX_ORDERS, robuxOrderPrice } from "@/lib/robux-orders";
+import { ROBUX_ORDERS, clampRobuxAmount, robuxOrderPrice } from "@/lib/robux-orders";
 import { useRobuxOrder } from "@/components/rates/rate-store";
 import { createRobuxOrder } from "@/app/actions/orders";
 import {
@@ -45,13 +45,19 @@ const fadeSlide = {
 export function RobuxLoginOrder({
   isLoggedIn,
   walletBalance = 0,
+  initialRobux = baseConfig.initialRobux,
 }: {
   isLoggedIn: boolean;
   walletBalance?: number;
+  /** Nominal the buyer already picked in the lobby's quick-buy counter. */
+  initialRobux?: number;
 }) {
   const router = useRouter();
-  const [robux, setRobux] = useState(1000);
-  const [inputValue, setInputValue] = useState("1000");
+  // Snapped onto this flow's grid so the number in the box is always one a
+  // slider value could actually hold.
+  const startRobux = clampRobuxAmount(baseConfig, initialRobux);
+  const [robux, setRobux] = useState(startRobux);
+  const [inputValue, setInputValue] = useState(String(startRobux));
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -158,7 +164,7 @@ export function RobuxLoginOrder({
                 <span className="num rounded-full border border-info/15 bg-info/[0.06] px-3 py-1 text-[12px] font-bold text-info">
                   Rate: {formatIDR(config.rate * 100)} / 100
                 </span>
-                <span className="rounded-full bg-info px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">
+                <span className="rounded-full bg-info px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-on-bright">
                   Instan
                 </span>
               </div>
@@ -172,7 +178,7 @@ export function RobuxLoginOrder({
                   Via Login: Robux diisikan langsung ke akunmu oleh sistem bot terverifikasi (5-15 menit).
                 </span>
               </div>
-              <span className="shrink-0 rounded-full bg-info px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-xs">
+              <span className="shrink-0 rounded-full bg-info px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-on-bright shadow-xs">
                 Proses Kilat
               </span>
             </div>
@@ -185,7 +191,7 @@ export function RobuxLoginOrder({
               <span className="num font-display text-[2.75rem] font-extrabold leading-none tracking-tight text-ink">
                 {formatNumber(robux)}
               </span>
-              <span className="num rounded-full border border-astra/25 bg-astra/[0.06] px-3.5 py-1 text-[14px] font-extrabold text-astra">
+              <span className="num rounded-full border border-astra/25 bg-astra/[0.06] px-3.5 py-1 text-[14px] font-extrabold text-astra-ink">
                 = {formatIDR(price)}
               </span>
             </div>
@@ -267,7 +273,7 @@ export function RobuxLoginOrder({
                     <span
                       className={cx(
                         "num text-[17px] font-extrabold",
-                        isSelected ? "text-astra" : "text-ink",
+                        isSelected ? "text-astra-ink" : "text-ink",
                       )}
                     >
                       {formatNumber(pack.robux)}
@@ -399,7 +405,7 @@ export function RobuxLoginOrder({
                   <h3 className="text-[13px] font-extrabold text-info">
                     Jaminan Keamanan Kredensial 100%
                   </h3>
-                  <span className="rounded bg-info px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">
+                  <span className="rounded bg-info px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-on-bright">
                     AES-256
                   </span>
                 </div>
@@ -460,7 +466,7 @@ export function RobuxLoginOrder({
                     className={cx(
                       "flex items-center justify-center gap-2 rounded-well border-2 px-3 py-3.5 text-[12px] font-bold transition-all duration-200",
                       isSelected
-                        ? "border-astra bg-paper text-astra"
+                        ? "border-astra bg-paper text-astra-ink"
                         : "border-line bg-paper text-ink-dim hover:border-line-strong",
                     )}
                   >
@@ -480,7 +486,7 @@ export function RobuxLoginOrder({
                   className="rounded-well border border-success/25 bg-success/[0.06] p-4 text-success"
                 >
                   <div className="flex items-start gap-3">
-                    <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-success text-white">
+                    <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-success text-on-bright">
                       <IconCheck size={12} />
                     </span>
                     <div className="flex flex-col gap-1">
@@ -500,7 +506,7 @@ export function RobuxLoginOrder({
                   className="rounded-well border border-info/25 bg-info/[0.06] p-4 text-info"
                 >
                   <div className="flex items-start gap-3">
-                    <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-info text-white">
+                    <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-info text-on-bright">
                       <IconCheck size={12} />
                     </span>
                     <div className="flex flex-col gap-1">
@@ -520,7 +526,7 @@ export function RobuxLoginOrder({
                   className="rounded-well border border-info/25 bg-info/[0.06] p-4 text-info"
                 >
                   <div className="flex items-start gap-3">
-                    <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-info text-white">
+                    <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-info text-on-bright">
                       <IconCheck size={12} />
                     </span>
                     <div className="flex flex-col gap-1">
@@ -618,7 +624,7 @@ export function RobuxLoginOrder({
                     {formatIDR(totalPrice)}
                   </div>
                 ) : null}
-                <div className="num mt-1 text-[1.85rem] font-black tracking-tight text-astra">
+                <div className="num mt-1 text-[1.85rem] font-black tracking-tight text-astra-ink">
                   {formatIDR(finalPrice)}
                 </div>
                 {promoCut ? (

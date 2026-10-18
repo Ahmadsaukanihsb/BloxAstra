@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { replyDispute } from "@/app/actions/room";
 import type { OrderDisputeInfo } from "@/lib/orders";
+import { isDecidableDispute } from "@/lib/order-meta";
 import { cx } from "@/lib/cx";
 import { Button } from "@/components/ui/button";
 import { Field, TextArea } from "@/components/ui/field";
@@ -16,10 +17,15 @@ const MAX_BYTES = 1_500_000;
 
 /** Read-only thumbnails for stored dispute evidence (data URLs). */
 export function EvidenceGallery({ items }: { items: string[] }) {
-  if (items.length === 0) return null;
+  // Only data-URL images are ever written (magic bytes verified server-side),
+  // but the value comes back out of a JSON blob that anything with DB access
+  // could have edited by hand. A `javascript:` URL here would run in the
+  // viewer's origin via the thumbnail link — so refuse anything else.
+  const safe = items.filter((src) => src.startsWith("data:image/"));
+  if (safe.length === 0) return null;
   return (
     <div className="flex flex-wrap gap-2.5">
-      {items.map((src, index) => (
+      {safe.map((src, index) => (
         <a
           key={`${index}-${src.slice(0, 32)}`}
           href={src}
@@ -128,7 +134,7 @@ export function EvidencePicker({
                 type="button"
                 aria-label={`Hapus lampiran ${index + 1}`}
                 onClick={() => onChange(items.filter((_, i) => i !== index))}
-                className="absolute -right-1.5 -top-1.5 grid size-6 place-items-center rounded-full bg-danger text-white shadow"
+                className="absolute -right-1.5 -top-1.5 grid size-6 place-items-center rounded-full bg-danger text-on-bright shadow"
               >
                 <IconX size={12} />
               </button>
@@ -157,7 +163,7 @@ export function DisputeThread({
   const [saved, setSaved] = useState(false);
 
   const isSeller = viewerRole === "seller";
-  const locked = dispute.status !== "open" && dispute.status !== "under_review";
+  const locked = !isDecidableDispute(dispute.status);
 
   function submitReply() {
     const text = reply.trim();

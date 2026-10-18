@@ -10,6 +10,11 @@ import { decryptCredentials } from "@/lib/credentials";
 import { validImageDataUrl } from "@/lib/images";
 import { checkThrottle } from "@/lib/throttle";
 import { adminUserIds, notify, notifyMany } from "@/lib/notifications";
+import {
+  DISPUTE_OPEN_STATE,
+  DISPUTE_SELLER_REPLIED_STATE,
+  isDecidableDispute,
+} from "@/lib/order-meta";
 
 export type RoomActionResult =
   | { ok: true }
@@ -372,39 +377,59 @@ export async function fileOrderDispute(rawInput: unknown): Promise<RoomActionRes
     return fail("INVALID", "Bukti harus gambar PNG/JPEG/GIF/WebP, maksimal 3 file @1,5MB.");
   }
   const ip = await clientIp();
-  await db.$transaction([
-    db.dispute.create({
-      data: {
-        orderId: order.id,
-        ref,
-        reasonId: parsed.data.reasonId,
-        reasonLabel: DISPUTE_REASON_LABELS[parsed.data.reasonId] ?? parsed.data.reasonId,
-        buyerNote: parsed.data.buyerNote,
-        evidence: JSON.stringify(evidence),
-        status: "open",
-        slaHoursLeft: 24,
-      },
-    }),
-    db.order.update({ where: { id: order.id }, data: { status: "disputed" } }),
-    db.orderEvent.create({
-      data: {
-        orderId: order.id,
-        state: "disputed",
-        label: `Sengketa ${ref} dibuka, dana dibekukan`,
-        actor: "buyer",
-      },
-    }),
-    db.adminAuditLog.create({
-      data: {
-        actionType: "dispute.open",
-        targetResource: "orders",
-        targetId: order.id,
-        diffPayload: JSON.stringify({ ref, reasonId: parsed.data.reasonId }),
-        ipAddress: ip,
-        actor: participant.user.email,
-      },
-    }),
-  ]);
+  // Interactive tx with a STATUS-GUARDED order flip. The pre-read above is only
+  // a fast path: a concurrent confirm/sweep/cancel can land between it and here
+  // (e.g. buyer confirms receipt, escrow released). An unguarded update would
+  // then revive a completed/refunded order as `disputed` and let admin pay both
+  // sides. AbortTxError rolls the whole dispute back when that race is lost.
+  try {
+    await db.$transaction(async (tx) => {
+      const flipped = await tx.order.updateMany({
+        where: { id: order.id, status: { in: ["paid", "processing", "shipped"] } },
+        data: { status: "disputed" },
+      });
+      if (flipped.count === 0) {
+        throw new AbortTxError("STATE", "Status pesanan berubah. Muat ulang lalu coba lagi.");
+      }
+      await tx.dispute.create({
+        data: {
+          orderId: order.id,
+          ref,
+          reasonId: parsed.data.reasonId,
+          reasonLabel: DISPUTE_REASON_LABELS[parsed.data.reasonId] ?? parsed.data.reasonId,
+          buyerNote: parsed.data.buyerNote,
+          evidence: JSON.stringify(evidence),
+          status: DISPUTE_OPEN_STATE,
+          slaHoursLeft: 24,
+        },
+      });
+      await tx.orderEvent.create({
+        data: {
+          orderId: order.id,
+          state: "disputed",
+          label: `Sengketa ${ref} dibuka, dana dibekukan`,
+          actor: "buyer",
+        },
+      });
+      await tx.adminAuditLog.create({
+        data: {
+          actionType: "dispute.open",
+          targetResource: "orders",
+          targetId: order.id,
+          diffPayload: JSON.stringify({ ref, reasonId: parsed.data.reasonId }),
+          ipAddress: ip,
+          actor: participant.user.email,
+        },
+      });
+    });
+  } catch (err) {
+    if (err instanceof AbortTxError) return fail(err.code, err.reason);
+    // Two concurrent dispute opens race on the unique ref -> the loser bounces.
+    if (isUniqueCollision(err)) {
+      return fail("STATE", "Sengketa untuk pesanan ini sudah terbuka.");
+    }
+    throw err;
+  }
 
   revalidatePath(`/pesanan/${parsed.data.orderCode}`);
   if (order.seller) {
@@ -450,14 +475,14 @@ export async function replyDispute(rawInput: unknown): Promise<RoomActionResult>
     select: { id: true, ref: true, status: true },
   });
   if (!dispute) return fail("STATE", "Pesanan ini tidak dalam sengketa.");
-  if (dispute.status !== "open" && dispute.status !== "under_review") {
+  if (!isDecidableDispute(dispute.status)) {
     return fail("STATE", "Sengketa sudah diputus admin. Balasan dikunci.");
   }
 
   await db.$transaction([
     db.dispute.update({
       where: { id: dispute.id },
-      data: { sellerReply: parsed.data.sellerReply, status: "under_review" },
+      data: { sellerReply: parsed.data.sellerReply, status: DISPUTE_SELLER_REPLIED_STATE },
     }),
     db.orderEvent.create({
       data: {
@@ -782,7 +807,7 @@ export async function submitReview(rawInput: unknown): Promise<RoomActionResult>
 
       if (order.sellerId) {
         const agg = await tx.review.aggregate({
-          where: { sellerId: order.sellerId },
+          where: { sellerId: order.sellerId, hidden: false },
           _avg: { rating: true },
           _count: true,
         });

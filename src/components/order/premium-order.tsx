@@ -128,7 +128,7 @@ export function PremiumOrder({
           {/* ── LANGKAH 1: Durasi ── */}
           <div className="rounded-card border border-line/80 bg-paper p-6 shadow-[0_4px_24px_rgba(23,21,46,0.04)] md:p-8">
             <div className="mb-6 flex items-center gap-3">
-              <span className="rounded-full bg-ink px-3.5 py-1 text-[11px] font-extrabold uppercase tracking-wider text-white shadow-xs">
+              <span className="rounded-full bg-ink px-3.5 py-1 text-[11px] font-extrabold uppercase tracking-wider text-on-bright shadow-xs">
                 Langkah 1
               </span>
               <h2 className="font-display text-lg font-extrabold text-ink md:text-title">
@@ -164,14 +164,14 @@ export function PremiumOrder({
                     )}
                   >
                     {plan.badge ? (
-                      <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-ink px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white">
+                      <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-ink px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-on-bright">
                         {plan.badge}
                       </span>
                     ) : null}
                     <span
                       className={cx(
                         "text-[14px] font-extrabold",
-                        active ? "text-astra" : "text-ink",
+                        active ? "text-astra-ink" : "text-ink",
                       )}
                     >
                       {plan.label}
@@ -192,7 +192,7 @@ export function PremiumOrder({
           {/* ── LANGKAH 2: Kredensial ── */}
           <div className="rounded-card border border-line/80 bg-paper p-6 shadow-[0_4px_24px_rgba(23,21,46,0.04)] md:p-8">
             <div className="mb-2 flex items-center gap-3">
-              <span className="rounded-full bg-ink px-3.5 py-1 text-[11px] font-extrabold uppercase tracking-wider text-white shadow-xs">
+              <span className="rounded-full bg-ink px-3.5 py-1 text-[11px] font-extrabold uppercase tracking-wider text-on-bright shadow-xs">
                 Langkah 2
               </span>
               <h2 className="font-display text-lg font-extrabold text-ink md:text-title">
@@ -284,7 +284,7 @@ export function PremiumOrder({
           {/* ── LANGKAH 3: Bayar ── */}
           <div className="rounded-card border border-line/80 bg-paper p-6 shadow-[0_4px_24px_rgba(23,21,46,0.04)] md:p-8">
             <div className="mb-2 flex items-center gap-3">
-              <span className="rounded-full bg-ink px-3.5 py-1 text-[11px] font-extrabold uppercase tracking-wider text-white shadow-xs">
+              <span className="rounded-full bg-ink px-3.5 py-1 text-[11px] font-extrabold uppercase tracking-wider text-on-bright shadow-xs">
                 Langkah 3
               </span>
               <h2 className="font-display text-lg font-extrabold text-ink md:text-title">
@@ -310,7 +310,7 @@ export function PremiumOrder({
                     className={cx(
                       "flex items-center justify-center gap-2 rounded-well border-2 px-3 py-3.5 text-[12px] font-bold transition-all duration-200",
                       isSelected
-                        ? "border-astra bg-paper text-astra"
+                        ? "border-astra bg-paper text-astra-ink"
                         : "border-line bg-paper text-ink-dim hover:border-line-strong",
                     )}
                   >
@@ -328,7 +328,7 @@ export function PremiumOrder({
           <div className="rounded-card border border-line/80 bg-paper p-6 shadow-[0_6px_28px_rgba(23,21,46,0.06)]">
             <div className="flex flex-col gap-5">
               <div className="flex items-center gap-2.5">
-                <span className="rounded-full bg-ink px-3 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
+                <span className="rounded-full bg-ink px-3 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-on-bright">
                   Ringkasan
                 </span>
                 <h3 className="font-display text-base font-extrabold text-ink">
@@ -422,7 +422,7 @@ export function PremiumOrder({
                     {formatIDR(totalPrice)}
                   </div>
                 ) : null}
-                <div className="num mt-1 text-[1.85rem] font-black tracking-tight text-astra">
+                <div className="num mt-1 text-[1.85rem] font-black tracking-tight text-astra-ink">
                   {formatIDR(Math.max(0, finalPrice))}
                 </div>
                 {promoCut ? (

@@ -5,6 +5,7 @@ import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { broadcastPoolOrder, poolKindLabel } from "@/lib/discord";
 import { notify } from "@/lib/notifications";
+import { classifyMidtransStatus } from "@/lib/midtrans";
 
 /** Buyer-facing payment methods. Fees default to the seeded settings values. */
 export type PaymentMethodId = "qris" | "va" | "ewallet" | "saldo";
@@ -153,7 +154,11 @@ export async function applyPaymentNotification(
   if (!order || !order.payment) return { ok: false, reason: "order_not_found" };
   const payment = order.payment;
 
-  const isSuccessStatus = input.status === "settlement" || input.status === "capture";
+  // Single source of truth for what a gateway status means (see
+  // classifyMidtransStatus): `capture` under fraud review (`challenge`) is
+  // NOT settled money, so it must not take the success path here.
+  const verdict = classifyMidtransStatus(input.status, input.fraudStatus);
+  const isSuccessStatus = verdict === "settled";
   const isFailureStatus = input.status in FAILURE_PAYMENT_STATUS;
 
   // Midtrans reports gross_amount as a numeric string ("150000.00").
@@ -164,7 +169,7 @@ export async function applyPaymentNotification(
   const rawJson = JSON.stringify(input.raw ?? null);
 
   // Idempotent replays of already-settled success.
-  if (payment.status === "settled" && isSuccessStatus && input.fraudStatus !== "deny") {
+  if (payment.status === "settled" && isSuccessStatus) {
     return { ok: true, alreadyProcessed: true };
   }
   // Pending heartbeat: only useful while the payment row is still pending.
@@ -180,7 +185,7 @@ export async function applyPaymentNotification(
   // The flip is guarded INSIDE the transaction — a concurrent expiry/cancel
   // that lands between the read above and this write loses instead of being
   // resurrected back to paid.
-  if (isSuccessStatus && input.fraudStatus !== "deny") {
+  if (isSuccessStatus) {
     const autoReleaseHours = order.product?.autoReleaseHours ?? 24;
     const flipped = await db.$transaction(async (tx) => {
       const updated = await tx.order.updateMany({
@@ -209,8 +214,13 @@ export async function applyPaymentNotification(
       // Lost the race — but one loser deserves a second look: a genuine
       // gateway settlement for an order the sweep already cancelled is REAL
       // money. Credit it back to the buyer instead of absorbing it silently.
-      // (Refunded orders already paid the buyer back — skip those.)
-      if (order.status === "cancelled" && payment.status === "pending") {
+      //
+      // Deliberately NO `payment.status === "pending"` check: every cancel
+      // path already retires the payment (sweep → expired, failure → failed,
+      // restoreCancelledOrder → failed), so requiring "pending" made this
+      // branch dead code and silently kept buyers' late money. The refund
+      // ledger's uniqueness + status guard below is what keeps it idempotent.
+      if (order.status === "cancelled") {
         const credited = await db.$transaction(async (tx) => {
           const dup = await tx.walletLedger.findFirst({
             where: { orderCode: order.code, type: "refund" },
@@ -231,8 +241,11 @@ export async function applyPaymentNotification(
               orderCode: order.code,
             },
           });
-          await tx.payment.updateMany({
-            where: { id: payment.id, status: "pending" },
+          // The payment row may be `pending`, `expired`, or `failed` by now —
+          // any of those can precede this late settlement. Record the truth
+          // (`settled`) unconditionally; the refund ledger above is the guard.
+          await tx.payment.update({
+            where: { id: payment.id },
             data: { status: "settled", rawJson },
           });
           await tx.orderEvent.create({
@@ -296,31 +309,47 @@ export async function applyPaymentNotification(
     const label = isRefund
       ? "Pembayaran dikembalikan (refund)"
       : "Pembayaran dibatalkan";
-    const ops: Prisma.PrismaPromise<unknown>[] = [];
-    if (order.productId) {
-      ops.push(
-        db.product.update({
+    // Guarded inside the tx, exactly like the success branch — the
+    // `order.status !== "pending_payment"` read above is only a fast path.
+    // A settlement landing in that gap must win, or this would clobber a just-
+    // paid order back to cancelled and mark the payment failed (buyer paid,
+    // nothing credited).
+    const applied = await db.$transaction(async (tx) => {
+      const flipped = await tx.order.updateMany({
+        where: { id: order.id, status: "pending_payment" },
+        data: { status: nextOrderStatus },
+      });
+      if (flipped.count === 0) return false;
+      await tx.payment.updateMany({
+        where: { id: payment.id, status: "pending" },
+        data: { status: nextPaymentStatus, rawJson },
+      });
+      if (order.productId) {
+        await tx.product.update({
           where: { id: order.productId },
           data: { stock: { increment: order.quantity } },
-        }),
-      );
-    }
-    ops.push(
-      db.payment.update({
-        where: { id: payment.id },
-        data: { status: nextPaymentStatus, rawJson },
-      }),
-      db.order.update({ where: { id: order.id }, data: { status: nextOrderStatus } }),
-      db.orderEvent.create({
+        });
+      }
+      // Give back the promo redemption consumed at creation — the buyer paid
+      // nothing for it, so an abandoned/failed invoice must not burn a limited
+      // code's slot (only restoreCancelledOrder did this before).
+      if (order.promoCode) {
+        await tx.promoCode.updateMany({
+          where: { code: order.promoCode, usedCount: { gt: 0 } },
+          data: { usedCount: { decrement: 1 } },
+        });
+      }
+      await tx.orderEvent.create({
         data: {
           orderId: order.id,
           state: nextOrderStatus,
           label,
           actor: "system",
         },
-      }),
-    );
-    await db.$transaction(ops);
+      });
+      return true;
+    });
+    if (!applied) return { ok: true, alreadyProcessed: true };
     if (order.productId) revalidateTag("catalog", { expire: 0 });
     // Never leave a buyer guessing — a failed/cancelled/refunded payment must
     // say so in their inbox, not just sit silently on the order page.
