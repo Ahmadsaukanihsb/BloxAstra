@@ -13,57 +13,99 @@ export const ROBLOX_USERNAME_RE = /^[A-Za-z0-9_]{3,20}$/;
 
 const TAB_META: Record<
   RobuxOrderKind,
-  { label: string; badge: string; badgeColor: string }
+  { label: string; badge: string; badgeColor: string; heading: string; blurb: string }
 > = {
-  username: { label: "Robux via Username", badge: "Langsung Masuk", badgeColor: "bg-success" },
-  login: { label: "Robux via Login", badge: "Proses Kilat", badgeColor: "bg-info" },
-  gamepass: { label: "Robux via Gamepass", badge: "Pending 5 Hari", badgeColor: "bg-warn" },
-  premium: { label: "Roblox Premium", badge: "Proses Seller", badgeColor: "bg-ink" },
+  username: {
+    label: "Robux via Username",
+    badge: "Langsung Masuk",
+    badgeColor: "bg-success",
+    heading: "Beli Robux via Username",
+    blurb:
+      "Top up Robux langsung masuk ke akunmu tanpa pending dan tanpa password — cukup masukkan username Roblox, verifikasi, lalu bayar.",
+  },
+  login: {
+    label: "Robux via Login",
+    badge: "Proses Kilat",
+    badgeColor: "bg-info",
+    heading: "Beli Robux via Login",
+    blurb:
+      "Proses kilat 5–15 menit dengan enkripsi kredensial AES-256. Kredensial hanya dipakai untuk memproses order ini.",
+  },
+  gamepass: {
+    label: "Robux via Gamepass",
+    badge: "Pending 5 Hari",
+    badgeColor: "bg-warn",
+    heading: "Beli Robux via Gamepass",
+    blurb:
+      "Cover Tax 100% ditanggung kami, tanpa password akun. Robux dikirim lewat gamepass milikmu dengan harga paling ramah.",
+  },
+  premium: {
+    label: "Roblox Premium",
+    badge: "Proses Seller",
+    badgeColor: "bg-ink",
+    heading: "Beli Roblox Premium",
+    blurb:
+      "Langganan Roblox Premium 1, 3, atau 12 bulan diproses penjual terverifikasi, kredensial dienkripsi AES-256.",
+  },
 };
 
-/** Cross-links the three `/beli/robux-*` methods. Exactly one is marked active. */
+/**
+ * Cross-links the three `/beli/robux-*` methods. Exactly one is marked active.
+ * Also carries the page's single H1 written per method — every /beli flow is
+ * otherwise an h2-only wizard, which leaves Search the page without a title.
+ */
 export function RobuxServiceTabs({ current }: { current: RobuxOrderKind }) {
+  const meta = TAB_META[current];
   return (
-    <nav aria-label="Metode pembayaran Robux" className="mb-8 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-      {(Object.keys(ROBUX_ORDERS) as RobuxOrderKind[]).map((kind) => {
-        const config = ROBUX_ORDERS[kind];
-        const meta = TAB_META[kind];
-        const active = kind === current;
-        return (
-          <Link
-            key={kind}
-            href={config.href}
-            aria-current={active ? "page" : undefined}
-            className={cx(
-              "group relative flex w-full items-center justify-center gap-2 rounded-full border-2 px-4 py-2.5 text-[13px] font-bold transition-all duration-200",
-              active
-                ? "border-astra bg-paper text-astra-ink ring-4 ring-astra/10"
-                : "border-line bg-paper text-ink-dim shadow-xs hover:border-line-strong hover:text-ink",
-            )}
-          >
-            <span
+    <>
+      <header className="mb-7 flex max-w-[64ch] flex-col gap-2.5">
+        <span className="eyebrow text-astra-ink">Beli Robux &amp; Premium</span>
+        <h1 className="font-display text-[26px] font-extrabold leading-tight tracking-tight text-ink md:text-page">
+          {meta.heading}
+        </h1>
+        <p className="text-[14px] leading-relaxed text-ink-dim">{meta.blurb}</p>
+      </header>
+      <nav aria-label="Metode pembayaran Robux" className="mb-8 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+        {(Object.keys(ROBUX_ORDERS) as RobuxOrderKind[]).map((kind) => {
+          const config = ROBUX_ORDERS[kind];
+          const tabMeta = TAB_META[kind];
+          const active = kind === current;
+          return (
+            <Link
+              key={kind}
+              href={config.href}
+              aria-current={active ? "page" : undefined}
               className={cx(
-                "grid size-6 place-items-center rounded-full transition-colors",
-                active ? "bg-astra/[0.06] text-astra-ink" : "bg-canvas-2 text-ink-mute",
+                "group relative flex w-full items-center justify-center gap-2 rounded-full border-2 px-4 py-2.5 text-[13px] font-bold transition-all duration-200",
+                active
+                  ? "border-astra bg-paper text-astra-ink ring-4 ring-astra/10"
+                  : "border-line bg-paper text-ink-dim shadow-xs hover:border-line-strong hover:text-ink",
               )}
             >
-              <IconHexCoin size={15} />
-            </span>
-            <span>{meta.label}</span>
-            <span
-              className={cx(
-                // The fill arrives from `meta.badgeColor` on another line, so this
-                // label cannot be found by scanning a single line for a fill class.
-                "rounded-full px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-on-bright shadow-xs",
-                meta.badgeColor,
-              )}
-            >
-              {meta.badge}
-            </span>
-          </Link>
-        );
-      })}
-    </nav>
+              <span
+                className={cx(
+                  "grid size-6 place-items-center rounded-full transition-colors",
+                  active ? "bg-astra/[0.06] text-astra-ink" : "bg-canvas-2 text-ink-mute",
+                )}
+              >
+                <IconHexCoin size={15} />
+              </span>
+              <span>{tabMeta.label}</span>
+              <span
+                className={cx(
+                  // The fill arrives from `tabMeta.badgeColor` on another line, so this
+                  // label cannot be found by scanning a single line for a fill class.
+                  "rounded-full px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-on-bright shadow-xs",
+                  tabMeta.badgeColor,
+                )}
+              >
+                {tabMeta.badge}
+              </span>
+            </Link>
+          );
+        })}
+      </nav>
+    </>
   );
 }
 

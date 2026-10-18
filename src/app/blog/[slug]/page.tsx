@@ -88,6 +88,25 @@ async function Article({ params }: { params: Promise<{ slug: string }> }) {
           }),
         }}
       />
+      <script
+        type="application/ld+json"
+        nonce={nonce}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Blog", item: blogUrl("/") },
+              {
+                "@type": "ListItem",
+                position: 2,
+                name: post.title,
+                item: blogPostPath(post.slug),
+              },
+            ],
+          }),
+        }}
+      />
 
       <div className="mx-auto flex max-w-[760px] flex-col gap-8">
         <header className="flex flex-col gap-4">

@@ -98,7 +98,7 @@ const manrope = Manrope({
 });
 
 const DESCRIPTION =
-  "Top up Robux, gamepass, item in-game, Gift Card, akun, dan Premium Roblox di Blox Astra. Dana ditahan sampai barang diterima, penjual terverifikasi, dan garansi pengembalian dana 100%.";
+  "Top up Robux, gamepass, item, dan Premium Roblox di Blox Astra. Dana ditahan sampai barang diterima, penjual terverifikasi, garansi dana kembali 100%.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

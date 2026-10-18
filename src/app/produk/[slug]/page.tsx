@@ -140,6 +140,26 @@ async function ProductDetails({ params }: { params: Promise<{ slug: string }> })
           }),
         }}
       />
+      <script
+        type="application/ld+json"
+        nonce={nonce}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Beranda", item: SITE_URL },
+              { "@type": "ListItem", position: 2, name: "Katalog", item: `${SITE_URL}/katalog` },
+              {
+                "@type": "ListItem",
+                position: 3,
+                name: product.title,
+                item: `${SITE_URL}/produk/${product.slug}`,
+              },
+            ],
+          }),
+        }}
+      />
       <nav className="mb-6 flex flex-wrap items-center gap-1.5 text-[11px] text-ink-mute">
         <Link href="/" className="transition-colors hover:text-ink">
           Beranda
