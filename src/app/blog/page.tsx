@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { connection } from "next/server";
-import { absoluteUrl } from "@/lib/site";
+import { BLOG_URL, blogUrl } from "@/lib/site";
 import { blogPostPath, getBlogPosts } from "@/lib/blog";
 import { FeaturedBlogCard, BlogCard } from "@/components/blog/blog-cards";
 import { ButtonLink } from "@/components/ui/button";
@@ -11,16 +11,26 @@ const DESCRIPTION =
   "Panduan, tips, dan kabar seputar Robux, gamepass, dan Premium Roblox — ditulis untuk pembeli dan penjual di Blox Astra.";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(BLOG_URL),
   title: TITLE,
   description: DESCRIPTION,
-  alternates: { canonical: "/blog" },
+  alternates: { canonical: blogUrl("/") },
   openGraph: {
     title: TITLE,
     description: DESCRIPTION,
-    url: "/blog",
+    url: blogUrl("/"),
+    siteName: "Blox Astra",
     type: "website",
+    // Set explicitly: a page-level openGraph replaces the layout's, and
+    // without this the index was the one page shipping no og:image at all.
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: TITLE }],
   },
-  twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: ["/opengraph-image"],
+  },
 };
 
 /**
@@ -44,13 +54,13 @@ export default async function BlogIndexPage() {
             "@context": "https://schema.org",
             "@type": "Blog",
             name: TITLE,
-            url: absoluteUrl("/blog"),
+            url: blogUrl("/"),
             inLanguage: "id-ID",
             publisher: { "@type": "Organization", name: "Blox Astra" },
             blogPost: posts.slice(0, 20).map((post) => ({
               "@type": "BlogPosting",
               headline: post.title,
-              url: absoluteUrl(blogPostPath(post.slug)),
+              url: blogPostPath(post.slug),
               ...(post.publishedAt ? { datePublished: post.publishedAt } : {}),
             })),
           }),

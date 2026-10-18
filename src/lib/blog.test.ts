@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  blogPostLocalPath,
   blogPostPath,
   deriveBlogExcerpt,
   isValidBlogSlug,
@@ -137,7 +138,11 @@ describe("renderBlogMarkdown", () => {
 });
 
 describe("blogPostPath", () => {
-  it("builds the public path", () => {
-    expect(blogPostPath("tips-aman")).toBe("/blog/tips-aman");
+  it("builds the public URL on the blog subdomain", () => {
+    expect(blogPostPath("tips-aman")).toBe("https://blog.bloxastra.com/tips-aman");
+  });
+
+  it("keeps the internal route path derivable for revalidatePath", () => {
+    expect(blogPostLocalPath("tips-aman")).toBe("/blog/tips-aman");
   });
 });

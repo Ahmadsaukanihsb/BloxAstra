@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { headers } from "next/headers";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
-import { absoluteUrl } from "@/lib/site";
+import { BLOG_URL, blogUrl } from "@/lib/site";
 import { blogPostPath, formatBlogDate, getBlogPostBySlug, getBlogPosts } from "@/lib/blog";
 import { BlogCard, BlogCover } from "@/components/blog/blog-cards";
 import { ButtonLink } from "@/components/ui/button";
@@ -16,6 +16,7 @@ export async function generateMetadata(props: PageProps<"/blog/[slug]">): Promis
   if (!post) return { title: "Artikel tidak ditemukan" };
   const url = blogPostPath(post.slug);
   return {
+    metadataBase: new URL(BLOG_URL),
     title: post.title,
     description: post.excerpt,
     alternates: { canonical: url },
@@ -78,7 +79,7 @@ async function Article({ params }: { params: Promise<{ slug: string }> }) {
             headline: post.title,
             description: post.excerpt,
             inLanguage: "id-ID",
-            mainEntityOfPage: absoluteUrl(blogPostPath(post.slug)),
+            mainEntityOfPage: blogPostPath(post.slug),
             ...(post.publishedAt ? { datePublished: post.publishedAt } : {}),
             dateModified: post.updatedAt,
             author: { "@type": "Organization", name: "Blox Astra" },
@@ -91,7 +92,7 @@ async function Article({ params }: { params: Promise<{ slug: string }> }) {
       <div className="mx-auto flex max-w-[760px] flex-col gap-8">
         <header className="flex flex-col gap-4">
           <Link
-            href="/blog"
+            href={blogUrl("/")}
             className="inline-flex w-fit items-center gap-1 text-[13px] font-bold text-ink-mute transition-colors duration-200 hover:text-astra-ink"
           >
             <IconChevronRight size={13} className="rotate-180" />

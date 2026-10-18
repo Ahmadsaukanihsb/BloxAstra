@@ -36,6 +36,7 @@ export {
   BLOG_TAG_COUNT_MAX,
   BLOG_TAG_MAX,
   BLOG_TITLE_MAX,
+  blogPostLocalPath,
   blogPostPath,
   blogReadingMinutes,
   deriveBlogExcerpt,

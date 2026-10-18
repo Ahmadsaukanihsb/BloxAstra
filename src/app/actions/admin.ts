@@ -29,7 +29,7 @@ import {
   BLOG_EXCERPT_MAX,
   BLOG_SLUG_MAX,
   BLOG_TITLE_MAX,
-  blogPostPath,
+  blogPostLocalPath,
   isValidBlogSlug,
   parseBlogTags,
   serializeBlogTags,
@@ -2005,7 +2005,7 @@ function revalidateBlog(slugs: string[]) {
   updateTag("blog");
   revalidatePath("/blog");
   for (const slug of new Set(slugs.filter(Boolean))) {
-    revalidatePath(blogPostPath(slug));
+    revalidatePath(blogPostLocalPath(slug));
   }
   revalidatePath("/sitemap.xml");
   revalidatePath("/admin");

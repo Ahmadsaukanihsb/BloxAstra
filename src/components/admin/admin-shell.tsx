@@ -24,6 +24,7 @@ import type {
   AdminTopUpRow,
   ChatReportRow,
 } from "@/lib/admin";
+import { blogUrl } from "@/lib/site";
 import type { LandingLayout } from "@/lib/landing-sections";
 import type { BlogPostAdminRow } from "@/lib/blog";
 import { DISPUTE_SELLER_REPLIED_STATE } from "@/lib/order-meta";
@@ -476,15 +477,15 @@ export function AdminShell({
       title: "Blog",
       hint: `${initialBlogPosts.length} artikel`,
       description:
-        "Artikel publik di /blog. Yang terbit muncul di index, masuk sitemap, dan bisa ditemukan mesin pencari — tulis untuk kata kunci yang dicari calon pembeli Robux. Draf hanya tampak di panel ini.",
+        "Artikel publik di blog.bloxastra.com. Yang terbit muncul di index, masuk sitemap, dan bisa ditemukan mesin pencari — tulis untuk kata kunci yang dicari calon pembeli Robux. Draf hanya tampak di panel ini.",
       action: (
         <ButtonLink
-          href="/blog"
+          href={blogUrl("/")}
           variant="secondary"
           size="sm"
           leadingIcon={<IconEye size={14} />}
         >
-          Buka /blog
+          Buka blog
         </ButtonLink>
       ),
     },

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState, type ReactNode } from "react";
 import { cx } from "@/lib/cx";
+import { blogUrl } from "@/lib/site";
 import { formatIDR } from "@/lib/format";
 import type { Category } from "@/lib/types";
 import { NotifBell } from "@/components/site/notif-bell";
@@ -46,7 +47,7 @@ const CATEGORY_HREF: Partial<Record<string, string>> = {
 
 const primaryLinks = [
   { href: "/katalog", label: "Jelajah" },
-  { href: "/blog", label: "Blog" },
+                { href: blogUrl("/"), label: "Blog" },
   { href: "/pesanan", label: "Pesanan" },
 ];
 
@@ -311,7 +312,7 @@ export function TopNav({
             <div className="flex flex-1 flex-col gap-1 px-4 pt-10">
               {[
                 { href: "/katalog", label: "Jelajah Katalog" },
-                { href: "/blog", label: "Blog" },
+                { href: blogUrl("/"), label: "Blog" },
                 { href: "/pesanan", label: "Pesanan Saya" },
                 ...(isLoggedIn
                   ? [

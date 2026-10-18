@@ -4,6 +4,7 @@
  * pages. Split out of `blog.ts` because that file imports the database and
  * `next/cache` — neither of which can travel into a client component.
  */
+import { blogUrl } from "@/lib/site";
 
 export const BLOG_TITLE_MAX = 140;
 export const BLOG_EXCERPT_MAX = 300;
@@ -15,8 +16,19 @@ export const BLOG_COVER_MAX_BYTES = 800_000;
 
 export type BlogPostStatus = "draft" | "published";
 
-/** Path publik sebuah artikel — dipakai kartu, sitemap, dan tautan balik. */
+/**
+ * URL publik sebuah artikel — subdomain blog, tanpa prefiks `/blog`.
+ * Dipakai kartu, sitemap, canonical, dan tautan balik.
+ */
 export function blogPostPath(slug: string): string {
+  return blogUrl(`/${slug}`);
+}
+
+/**
+ * Path rute internal artikel (`/blog/[slug]`). Hanya untuk API yang bekerja
+ * pada router lokal — `revalidatePath` — yang tidak menerima URL absolut.
+ */
+export function blogPostLocalPath(slug: string): string {
   return `/blog/${slug}`;
 }
 

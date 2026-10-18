@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cx } from "@/lib/cx";
+import { blogUrl } from "@/lib/site";
 import { getSiteLogo } from "@/lib/site-logo";
 import { BrandMark } from "@/components/site/brand-mark";
 
@@ -67,7 +68,7 @@ export async function SiteFooter() {
               so no link here promises something that is not there. */}
           <p className="flex flex-wrap items-center gap-x-4 gap-y-1.5 md:shrink-0">
             <Link
-              href="/blog"
+              href={blogUrl("/")}
               className="font-bold text-ink-dim underline decoration-dotted underline-offset-4 transition-colors duration-200 hover:text-astra-ink"
             >
               Blog

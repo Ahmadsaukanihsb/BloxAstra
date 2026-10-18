@@ -3,6 +3,28 @@ export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3
   "",
 );
 
+/**
+ * The blog lives on its own subdomain (host-routed in `src/proxy.ts` and
+ * served by this same app). Absolute URLs for articles, canonicals, and the
+ * blog sitemap are built from here so nothing ever links back to the legacy
+ * `bloxastra.com/blog` paths.
+ */
+export const BLOG_URL = (
+  process.env.NEXT_PUBLIC_BLOG_URL ?? "https://blog.bloxastra.com"
+).replace(/\/+$/, "");
+
+export const BLOG_HOST = (() => {
+  try {
+    return new URL(BLOG_URL).host.toLowerCase();
+  } catch {
+    return "blog.bloxastra.com";
+  }
+})();
+
+export function blogUrl(path: string): string {
+  return `${BLOG_URL}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
 export function absoluteUrl(path: string): string {
   return `${SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
@@ -24,6 +46,7 @@ function allowedHosts(): string[] {
   } catch {
     /* SITE_URL unparsable — rely on the loopback entries below */
   }
+  hosts.push(BLOG_HOST);
   return hosts;
 }
 
