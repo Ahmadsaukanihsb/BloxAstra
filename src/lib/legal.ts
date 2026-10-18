@@ -71,6 +71,9 @@ export function missingOperatorFields(): OperatorField[] {
 /** Date these pages last changed — a privacy notice must show this. */
 export const LEGAL_UPDATED = "12 Oktober 2026";
 
+/** The privacy page was rewritten on its own schedule; keep its date separate. */
+export const PRIVACY_UPDATED = "19 Oktober 2026";
+
 // ───────────────────────────── mechanics, from code ─────────────────────────────
 
 /** Payment methods and their gateway fees, mirroring `PAYMENT_METHODS`. */
