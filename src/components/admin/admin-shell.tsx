@@ -561,7 +561,7 @@ export function AdminShell({
         ))}
       </div>
 
-      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[230px_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[264px_minmax(0,1fr)]">
       <nav
         aria-label="Bagian panel admin"
         className="bezel-shell overflow-hidden p-1.5 lg:sticky lg:top-6 lg:max-h-[calc(100dvh-15rem)] lg:overflow-y-auto"
