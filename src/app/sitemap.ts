@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { connection } from "next/server";
 import { getProducts } from "@/lib/catalog";
+import { blogPostPath, getBlogPosts } from "@/lib/blog";
 import { absoluteUrl } from "@/lib/site";
 
 type Entry = MetadataRoute.Sitemap[number];
@@ -12,6 +13,7 @@ const STATIC_PAGES: Array<Omit<Entry, "url" | "lastModified"> & { path: string }
   { path: "/beli/robux-login", changeFrequency: "weekly", priority: 0.8 },
   { path: "/beli/robux-gamepass", changeFrequency: "weekly", priority: 0.8 },
   { path: "/beli/premium", changeFrequency: "weekly", priority: 0.8 },
+  { path: "/blog", changeFrequency: "weekly", priority: 0.6 },
   { path: "/tentang", changeFrequency: "monthly", priority: 0.4 },
   { path: "/syarat-layanan", changeFrequency: "monthly", priority: 0.3 },
   { path: "/kebijakan-privasi", changeFrequency: "monthly", priority: 0.3 },
@@ -22,7 +24,7 @@ const STATIC_PAGES: Array<Omit<Entry, "url" | "lastModified"> & { path: string }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   await connection();
-  const products = await getProducts();
+  const [products, posts] = await Promise.all([getProducts(), getBlogPosts()]);
   // Newest listing mtime, used as the home page's lastmod: the lobby is a
   // live catalogue view, so its real "changed" moment is the newest listing.
   const latestProduct = products.reduce<string | null>(
@@ -47,5 +49,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticEntries, ...productEntries];
+  const blogEntries: MetadataRoute.Sitemap = posts.map((post) => ({
+    url: absoluteUrl(blogPostPath(post.slug)),
+    // Real row mtime so Google sees a fresh date only when the article changed.
+    lastModified: new Date(post.updatedAt),
+    changeFrequency: "monthly" as const,
+    priority: 0.6,
+  }));
+
+  return [...staticEntries, ...productEntries, ...blogEntries];
 }

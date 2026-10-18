@@ -46,6 +46,7 @@ const CATEGORY_HREF: Partial<Record<string, string>> = {
 
 const primaryLinks = [
   { href: "/katalog", label: "Jelajah" },
+  { href: "/blog", label: "Blog" },
   { href: "/pesanan", label: "Pesanan" },
 ];
 
@@ -310,6 +311,7 @@ export function TopNav({
             <div className="flex flex-1 flex-col gap-1 px-4 pt-10">
               {[
                 { href: "/katalog", label: "Jelajah Katalog" },
+                { href: "/blog", label: "Blog" },
                 { href: "/pesanan", label: "Pesanan Saya" },
                 ...(isLoggedIn
                   ? [

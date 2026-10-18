@@ -62,10 +62,16 @@ export async function SiteFooter() {
             © 2026 Blox Astra. Bukan afiliasi resmi Roblox Corporation. Robux dan Roblox adalah
             merek dagang Roblox Corporation.
           </p>
-          {/* The pages a marketplace is expected to publish, plus the one that
-              explains the service itself. All are real routes, so no link here
-              promises something that is not there. */}
+          {/* The pages a marketplace is expected to publish, the one that
+              explains the service itself, and the blog. All are real routes,
+              so no link here promises something that is not there. */}
           <p className="flex flex-wrap items-center gap-x-4 gap-y-1.5 md:shrink-0">
+            <Link
+              href="/blog"
+              className="font-bold text-ink-dim underline decoration-dotted underline-offset-4 transition-colors duration-200 hover:text-astra-ink"
+            >
+              Blog
+            </Link>
             <Link
               href="/tentang"
               className="font-bold text-ink-dim underline decoration-dotted underline-offset-4 transition-colors duration-200 hover:text-astra-ink"

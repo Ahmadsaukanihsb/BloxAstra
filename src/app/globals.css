@@ -582,3 +582,119 @@
   box-shadow: 0 4px 14px rgba(226, 35, 26, 0.42);
 }
 
+/* ============================================================
+   BLOG ARTICLE TYPOGRAPHY
+   The markdown renderer in src/lib/blog.ts emits bare
+   h1–h4/p/ul/ol/blockquote/pre/code/a/hr, so the reading styles
+   live on one wrapper (.blog-prose) instead of on every element
+   the renderer produces.
+   ============================================================ */
+
+.blog-prose {
+  color: var(--color-ink-dim);
+  font-size: 15.5px;
+  line-height: 1.75;
+}
+
+.blog-prose > * + * {
+  margin-top: 1.1em;
+}
+
+.blog-prose > h1,
+.blog-prose > h2 {
+  margin-top: 2.1em;
+  font-family: var(--font-display);
+  font-size: 1.45em;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--color-ink);
+}
+
+.blog-prose > h3,
+.blog-prose > h4 {
+  margin-top: 1.9em;
+  font-family: var(--font-display);
+  font-size: 1.18em;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
+  color: var(--color-ink);
+}
+
+.blog-prose a {
+  color: var(--color-astra-ink);
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 4px;
+  transition: color 200ms ease;
+}
+
+.blog-prose a:hover {
+  color: var(--color-ink);
+}
+
+.blog-prose strong {
+  color: var(--color-ink);
+  font-weight: 800;
+}
+
+.blog-prose ul,
+.blog-prose ol {
+  padding-left: 1.4em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45em;
+}
+
+.blog-prose ul {
+  list-style: disc;
+}
+
+.blog-prose ol {
+  list-style: decimal;
+}
+
+.blog-prose li::marker {
+  color: var(--color-astra-ink);
+}
+
+.blog-prose blockquote {
+  border-left: 3px solid var(--color-astra);
+  padding: 0.35em 0 0.35em 1.1em;
+  font-style: italic;
+  color: var(--color-ink);
+}
+
+.blog-prose code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  padding: 0.12em 0.4em;
+}
+
+.blog-prose pre {
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+  padding: 1em 1.15em;
+  overflow-x: auto;
+}
+
+.blog-prose pre code {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  white-space: pre;
+}
+
+.blog-prose hr {
+  border: 0;
+  border-top: 1px solid var(--color-line);
+  margin-block: 2em;
+}
+
+

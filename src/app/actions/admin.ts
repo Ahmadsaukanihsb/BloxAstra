@@ -23,6 +23,18 @@ import {
   SITE_PROMO_KEY,
 } from "@/lib/site-notice-slots";
 import { LANDING_SECTION_KEY, parseLandingLayout } from "@/lib/landing-sections";
+import {
+  BLOG_CONTENT_MAX,
+  BLOG_COVER_MAX_BYTES,
+  BLOG_EXCERPT_MAX,
+  BLOG_SLUG_MAX,
+  BLOG_TITLE_MAX,
+  blogPostPath,
+  isValidBlogSlug,
+  parseBlogTags,
+  serializeBlogTags,
+  slugifyBlogTitle,
+} from "@/lib/blog";
 import { isDecidableDispute, ACTIVE_ORDER_STATES } from "@/lib/order-meta";
 import {
   SERVICE_ART_KEY,
@@ -1968,6 +1980,142 @@ export async function dismissChatReport(rawInput: unknown): Promise<AdminActionR
 
   revalidatePath("/admin");
   revalidatePath("/dashboard/penjual/grup");
+  return { ok: true };
+}
+
+/* ─────────────────────── blog ─────────────────────── */
+
+export type BlogActionResult =
+  | { ok: true; id: string; slug: string }
+  | { ok: false; error: string };
+
+const blogPostSchema = z.object({
+  id: z.string().min(1).max(50).nullable().optional(),
+  title: z.string().trim().min(1).max(BLOG_TITLE_MAX),
+  slug: z.string().max(BLOG_SLUG_MAX * 2),
+  excerpt: z.string().max(BLOG_EXCERPT_MAX),
+  content: z.string().max(BLOG_CONTENT_MAX),
+  coverImage: z.string().max(1_200_000).nullable().optional(),
+  tags: z.string().max(400),
+  status: z.enum(["draft", "published"]),
+});
+
+/** Readers of the public blog are cached with the `blog` tag; drop it everywhere. */
+function revalidateBlog(slugs: string[]) {
+  updateTag("blog");
+  revalidatePath("/blog");
+  for (const slug of new Set(slugs.filter(Boolean))) {
+    revalidatePath(blogPostPath(slug));
+  }
+  revalidatePath("/sitemap.xml");
+  revalidatePath("/admin");
+}
+
+/**
+ * Create or update one blog post from the admin panel. The slug is always
+ * derived through `slugifyBlogTitle` (from the admin's explicit slug, or the
+ * title when empty), so URLs stay lowercase-dashed no matter what was typed.
+ * `publishedAt` is stamped on first publish and kept afterwards, so editing an
+ * old article does not move it to the top of /blog.
+ */
+export async function saveBlogPost(rawInput: unknown): Promise<BlogActionResult> {
+  const user = await requireRole("admin");
+  const parsed = blogPostSchema.safeParse(rawInput);
+  if (!parsed.success) return { ok: false, error: "Input tidak valid." };
+
+  const slug = slugifyBlogTitle(parsed.data.slug.trim() || parsed.data.title);
+  if (!isValidBlogSlug(slug)) {
+    return { ok: false, error: "Slug kosong/tidak valid — isi judul atau slug dengan huruf biasa." };
+  }
+  if (parsed.data.status === "published" && !parsed.data.content.trim()) {
+    return { ok: false, error: "Artikel perlu isi sebelum diterbitkan." };
+  }
+
+  const cover = parsed.data.coverImage ?? null;
+  if (cover !== null && cover !== "" && !normalizeImageInput(cover, BLOG_COVER_MAX_BYTES)) {
+    return {
+      ok: false,
+      error: `Sampul harus PNG/JPEG/GIF/WebP di bawah ${Math.round(BLOG_COVER_MAX_BYTES / 1000)}KB, atau URL https yang valid.`,
+    };
+  }
+
+  const existing = parsed.data.id
+    ? await db.blogPost.findUnique({ where: { id: parsed.data.id } })
+    : null;
+  if (parsed.data.id && !existing) return { ok: false, error: "Artikel tidak ditemukan." };
+
+  const slugOwner = await db.blogPost.findUnique({ where: { slug }, select: { id: true } });
+  if (slugOwner && slugOwner.id !== existing?.id) {
+    return { ok: false, error: `Slug "${slug}" sudah dipakai artikel lain.` };
+  }
+
+  const publishedAt =
+    existing?.publishedAt ?? (parsed.data.status === "published" ? new Date() : null);
+  const data = {
+    slug,
+    title: parsed.data.title,
+    excerpt: parsed.data.excerpt.trim(),
+    content: parsed.data.content,
+    coverImage: cover || null,
+    tags: serializeBlogTags(parseBlogTags(parsed.data.tags)),
+    status: parsed.data.status,
+    publishedAt,
+    authorEmail: user.email,
+  };
+
+  const ip = await clientIp();
+  const post = await db.$transaction(async (tx) => {
+    const saved = existing
+      ? await tx.blogPost.update({ where: { id: existing.id }, data })
+      : await tx.blogPost.create({ data });
+    await tx.adminAuditLog.create({
+      data: {
+        actionType: existing ? "blog_post.update" : "blog_post.create",
+        targetResource: "blog",
+        targetId: saved.id,
+        diffPayload: JSON.stringify({
+          slug: saved.slug,
+          judul: saved.title,
+          status: saved.status,
+        }),
+        ipAddress: ip,
+        actor: user.email,
+      },
+    });
+    return saved;
+  });
+
+  // Renames leave the old URL as a 404 — invalidate it too so the cached page
+  // disappears immediately instead of after its next revalidation.
+  revalidateBlog([post.slug, existing?.slug ?? ""]);
+  return { ok: true, id: post.id, slug: post.slug };
+}
+
+/** Hapus permanen satu artikel (draf maupun terbit) + catat di jejak audit. */
+export async function deleteBlogPost(rawInput: unknown): Promise<AdminActionResult> {
+  const user = await requireRole("admin");
+  const parsed = z.string().min(1).max(50).safeParse(rawInput);
+  if (!parsed.success) return fail("Input tidak valid.");
+
+  const post = await db.blogPost.findUnique({ where: { id: parsed.data } });
+  if (!post) return fail("Artikel tidak ditemukan.");
+
+  const ip = await clientIp();
+  await db.$transaction([
+    db.blogPost.delete({ where: { id: post.id } }),
+    db.adminAuditLog.create({
+      data: {
+        actionType: "blog_post.delete",
+        targetResource: "blog",
+        targetId: post.id,
+        diffPayload: JSON.stringify({ slug: post.slug, judul: post.title }),
+        ipAddress: ip,
+        actor: user.email,
+      },
+    }),
+  ]);
+
+  revalidateBlog([post.slug]);
   return { ok: true };
 }
 

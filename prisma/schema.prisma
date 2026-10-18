@@ -521,3 +521,32 @@ model PromoCode {
   maxUses   Int?
   usedCount Int     @default(0)
 }
+
+// ──────────────────────────── blog ────────────────────────────
+
+/// Artikel blog publik (/blog) — ditulis admin dari panel, tujuannya
+/// mendatangkan trafik organik dari mesin pencari. `content` menyimpan
+/// markdown (subset aman yang dirender di server oleh lib/blog.ts).
+model BlogPost {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  /// Ringkasan 1–2 kalimat untuk kartu di /blog + meta description.
+  excerpt     String    @default("")
+  /// Markdown — lihat renderBlogMarkdown() di src/lib/blog.ts.
+  content     String    @default("")
+  /// Data URL (di-upload lewat ImagePicker) atau URL https eksternal.
+  coverImage  String?
+  /// Tag dipisah koma, ditampilkan sebagai chip di artikel.
+  tags        String    @default("")
+  /// draft | published — hanya published yang tampil ke publik.
+  status      String    @default("draft")
+  /// Diisi otomatis saat pertama kali diterbitkan.
+  publishedAt DateTime?
+  /// Email admin penulis terakhir, untuk jejak.
+  authorEmail String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, publishedAt])
+}

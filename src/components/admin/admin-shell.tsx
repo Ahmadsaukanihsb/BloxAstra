@@ -25,6 +25,7 @@ import type {
   ChatReportRow,
 } from "@/lib/admin";
 import type { LandingLayout } from "@/lib/landing-sections";
+import type { BlogPostAdminRow } from "@/lib/blog";
 import { DISPUTE_SELLER_REPLIED_STATE } from "@/lib/order-meta";
 import type { RobuxOrderRates } from "@/lib/robux-orders";
 import type { RateCard } from "@/lib/robux-pricing";
@@ -39,6 +40,7 @@ import { TopUpsPanel } from "@/components/admin/admin-topups";
 import { ReportsPanel } from "@/components/admin/admin-reports";
 import { LogoPanel } from "@/components/admin/admin-logo";
 import { NoticePanel } from "@/components/admin/admin-notice";
+import { BlogPanel } from "@/components/admin/admin-blog";
 import { LandingPanel } from "@/components/admin/admin-landing";
 import { KycQueue } from "@/components/admin/kyc-queue";
 import { UsersPanel } from "@/components/admin/admin-users";
@@ -64,6 +66,7 @@ import {
   IconAlert,
   IconChat,
   IconCheck,
+  IconEye,
   IconFileText,
   IconRefresh,
   IconScale,
@@ -72,7 +75,7 @@ import {
   IconWallet,
 } from "@/components/ui/icons";
 
-type Tab = "sengketa" | "escrow" | "tarik" | "rate" | "kartu" | "plus" | "audit" | "produk" | "promo" | "pengaturan" | "topup" | "laporan" | "logo" | "beranda" | "notifikasi" | "kyc" | "pengguna" | "ulasan";
+type Tab = "sengketa" | "escrow" | "tarik" | "rate" | "kartu" | "plus" | "audit" | "produk" | "promo" | "pengaturan" | "topup" | "laporan" | "logo" | "beranda" | "notifikasi" | "blog" | "kyc" | "pengguna" | "ulasan";
 
 /**
  * Tabs live in groups because seventeen flat entries read as a wall. Groups
@@ -113,6 +116,7 @@ const TAB_GROUPS: { label: string; tabs: { id: Tab; label: string }[] }[] = [
     tabs: [
       { id: "beranda", label: "Beranda" },
       { id: "notifikasi", label: "Notifikasi" },
+      { id: "blog", label: "Blog" },
       { id: "logo", label: "Logo & favicon" },
     ],
   },
@@ -156,6 +160,7 @@ export function AdminShell({
   initialPromo,
   initialPopup,
   initialLanding,
+  initialBlogPosts,
   initialKyc,
   initialUsers,
   suspendedCount,
@@ -180,6 +185,7 @@ export function AdminShell({
   initialPromo: SitePromo;
   initialPopup: SitePopup;
   initialLanding: LandingLayout;
+  initialBlogPosts: BlogPostAdminRow[];
   initialKyc: { rows: AdminKycRow[]; total: number };
   initialUsers: AdminUserRow[];
   suspendedCount: number;
@@ -466,6 +472,22 @@ export function AdminShell({
       description:
         "Bilah promo di paling atas situs dan pop up yang muncul saat pengunjung baru membuka beranda. Teks, tombol, tautan, dan gambar bisa diubah — atau dimatikan — kapan saja tanpa deploy.",
     },
+    blog: {
+      title: "Blog",
+      hint: `${initialBlogPosts.length} artikel`,
+      description:
+        "Artikel publik di /blog. Yang terbit muncul di index, masuk sitemap, dan bisa ditemukan mesin pencari — tulis untuk kata kunci yang dicari calon pembeli Robux. Draf hanya tampak di panel ini.",
+      action: (
+        <ButtonLink
+          href="/blog"
+          variant="secondary"
+          size="sm"
+          leadingIcon={<IconEye size={14} />}
+        >
+          Buka /blog
+        </ButtonLink>
+      ),
+    },
     kyc: {
       title: "Antrean KYC penjual",
       hint: `${initialKyc.total} menunggu`,
@@ -652,6 +674,7 @@ export function AdminShell({
         {tab === "notifikasi" ? (
           <NoticePanel initialPromo={initialPromo} initialPopup={initialPopup} />
         ) : null}
+        {tab === "blog" ? <BlogPanel initial={initialBlogPosts} /> : null}
         {tab === "beranda" ? <LandingPanel initial={initialLanding} /> : null}
         {tab === "kyc" ? <KycQueue rows={initialKyc.rows} total={initialKyc.total} /> : null}
         {tab === "pengguna" ? <UsersPanel initial={initialUsers} suspendedCount={suspendedCount} /> : null}
