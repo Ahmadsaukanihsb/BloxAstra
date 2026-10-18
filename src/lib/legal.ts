@@ -7,12 +7,14 @@
  * `PAYMENT_METHODS` in `lib/payments.ts`, and the security measures from
  * `lib/credentials.ts`, `lib/session.ts` and `lib/oauth.ts`.
  *
- * The operator block below is the one thing code cannot answer. Those fields
- * are empty on purpose: a privacy notice has to identify who controls the data,
- * and no amount of source reading tells me the legal entity, its address, or
- * the address a consumer complaint should go to. Rather than print a made-up
- * company, the pages render every empty field as a visible "belum diisi" item.
- * Fill these in and the notice disappears on its own.
+ * The operator block comes from `LEGAL_OPERATOR_*` environment variables (see
+ * `.env.example`). Code cannot know the legal entity, its address, or the
+ * address a consumer complaint should go to, so rather than print a made-up
+ * company, every empty field renders as a visible "belum diisi" item on the
+ * policy pages. Fill the env vars and that notice disappears on its own,
+ * without a deploy — the pages that print these fields call `connection()`,
+ * so editing `.env` and restarting the app (`pm2 restart bloxastra-web`) is
+ * enough for a change to take effect.
  */
 
 import { DEFAULT_TIMEOUTS } from "@/lib/sweep";
@@ -27,17 +29,17 @@ export interface OperatorField {
 
 export const OPERATOR = {
   /** Legal entity behind the service. */
-  entity: "AstraFlow Digital",
+  entity: process.env.LEGAL_OPERATOR_ENTITY?.trim() || "AstraFlow Digital",
   /** Registered address — required in a consumer complaint channel. */
-  address: "",
+  address: process.env.LEGAL_OPERATOR_ADDRESS?.trim() || "",
   /** Consumer complaint address. PP 80/2019 Pasal 27 requires one be published. */
-  email: "",
+  email: process.env.LEGAL_OPERATOR_EMAIL?.trim() || "",
   /** Consumer complaint phone number. Also required by Pasal 27. */
-  phone: "",
+  phone: process.env.LEGAL_OPERATOR_PHONE?.trim() || "",
   /** Electronic System Provider registration number (PP 71/2019 Pasal 6). */
-  pseNumber: "",
+  pseNumber: process.env.LEGAL_OPERATOR_PSE_NUMBER?.trim() || "",
   /** Minimum age a user must be to hold an account. */
-  minAge: "13 tahun",
+  minAge: process.env.LEGAL_OPERATOR_MIN_AGE?.trim() || "13 tahun",
 };
 
 export const OPERATOR_FIELDS: OperatorField[] = [

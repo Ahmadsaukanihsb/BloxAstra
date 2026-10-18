@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { connection } from "next/server";
 import { LegalPage, LegalSection, type LegalSectionRef } from "@/components/site/legal-page";
 import { ESCROW_WINDOWS, OFFSITE, OPERATOR, PAYMENT_METHODS_LEGAL, WITHDRAWAL_FEE } from "@/lib/legal";
 
@@ -26,7 +27,10 @@ const SECTIONS: LegalSectionRef[] = [
   { id: "pengaduan", label: "Pengaduan" },
 ];
 
-export default function TermsPage() {
+export default async function TermsPage() {
+  // Operator fields come from `.env` (LEGAL_OPERATOR_*); render per request so
+  // filling them in never waits for a rebuild.
+  await connection();
   return (
     <LegalPage
       title="Syarat layanan"

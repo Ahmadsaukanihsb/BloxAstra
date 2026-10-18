@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { connection } from "next/server";
 import { LegalPage, LegalSection, type LegalSectionRef } from "@/components/site/legal-page";
 import { Surface } from "@/components/ui/surface";
 import { TierBadge } from "@/components/ui/badge";
@@ -57,7 +58,10 @@ const GUARANTEES = [
   },
 ] as const;
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  // Operator fields come from `.env` (LEGAL_OPERATOR_*); render per request so
+  // filling them in never waits for a rebuild.
+  await connection();
   return (
     <LegalPage
       title="Tentang Blox Astra"

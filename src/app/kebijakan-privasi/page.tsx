@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { LegalPage, LegalSection, type LegalSectionRef } from "@/components/site/legal-page";
 import { OPERATOR, PRIVACY_UPDATED, RETENTION } from "@/lib/legal";
 
@@ -21,7 +22,10 @@ const SECTIONS: LegalSectionRef[] = [
   { id: "perubahan", label: "Perubahan kebijakan" },
 ];
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
+  // Operator fields come from `.env` (LEGAL_OPERATOR_*); render per request so
+  // filling them in never waits for a rebuild.
+  await connection();
   return (
     <LegalPage
       title="Kebijakan privasi"
