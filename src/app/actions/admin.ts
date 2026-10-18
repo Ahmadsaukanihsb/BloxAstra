@@ -12,6 +12,13 @@ import { parseServiceArt } from "@/lib/service-art";
 import { SITE_LOGO_KEY, SITE_LOGO_MAX_BYTES } from "@/lib/site-logo";
 import { SITE_FAVICON_KEY, SITE_FAVICON_MAX_BYTES } from "@/lib/site-favicon";
 import { parseSitePopup, parseSitePromo } from "@/lib/site-notice";
+import { parseSocialLinks } from "@/lib/social-links";
+import {
+  isValidSocialUrl,
+  SOCIAL_LINKS_KEY,
+  SOCIAL_SLOTS,
+  SOCIAL_URL_MAX,
+} from "@/lib/social-links-slots";
 import {
   isValidNoticeHref,
   NOTICE_CTA_LABEL_MAX,
@@ -1898,6 +1905,66 @@ export async function saveSitePopup(rawInput: unknown): Promise<AdminActionResul
 
   updateTag("site-popup");
   revalidatePath("/");
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
+/* ─────────────────── sosial media (footer) ─────────────────── */
+
+const socialLinksSchema = z.object({
+  discord: z.string().max(SOCIAL_URL_MAX),
+  instagram: z.string().max(SOCIAL_URL_MAX),
+  tiktok: z.string().max(SOCIAL_URL_MAX),
+  youtube: z.string().max(SOCIAL_URL_MAX),
+  facebook: z.string().max(SOCIAL_URL_MAX),
+  x: z.string().max(SOCIAL_URL_MAX),
+  whatsapp: z.string().max(SOCIAL_URL_MAX),
+});
+
+/**
+ * Set the footer's social links. One URL per platform, empty = the icon is
+ * not rendered. Each link must be an https URL on the platform's own domain —
+ * the read path enforces this too, but rejecting on write lets the admin know
+ * which row is wrong instead of watching it disappear after saving.
+ */
+export async function saveSocialLinks(rawInput: unknown): Promise<AdminActionResult> {
+  const user = await requireRole("admin");
+  const parsed = socialLinksSchema.safeParse(rawInput);
+  if (!parsed.success) return fail("Input tidak valid.");
+
+  for (const slot of SOCIAL_SLOTS) {
+    const value = parsed.data[slot.id].trim();
+    if (value && !isValidSocialUrl(slot.id, value)) {
+      return fail(`Tautan ${slot.label} harus URL https di domain ${slot.hosts.join(" atau ")}.`);
+    }
+  }
+
+  const normalized = parseSocialLinks(JSON.stringify(parsed.data));
+  const active = SOCIAL_SLOTS.filter((slot) => normalized[slot.id]).map((slot) => slot.label);
+  const ip = await clientIp();
+  const value = JSON.stringify(normalized);
+  await db.$transaction([
+    db.setting.upsert({
+      where: { key: SOCIAL_LINKS_KEY },
+      create: { key: SOCIAL_LINKS_KEY, value },
+      update: { value },
+    }),
+    db.adminAuditLog.create({
+      data: {
+        actionType: "site_social.update",
+        targetResource: "landing",
+        targetId: SOCIAL_LINKS_KEY,
+        diffPayload: JSON.stringify({
+          aktif: active.length > 0 ? active : "tidak ada (footer tanpa ikon sosial)",
+        }),
+        ipAddress: ip,
+        actor: user.email,
+      },
+    }),
+  ]);
+
+  updateTag("site-social");
+  revalidatePath("/", "layout");
   revalidatePath("/admin");
   return { ok: true };
 }

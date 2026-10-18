@@ -41,6 +41,8 @@ import { TopUpsPanel } from "@/components/admin/admin-topups";
 import { ReportsPanel } from "@/components/admin/admin-reports";
 import { LogoPanel } from "@/components/admin/admin-logo";
 import { NoticePanel } from "@/components/admin/admin-notice";
+import { SocialPanel } from "@/components/admin/admin-social";
+import type { SocialLinks } from "@/lib/social-links-slots";
 import { BlogPanel } from "@/components/admin/admin-blog";
 import { LandingPanel } from "@/components/admin/admin-landing";
 import { KycQueue } from "@/components/admin/kyc-queue";
@@ -76,7 +78,7 @@ import {
   IconWallet,
 } from "@/components/ui/icons";
 
-type Tab = "sengketa" | "escrow" | "tarik" | "rate" | "kartu" | "plus" | "audit" | "produk" | "promo" | "pengaturan" | "topup" | "laporan" | "logo" | "beranda" | "notifikasi" | "blog" | "kyc" | "pengguna" | "ulasan";
+type Tab = "sengketa" | "escrow" | "tarik" | "rate" | "kartu" | "plus" | "audit" | "produk" | "promo" | "pengaturan" | "topup" | "laporan" | "logo" | "beranda" | "notifikasi" | "sosial" | "blog" | "kyc" | "pengguna" | "ulasan";
 
 /**
  * Tabs live in groups because seventeen flat entries read as a wall. Groups
@@ -117,6 +119,7 @@ const TAB_GROUPS: { label: string; tabs: { id: Tab; label: string }[] }[] = [
     tabs: [
       { id: "beranda", label: "Beranda" },
       { id: "notifikasi", label: "Notifikasi" },
+      { id: "sosial", label: "Sosial media" },
       { id: "blog", label: "Blog" },
       { id: "logo", label: "Logo & favicon" },
     ],
@@ -160,6 +163,7 @@ export function AdminShell({
   initialFavicon,
   initialPromo,
   initialPopup,
+  initialSocial,
   initialLanding,
   initialBlogPosts,
   initialKyc,
@@ -185,6 +189,7 @@ export function AdminShell({
   initialFavicon: string | null;
   initialPromo: SitePromo;
   initialPopup: SitePopup;
+  initialSocial: SocialLinks;
   initialLanding: LandingLayout;
   initialBlogPosts: BlogPostAdminRow[];
   initialKyc: { rows: AdminKycRow[]; total: number };
@@ -473,6 +478,12 @@ export function AdminShell({
       description:
         "Bilah promo di paling atas situs dan pop up yang muncul saat pengunjung baru membuka beranda. Teks, tombol, tautan, dan gambar bisa diubah — atau dimatikan — kapan saja tanpa deploy.",
     },
+    sosial: {
+      title: "Sosial media footer",
+      hint: "Discord, Instagram, WhatsApp, dll.",
+      description:
+        "Tautan sosial yang muncul sebagai ikon di footer semua halaman. Satu URL per platform — kosongkan baris untuk menyembunyikan ikonnya. Hanya URL https di domain resmi platform yang diterima.",
+    },
     blog: {
       title: "Blog",
       hint: `${initialBlogPosts.length} artikel`,
@@ -675,6 +686,7 @@ export function AdminShell({
         {tab === "notifikasi" ? (
           <NoticePanel initialPromo={initialPromo} initialPopup={initialPopup} />
         ) : null}
+        {tab === "sosial" ? <SocialPanel initial={initialSocial} /> : null}
         {tab === "blog" ? <BlogPanel initial={initialBlogPosts} /> : null}
         {tab === "beranda" ? <LandingPanel initial={initialLanding} /> : null}
         {tab === "kyc" ? <KycQueue rows={initialKyc.rows} total={initialKyc.total} /> : null}

@@ -12,14 +12,12 @@ export const metadata: Metadata = {
 
 const SECTIONS: LegalSectionRef[] = [
   { id: "pengendali", label: "Pengendali data" },
-  { id: "data", label: "Data yang dikumpulkan" },
-  { id: "tujuan", label: "Cara kami memakainya" },
+  { id: "data", label: "Data & pemakaian" },
   { id: "cookie", label: "Cookie" },
   { id: "penerima", label: "Penerima data" },
   { id: "retensi", label: "Penyimpanan & keamanan" },
   { id: "hak", label: "Hak kamu" },
-  { id: "anak", label: "Pengguna di bawah umur" },
-  { id: "perubahan", label: "Perubahan kebijakan" },
+  { id: "anak", label: "Di bawah umur & perubahan" },
 ];
 
 export default async function PrivacyPage() {
@@ -29,159 +27,97 @@ export default async function PrivacyPage() {
   return (
     <LegalPage
       title="Kebijakan privasi"
-      lede="Versi ringkas: data yang kamu berikan dipakai untuk menjalankan transaksi, tidak dijual, dan bisa kamu minta hapus. Rinciannya di bawah, ditulis mengikuti Undang-Undang Nomor 27 Tahun 2022 tentang Pelindungan Data Pribadi."
+      lede="Ringkasnya: data yang kamu berikan dipakai untuk menjalankan transaksi, tidak dijual, dan bisa kamu minta hapus. Ditulis mengikuti UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi."
       sections={SECTIONS}
       meta={`Terakhir diperbarui ${PRIVACY_UPDATED}`}
     >
-      <LegalSection id="pengendali" title="Siapa pengendali datanya">
+      <LegalSection id="pengendali" title="Pengendali data">
         <p>
-          Pengendali data pribadi di layanan ini adalah{" "}
+          Pengendali datamu adalah{" "}
           <strong>{OPERATOR.entity.trim() || "[nama badan hukum belum diisi]"}</strong>
-          {OPERATOR.address.trim() ? `, beralamat di ${OPERATOR.address}` : ""}. Permintaan salinan,
-          koreksi, atau penghapusan dikirim ke{" "}
+          {OPERATOR.address.trim() ? `, ${OPERATOR.address}` : ""}. Permintaan salinan, koreksi,
+          atau penghapusan dikirim ke{" "}
           <strong>{OPERATOR.email.trim() || "[alamat pengaduan belum diisi]"}</strong>
-          {OPERATOR.phone.trim() ? ` atau ${OPERATOR.phone}` : ""}. Kami akan meminta kamu
-          membuktikan kepemilikan akun sebelum memprosesnya.
+          {OPERATOR.phone.trim() ? ` atau ${OPERATOR.phone}` : ""}, dengan bukti kepemilikan akun.
         </p>
       </LegalSection>
 
-      <LegalSection id="data" title="Data yang kami kumpulkan">
+      <LegalSection id="data" title="Data & pemakaian">
         <ul>
           <li>
-            <strong>Akun:</strong> email, nama pengguna, dan kata sandi (disimpan sebagai hash).
-            Nomor WhatsApp bila kamu memverifikasinya, dan identitas dasar dari Google atau Discord
-            bila kamu memilih masuk lewat mereka.
+            <strong>Akun:</strong> email, nama pengguna, kata sandi ter-hash, nomor WhatsApp
+            terverifikasi, dan identitas dari Google/Discord bila kamu masuk lewat mereka.
           </li>
           <li>
-            <strong>Verifikasi penjual (KYC):</strong> nama lengkap, kota, foto identitas, dan
-            swafoto — hanya untuk akun yang membuka toko, dengan persetujuan eksplisit darimu.
+            <strong>Pesanan &amp; dompet:</strong> isi dan riwayat pesanan, catatan dan percakapan
+            ruang pesanan, mutasi saldo, serta rekening penarikan. Kredensial pesanan tersimpan
+            terenkripsi; nomor kartu tidak pernah kami simpan.
           </li>
           <li>
-            <strong>Pesanan:</strong> isi pesanan dan riwayatnya, username Roblox atau tautan
-            gamepass tujuan, catatan, dan percakapan di ruang pesanan. Kredensial login yang kamu
-            berikan untuk suatu pesanan disimpan terenkripsi.
+            <strong>Verifikasi penjual (KYC):</strong> nama, kota, foto identitas, dan swafoto —
+            hanya bila kamu membuka toko, atas persetujuanmu.
           </li>
           <li>
-            <strong>Pembayaran &amp; dompet:</strong> metode dan status pembayaran, mutasi saldo,
-            serta nama bank dan nomor rekening untuk penarikan penjual. Kami tidak menyimpan nomor
-            kartu.
-          </li>
-          <li>
-            <strong>Lainnya:</strong> daftar keinginan, ulasan, notifikasi, dan jejak audit tindakan
-            admin (termasuk alamat IP petugas) agar perubahan data bisa ditelusuri.
+            <strong>Teknis:</strong> daftar keinginan, ulasan, notifikasi, serta IP dan jejak audit
+            tindakan admin agar perubahan data bisa ditelusuri.
           </li>
         </ul>
-      </LegalSection>
-
-      <LegalSection id="tujuan" title="Cara kami memakainya">
-        <ul>
-          <li>
-            <strong>Menjalankan layanan:</strong> akun, pesanan, penahanan dan pelepasan dana,
-            notifikasi, serta penyelesaian sengketa — tidak mungkin dilewati bila kamu ingin
-            bertransaksi.
-          </li>
-          <li>
-            <strong>Atas persetujuanmu:</strong> verifikasi WhatsApp dan verifikasi identitas
-            penjual (KYC). Persetujuan bisa ditarik, dengan konsekuensi fitur itu tidak bisa dipakai.
-          </li>
-          <li>
-            <strong>Kewajiban hukum:</strong> menyimpan catatan transaksi sesuai jangka waktu yang
-            diwajibkan bagi penyelenggara perdagangan elektronik.
-          </li>
-          <li>
-            <strong>Kepentingan yang sah:</strong> mencegah penipuan dan menjaga keamanan sistem,
-            ditimbang agar tidak melampaui hakmu.
-          </li>
-        </ul>
+        <p>
+          Pemakaiannya: menjalankan layanan (akun, escrow, notifikasi, sengketa); atas
+          persetujuanmu (verifikasi WhatsApp dan KYC — bisa ditarik kapan saja); kewajiban hukum
+          (catatan transaksi); dan kepentingan sah (mencegah penipuan). Tidak untuk iklan, tidak
+          dijual.
+        </p>
       </LegalSection>
 
       <LegalSection id="cookie" title="Cookie">
         <p>
-          Kami hanya memakai satu cookie: <strong>bloxastra_session</strong> untuk menyimpan sesi
-          masuk. Cookie ini <em>httpOnly</em>, <em>SameSite=Lax</em>, dan <em>Secure</em> di
-          produksi. Tidak ada cookie iklan, analitik, atau pelacak pihak ketiga — karena itu tidak
-          ada banner persetujuan cookie.
+          Hanya satu cookie: <strong>bloxastra_session</strong> untuk sesi masuk (httpOnly,
+          SameSite=Lax, Secure di produksi). Tidak ada cookie iklan, analitik, atau pelacak pihak
+          ketiga — karena itu situs ini tanpa banner persetujuan cookie.
         </p>
       </LegalSection>
 
-      <LegalSection id="penerima" title="Siapa lagi yang menerima data">
-        <ul>
-          <li>
-            <strong>Penyedia pembayaran (Tripay)</strong> — nama, email, nomor WhatsApp, tagihan,
-            dan kode pesanan untuk memproses pembayaran.
-          </li>
-          <li>
-            <strong>Google dan Discord</strong> — hanya bila kamu memilih masuk dengan akun mereka.
-          </li>
-          <li>
-            <strong>Pengirim kode WhatsApp</strong> — nomor tujuan dan isi pesan kode verifikasi.
-          </li>
-          <li>
-            <strong>Discord milik penjual,</strong> bila penjual menyalakan webhook-nya — ringkasan
-            pesanan yang masuk dikirim ke server Discord mereka.
-          </li>
-          <li>
-            <strong>Penyedia hosting</strong> yang menyimpan basis data dan berkas aplikasi.
-          </li>
-        </ul>
+      <LegalSection id="penerima" title="Penerima data">
         <p>
-          Kredensial pesanan tidak dikirim ke luar alur pesanan, dan data pribadi tidak kami jual.
+          <strong>Tripay</strong> memproses pembayaran; <strong>Google dan Discord</strong> hanya
+          bila kamu memilih masuk lewat mereka; <strong>pengirim kode WhatsApp</strong> menerima
+          nomor dan isi pesan OTP; <strong>Discord penjual</strong> menerima ringkasan pesanan bila
+          penjual menyalakan webhook-nya; <strong>penyedia hosting</strong> menyimpan basis data dan
+          berkas aplikasi. Kredensial pesanan tidak keluar dari alur pesanan, dan data pribadi
+          tidak kami jual.
         </p>
       </LegalSection>
 
-      <LegalSection id="retensi" title="Berapa lama disimpan dan bagaimana diamankan">
-        <ul>
-          <li>
-            Catatan transaksi keuangan disimpan minimal <strong>{RETENTION.financial}</strong> dan
-            transaksi non-keuangan minimal <strong>{RETENTION.nonFinancial}</strong>, sesuai
-            kewajiban penyelenggara perdagangan elektronik. Sisanya dihapus saat akun dihapus atau
-            sudah tidak diperlukan.
-          </li>
-          <li>
-            Kode verifikasi WhatsApp disimpan sebagai hash, berlaku {RETENTION.otpMinutes} menit.
-          </li>
-          <li>
-            Kata sandi disimpan sebagai hash; kredensial pesanan dienkripsi AES-256-GCM dengan kunci
-            yang tidak ikut tersimpan di basis data.
-          </li>
-          <li>
-            Setiap tindakan admin terhadap pesanan, dompet, atau data pengguna tercatat di jejak
-            audit. Bila terjadi kebocoran yang berisiko bagimu, kami memberi tahu kamu dan pihak
-            berwenang sesuai ketentuan.
-          </li>
-        </ul>
-      </LegalSection>
-
-      <LegalSection id="hak" title="Hak kamu atas datamu">
-        <p>Kamu berhak untuk:</p>
-        <ul>
-          <li>tahu data apa yang disimpan dan mendapat salinannya;</li>
-          <li>memperbaiki data yang keliru;</li>
-          <li>meminta penghapusan atau penghentian pemrosesan;</li>
-          <li>menarik kembali persetujuan yang pernah diberikan;</li>
-          <li>membatasi pemrosesan dan memindahkan datamu sejauh sistem memungkinkan;</li>
-          <li>mengadu bila hakmu dirugikan.</li>
-        </ul>
+      <LegalSection id="retensi" title="Penyimpanan & keamanan">
         <p>
-          Kirim permintaan ke kontak di bagian pertama. Catatan transaksi yang wajib disimpan
-          menurut peraturan tidak bisa dihapus lebih awal; bila itu berlaku, kami akan memberi tahu
-          bagian mana yang tertahan dan mengapa.
+          Catatan transaksi keuangan disimpan minimal <strong>{RETENTION.financial}</strong> dan
+          non-keuangan minimal <strong>{RETENTION.nonFinancial}</strong> sesuai kewajiban
+          penyelenggara perdagangan elektronik; sisanya dihapus bersama akun. Kode OTP disimpan
+          ter-hash dan berlaku {RETENTION.otpMinutes} menit. Kata sandi ter-hash, kredensial
+          pesanan dienkripsi AES-256-GCM dengan kunci yang terpisah dari basis data, dan setiap
+          tindakan admin terhadap datamu tercatat di jejak audit. Bila terjadi kebocoran yang
+          berisiko bagimu, kamu dan pihak berwenang kami beri tahu.
         </p>
       </LegalSection>
 
-      <LegalSection id="anak" title="Pengguna di bawah umur">
+      <LegalSection id="hak" title="Hak kamu">
         <p>
-          Layanan ini untuk pengguna berusia minimal <strong>{OPERATOR.minAge}</strong>. Bila kamu
-          orang tua atau wali dan anakmu mendaftar, hubungi kami — akun dan datanya kami hapus,
-          kecuali bagian yang wajib disimpan.
+          Kamu berhak mendapat salinan datamu, memperbaikinya, meminta penghapusan atau
+          penghentian pemrosesan, menarik persetujuan, membatasi dan memindahkan datamu sejauh
+          sistem memungkinkan, serta mengadu — semuanya lewat kontak di bagian pertama. Catatan
+          transaksi yang wajib disimpan peraturan tidak bisa dihapus lebih awal; bila itu berlaku,
+          kami beri tahu bagian mana yang tertahan dan mengapa.
         </p>
       </LegalSection>
 
-      <LegalSection id="perubahan" title="Perubahan kebijakan">
+      <LegalSection id="anak" title="Di bawah umur & perubahan">
         <p>
-          Bila ada tujuan pemrosesan atau penerima data baru, kami memberi tahu sebelum perubahan
-          berlaku dan memperbarui tanggal di atas. Kamu selalu bisa berhenti memakai layanan bila
-          tidak menyetujuinya.
+          Layanan ini untuk usia minimal <strong>{OPERATOR.minAge}</strong>; orang tua atau wali
+          bisa menghubungi kami untuk menghapus akun anaknya, kecuali bagian yang wajib disimpan.
+          Bila ada tujuan pemrosesan atau penerima data baru, kami memberi tahu sebelum berlaku
+          dan memperbarui tanggal di atas — kamu selalu bisa berhenti memakai layanan bila tidak
+          setuju.
         </p>
       </LegalSection>
     </LegalPage>

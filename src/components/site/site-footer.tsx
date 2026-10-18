@@ -2,7 +2,31 @@ import Link from "next/link";
 import { cx } from "@/lib/cx";
 import { blogUrl } from "@/lib/site";
 import { getSiteLogo } from "@/lib/site-logo";
+import { getSocialLinks } from "@/lib/social-links";
+import { SOCIAL_SLOTS, type SocialPlatformId } from "@/lib/social-links-slots";
+import {
+  IconDiscord,
+  IconFacebook,
+  IconInstagram,
+  IconTiktok,
+  IconWhatsapp,
+  IconXTwitter,
+  IconYoutube,
+} from "@/components/ui/icons";
 import { BrandMark } from "@/components/site/brand-mark";
+
+const SOCIAL_ICONS: Record<
+  SocialPlatformId,
+  (props: { size?: number; className?: string }) => React.JSX.Element
+> = {
+  discord: IconDiscord,
+  instagram: IconInstagram,
+  tiktok: IconTiktok,
+  youtube: IconYoutube,
+  facebook: IconFacebook,
+  x: IconXTwitter,
+  whatsapp: IconWhatsapp,
+};
 
 /**
  * The shop sign-off.
@@ -23,7 +47,8 @@ import { BrandMark } from "@/components/site/brand-mark";
  * destination here is a real route.
  */
 export async function SiteFooter() {
-  const logo = await getSiteLogo();
+  const [logo, social] = await Promise.all([getSiteLogo(), getSocialLinks()]);
+  const socialLinks = SOCIAL_SLOTS.filter((slot) => social[slot.id]);
   return (
     <footer className="relative z-10 mt-16 border-t border-line bg-paper px-4 pb-32 pt-12 md:px-8 md:pb-16 md:pt-14">
       <div className="mx-auto flex max-w-[1180px] flex-col gap-10">
@@ -41,6 +66,28 @@ export async function SiteFooter() {
               Marketplace Robux dan item Roblox. Dana pembeli ditahan platform dan baru cair ke
               penjual setelah barang diterima, dengan penjual yang identitasnya diverifikasi.
             </p>
+            {/* Only the platforms the admin filled in — an empty slot is not
+                rendered, so nothing here links nowhere. */}
+            {socialLinks.length > 0 ? (
+              <span className="flex flex-wrap items-center gap-2">
+                {socialLinks.map((slot) => {
+                  const Icon = SOCIAL_ICONS[slot.id];
+                  return (
+                    <a
+                      key={slot.id}
+                      href={social[slot.id]}
+                      target="_blank"
+                      rel="noopener noreferrer me"
+                      aria-label={`${slot.label} Blox Astra`}
+                      title={slot.label}
+                      className="flex size-9 items-center justify-center rounded-full border border-line bg-paper transition-colors duration-200 hover:border-astra-ink/40 hover:bg-canvas-2"
+                    >
+                      <Icon size={18} />
+                    </a>
+                  );
+                })}
+              </span>
+            ) : null}
           </div>
 
           {/* Sits beside the blurb rather than under it: with the link blocks

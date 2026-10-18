@@ -20,6 +20,7 @@ import { getSweepTimeouts } from "@/lib/sweep";
 import { getSiteLogo } from "@/lib/site-logo";
 import { getSiteFavicon } from "@/lib/site-favicon";
 import { getSitePopup, getSitePromo } from "@/lib/site-notice";
+import { getSocialLinks } from "@/lib/social-links";
 import { getServiceArt } from "@/lib/service-art";
 import { getBlogPostsForAdmin } from "@/lib/blog";
 import { AdminShell } from "@/components/admin/admin-shell";
@@ -54,7 +55,7 @@ export default function AdminPage() {
 async function AdminContent() {
   await connection();
   const user = await requireRole("admin");
-  const [dashboard, rates, serviceArt, products, promos, topUps, reports, fees, withdrawal, banks, timeouts, logo, favicon, promo, popup, landing, blogPosts, kyc, users, reviews] =
+  const [dashboard, rates, serviceArt, products, promos, topUps, reports, fees, withdrawal, banks, timeouts, logo, favicon, promo, popup, social, landing, blogPosts, kyc, users, reviews] =
     await Promise.all([
       getAdminDashboard(),
       getActiveRates(),
@@ -71,6 +72,7 @@ async function AdminContent() {
       getSiteFavicon(),
       getSitePromo(),
       getSitePopup(),
+      getSocialLinks(),
       getLandingLayout(),
       getBlogPostsForAdmin(),
       getKycQueue(),
@@ -103,6 +105,7 @@ async function AdminContent() {
         initialFavicon={favicon}
         initialPromo={promo}
         initialPopup={popup}
+        initialSocial={social}
         initialLanding={landing}
         initialBlogPosts={blogPosts}
         initialKyc={kyc}
