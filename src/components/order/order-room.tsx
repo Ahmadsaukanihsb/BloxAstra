@@ -996,6 +996,19 @@ export function OrderRoom({
                 </Button>
               ) : null}
 
+              {/* Locked until delivery: confirming early would release escrow
+                  before the seller ever shipped. */}
+              {order.awaitingShipment && !locked ? (
+                <div className="flex flex-col gap-1.5">
+                  <Button size="lg" variant="primary" disabled>
+                    Barang diterima, lepas dana ke penjual
+                  </Button>
+                  <p className="text-[11px] leading-relaxed text-ink-mute">
+                    Tombol aktif setelah penjual menandai barang terkirim. Dana aman di escrow.
+                  </p>
+                </div>
+              ) : null}
+
               {order.state === "completed" ? (
                 <Notice tone="astra" title="Barang diterima · dana dilepas">
                   Terima kasih! Dana sudah dicairkan ke dompet penjual.

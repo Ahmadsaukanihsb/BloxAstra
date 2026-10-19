@@ -85,7 +85,10 @@ export interface OrderDetail extends OrderListItem {
   productImageUrl: string | null;
   paymentCheckoutUrl: string | null;
   paymentStatus: string | null;
+  /** Buyer's "barang diterima": live only once the seller marked it shipped. */
   canConfirm: boolean;
+  /** Buyer is waiting for the seller to press "tandai barang terkirim". */
+  awaitingShipment: boolean;
   canCancelAfk: boolean;
   viewerRole: OrderViewerRole;
   credentials: {
@@ -465,12 +468,16 @@ export async function getOrderRoom(
     productImageUrl: row.product?.imageUrl ?? null,
     paymentCheckoutUrl: row.payment?.checkoutUrl ?? null,
     paymentStatus: row.payment?.status ?? null,
-    canConfirm:
-      ["paid", "processing", "shipped"].includes(state) &&
-      viewerRole !== "seller" &&
-      // Unclaimed pool orders have no seller yet — there is nothing to
-      // confirm; the button would only ever fail server-side.
-      row.sellerId !== null,
+    // The escrow confirm window opens at delivery: before the seller marks
+    // the order shipped there is nothing to confirm (the server rejects it).
+    canConfirm: state === "shipped" && viewerRole === "buyer",
+    // Mirror of the above for the disabled state: the buyer sees the button
+    // locked while the order is still being processed.
+    awaitingShipment:
+      viewerRole === "buyer" &&
+      // Unclaimed pool orders have no seller yet — no button until claimed.
+      row.sellerId !== null &&
+      ["paid", "processing"].includes(state),
     canCancelAfk: canCancelAfk(row, now) && viewerRole === "buyer",
     viewerRole,
     credentials,

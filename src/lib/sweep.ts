@@ -157,6 +157,13 @@ async function releaseDueOrders(now: Date): Promise<string[]> {
             actor: "system",
           },
         });
+        await tx.message.create({
+          data: {
+            orderId: order.id,
+            fromRole: "system",
+            body: "Jendela konfirmasi habis. Dana otomatis diteruskan ke penjual. Pesanan selesai.",
+          },
+        });
         await tx.sellerProfile.update({
           where: { id: order.seller!.id },
           data: { ordersCompleted: { increment: 1 } },

@@ -284,8 +284,10 @@ export async function confirmOrderReceived(orderCode: string): Promise<RoomActio
     include: { seller: { select: { id: true, userId: true } } },
   });
   if (!order) return fail("NOT_FOUND", "Pesanan tidak ditemukan.");
-  if (!["paid", "processing", "shipped"].includes(order.status)) {
-    return fail("STATE", "Pesanan tidak dalam status yang bisa dikonfirmasi.");
+  // Escrow releases only after delivery: the seller must have pressed
+  // "tandai barang terkirim" first — that is what starts the confirm window.
+  if (order.status !== "shipped") {
+    return fail("STATE", "Pesanan belum ditandai terkirim oleh penjual.");
   }
   const seller = order.seller;
   if (!seller) return fail("STATE", "Pesanan belum punya penjual.");
@@ -302,11 +304,11 @@ export async function confirmOrderReceived(orderCode: string): Promise<RoomActio
       }
 
       const updated = await tx.order.updateMany({
-        where: { id: order.id, status: { in: ["paid", "processing", "shipped"] } },
+        where: { id: order.id, status: "shipped" },
         data: { status: "completed", autoReleaseAt: null },
       });
       if (updated.count === 0) {
-        throw new AbortTxError("STATE", "Pesanan tidak dalam status yang bisa dikonfirmasi.");
+        throw new AbortTxError("STATE", "Pesanan belum ditandai terkirim oleh penjual.");
       }
 
       await tx.orderEvent.create({
@@ -315,6 +317,13 @@ export async function confirmOrderReceived(orderCode: string): Promise<RoomActio
           state: "completed",
           label: "Pembeli mengonfirmasi barang diterima, dana dilepas",
           actor: "buyer",
+        },
+      });
+      await tx.message.create({
+        data: {
+          orderId: order.id,
+          fromRole: "system",
+          body: "Pembeli mengonfirmasi barang diterima. Dana diteruskan ke penjual. Pesanan selesai.",
         },
       });
       await tx.sellerProfile.update({
@@ -621,12 +630,12 @@ async function requireSellerOfOrder(orderId: string, userId: string, role: strin
   if (!order.sellerId) return { ok: false as const, error: "Pesanan belum punya penjual." };
   const profile = await db.sellerProfile.findUnique({
     where: { id: order.sellerId },
-    select: { userId: true },
+    select: { userId: true, storeName: true },
   });
   if (profile?.userId !== userId && role !== "admin") {
     return { ok: false as const, error: "Hanya penjual pesanan ini yang bisa melakukan aksi ini." };
   }
-  return { ok: true as const, order };
+  return { ok: true as const, order, storeName: profile?.storeName ?? "Penjual" };
 }
 
 /** Seller claims a paid order (paid → processing), assigning themselves if pool. */
@@ -663,6 +672,13 @@ export async function startOrderProcessing(orderCode: string): Promise<RoomActio
           actor: "seller",
         },
       });
+      await tx.message.create({
+        data: {
+          orderId: order.id,
+          fromRole: "system",
+          body: `Penjual ${guard.storeName} mulai memproses pesanan.`,
+        },
+      });
       return "done" as const;
     });
     if (claimed === "taken") {
@@ -692,6 +708,13 @@ export async function startOrderProcessing(orderCode: string): Promise<RoomActio
           state: "processing",
           label: "Penjual mengambil dan mulai memproses",
           actor: "seller",
+        },
+      });
+      await tx.message.create({
+        data: {
+          orderId: order.id,
+          fromRole: "system",
+          body: `Penjual ${profile.storeName} mengambil pesanan ini dan mulai memproses.`,
         },
       });
       return "done" as const;
@@ -780,6 +803,13 @@ export async function markOrderShipped(orderCode: string): Promise<RoomActionRes
         state: "shipped",
         label: "Penjual menandai barang terkirim",
         actor: "seller",
+      },
+    });
+    await tx.message.create({
+      data: {
+        orderId: order.id,
+        fromRole: "system",
+        body: `Penjual ${guard.storeName} menandai barang terkirim. Konfirmasi penerimaan setelah barang kamu terima, ya.`,
       },
     });
     if (full?.productId) {
