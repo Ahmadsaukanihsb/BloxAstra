@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { cx } from "@/lib/cx";
 import { useGroupChatUnread } from "@/lib/chat-unread";
+import { useOrderUnread } from "@/lib/order-unread";
 import {
   IconChat,
   IconCompass,
@@ -34,14 +35,18 @@ const GROUP_TAB: Tab = { href: "/dashboard/penjual/grup", label: "Grup", icon: I
 export function BottomNav({
   role = null,
   groupUnread = 0,
+  orderUnread = 0,
 }: {
   role?: "buyer" | "seller" | "admin" | null;
   /** Unread group messages, read on the server so the tab is never a surprise. */
   groupUnread?: number;
+  /** Unread order-chat messages, same contract as `groupUnread`. */
+  orderUnread?: number;
 }) {
   const pathname = usePathname();
   const isSeller = role === "seller";
   const unread = useGroupChatUnread(groupUnread, isSeller);
+  const unreadOrders = useOrderUnread(orderUnread, Boolean(role));
 
   const tabs: Tab[] = isSeller
     ? [...BASE_TABS.slice(0, 4), GROUP_TAB, BASE_TABS[4]]
@@ -88,6 +93,14 @@ export function BottomNav({
                     className="num absolute -right-2.5 -top-1.5 grid min-w-4 place-items-center rounded-full bg-astra px-1 text-[9px] font-extrabold text-on-bright"
                   >
                     {unread > 99 ? "99+" : unread}
+                  </span>
+                ) : null}
+                {tab.href === "/pesanan" && unreadOrders > 0 ? (
+                  <span
+                    aria-label={`${unreadOrders} pesan pesanan belum dibaca`}
+                    className="num absolute -right-2.5 -top-1.5 grid min-w-4 place-items-center rounded-full bg-astra px-1 text-[9px] font-extrabold text-on-bright"
+                  >
+                    {unreadOrders > 99 ? "99+" : unreadOrders}
                   </span>
                 ) : null}
               </span>

@@ -17,6 +17,7 @@ export interface SweepResult {
   refundedIdle: string[];
   expiredTopUps: string[];
   wipedCreds: number;
+  reminded: number;
 }
 
 export interface SweepTimeouts {
@@ -37,6 +38,18 @@ export const DEFAULT_TIMEOUTS: SweepTimeouts = { poolHours: 24, processingDays: 
 /// permanen N hari setelah selesai" is made to buyers on several surfaces, and
 /// a number typed once per surface is a number that drifts.
 export const CREDENTIAL_WIPE_DAYS = 7;
+
+/** How far before a deadline the system reminder lands. */
+const RELEASE_REMINDER_WINDOW_MS = 2 * 3_600_000;
+const POOL_REMINDER_WINDOW_MS = 2 * 3_600_000;
+const SELLER_REMINDER_WINDOW_MS = 3 * 3_600_000;
+
+/// Reminder messages are deduped by these prefixes: the sweep reads back the
+/// message list for the marker, so overlapping passes can post each reminder
+/// exactly once. The prefix doubles as readable copy in the chat timeline.
+const RELEASE_REMINDER_MARKER = "Pengingat: pesanan otomatis selesai";
+const SELLER_REMINDER_MARKER = "Pengingat: pesanan otomatis dibatalkan";
+const POOL_REMINDER_MARKER = "Pengingat: belum ada penjual";
 
 /** Sweep windows, tunable via the `sweep.timeouts` setting row. */
 export async function getSweepTimeouts(): Promise<SweepTimeouts> {
@@ -257,18 +270,36 @@ async function expireStalePayments(now: Date): Promise<string[]> {
 export async function runSweep(): Promise<SweepResult> {
   const now = new Date();
   const timeouts = await getSweepTimeouts();
-  const [released, expired, refundedPool, refundedStuck, refundedIdle, expiredTopUps, wipedCreds] =
-    await Promise.all([
-      releaseDueOrders(now),
-      expireStalePayments(now),
-      refundStalePoolOrders(now, timeouts.poolHours),
-      refundStuckProcessingOrders(now, timeouts.processingDays),
-      refundIdleAssignedOrders(now, timeouts.assignedHours),
-      expireStaleTopUps(),
-      wipeOldCredentials(now),
-    ]);
+  const [
+    released,
+    expired,
+    refundedPool,
+    refundedStuck,
+    refundedIdle,
+    expiredTopUps,
+    wipedCreds,
+    reminded,
+  ] = await Promise.all([
+    releaseDueOrders(now),
+    expireStalePayments(now),
+    refundStalePoolOrders(now, timeouts.poolHours),
+    refundStuckProcessingOrders(now, timeouts.processingDays),
+    refundIdleAssignedOrders(now, timeouts.assignedHours),
+    expireStaleTopUps(),
+    wipeOldCredentials(now),
+    sendDeadlineReminders(now, timeouts),
+  ]);
   if (expired.length > 0) revalidateTag("catalog", { expire: 0 });
-  return { released, expired, refundedPool, refundedStuck, refundedIdle, expiredTopUps, wipedCreds };
+  return {
+    released,
+    expired,
+    refundedPool,
+    refundedStuck,
+    refundedIdle,
+    expiredTopUps,
+    wipedCreds,
+    reminded,
+  };
 }
 
 /**
@@ -581,4 +612,176 @@ async function refundIdleAssignedOrders(now: Date, assignedHours: number): Promi
   }
   if (refunded.length > 0) revalidateTag("catalog", { expire: 0 });
   return refunded;
+}
+
+/** Reminders land in "±2 jam" style copy; the sweep runs every 10 minutes,
+ *  so rounding to whole hours keeps the message honest. */
+function hoursLeft(deadlineMs: number, now: Date): number {
+  return Math.max(1, Math.round((deadlineMs - now.getTime()) / 3_600_000));
+}
+
+/**
+ * Gentle heads-up before the sweep moves money on its own: the buyer gets one
+ * reminder before auto-release, the seller one before an idle assigned order
+ * refunds, and the buyer one before an unclaimed pool order returns their
+ * balance. Each lands as a marker-prefixed system message (deduped by reading
+ * the marker back) plus a notification, so the deadline shows up exactly
+ * where the person can still act on it.
+ */
+async function sendDeadlineReminders(now: Date, timeouts: SweepTimeouts): Promise<number> {
+  let sent = 0;
+
+  const post = async (
+    orderId: string,
+    marker: string,
+    body: string,
+    recipient: { userId: string; title: string; notification: string; code: string },
+  ): Promise<void> => {
+    const existing = await db.message.findFirst({
+      where: { orderId, fromRole: "system", body: { startsWith: marker } },
+      select: { id: true },
+    });
+    if (existing) return;
+    await db.message.create({ data: { orderId, fromRole: "system", body } });
+    await notify({
+      userId: recipient.userId,
+      kind: "order_reminder",
+      title: recipient.title,
+      body: recipient.notification,
+      link: `/pesanan/${recipient.code}`,
+    });
+    sent += 1;
+  };
+
+  // 1. Buyer: the auto-release window on a shipped order is closing.
+  const releaseCutoff = new Date(now.getTime() + RELEASE_REMINDER_WINDOW_MS);
+  const releasing = await db.order.findMany({
+    where: {
+      status: "shipped",
+      dispute: { is: null },
+      autoReleaseAt: { gt: now, lte: releaseCutoff },
+    },
+    orderBy: { autoReleaseAt: "asc" },
+    select: { id: true, code: true, buyerId: true, autoReleaseAt: true },
+    take: REFUND_BATCH,
+  });
+  for (const order of releasing) {
+    if (!order.autoReleaseAt) continue;
+    try {
+      const hours = hoursLeft(order.autoReleaseAt.getTime(), now);
+      await post(
+        order.id,
+        RELEASE_REMINDER_MARKER,
+        `${RELEASE_REMINDER_MARKER} dan dana dilepas ke penjual dalam ±${hours} jam bila kamu tidak konfirmasi terima.`,
+        {
+          userId: order.buyerId,
+          code: order.code,
+          title: `Konfirmasi ${order.code} sebelum dana dilepas`,
+          notification: `Jendela konfirmasi tersisa ±${hours} jam. Buka pesanan untuk konfirmasi terima atau ajukan komplain.`,
+        },
+      );
+    } catch (err) {
+      console.error("sweep sendDeadlineReminders (release) failed", order.code, err);
+    }
+  }
+
+  // 2. Seller: an assigned order they never started is about to refund.
+  const assignedMs = timeouts.assignedHours * 3_600_000;
+  const idleFrom = new Date(now.getTime() + SELLER_REMINDER_WINDOW_MS - assignedMs);
+  const idleTo = new Date(now.getTime() - assignedMs);
+  const idling = await db.order.findMany({
+    where: {
+      status: "paid",
+      sellerId: { not: null },
+      dispute: { is: null },
+      createdAt: { gt: idleTo, lte: idleFrom },
+    },
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      code: true,
+      createdAt: true,
+      seller: { select: { userId: true } },
+      events: {
+        where: { state: "paid" },
+        orderBy: { at: "asc" },
+        take: 1,
+        select: { at: true },
+      },
+    },
+    take: REFUND_BATCH,
+  });
+  for (const order of idling) {
+    if (!order.seller) continue;
+    const paidAt = order.events[0]?.at ?? order.createdAt;
+    const left = paidAt.getTime() + assignedMs - now.getTime();
+    if (left <= 0 || left > SELLER_REMINDER_WINDOW_MS) continue;
+    try {
+      const hours = hoursLeft(paidAt.getTime() + assignedMs, now);
+      await post(
+        order.id,
+        SELLER_REMINDER_MARKER,
+        `${SELLER_REMINDER_MARKER} dan dana kembali ke pembeli dalam ±${hours} jam bila kamu belum mulai memproses.`,
+        {
+          userId: order.seller.userId,
+          code: order.code,
+          title: `Segera mulai ${order.code}`,
+          notification: `Sisa ±${hours} jam sebelum pesanan direfund otomatis. Buka pesanan dan mulai proses agar tidak hangus.`,
+        },
+      );
+    } catch (err) {
+      console.error("sweep sendDeadlineReminders (seller) failed", order.code, err);
+    }
+  }
+
+  // 3. Buyer: a pool order nobody claimed is about to return their balance.
+  const poolMs = timeouts.poolHours * 3_600_000;
+  const poolFrom = new Date(now.getTime() + POOL_REMINDER_WINDOW_MS - poolMs);
+  const poolTo = new Date(now.getTime() - poolMs);
+  const unclaimed = await db.order.findMany({
+    where: {
+      status: "paid",
+      sellerId: null,
+      isPoolOrder: true,
+      dispute: { is: null },
+      createdAt: { gt: poolTo, lte: poolFrom },
+    },
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      code: true,
+      buyerId: true,
+      createdAt: true,
+      events: {
+        where: { state: "paid" },
+        orderBy: { at: "asc" },
+        take: 1,
+        select: { at: true },
+      },
+    },
+    take: REFUND_BATCH,
+  });
+  for (const order of unclaimed) {
+    const paidAt = order.events[0]?.at ?? order.createdAt;
+    const left = paidAt.getTime() + poolMs - now.getTime();
+    if (left <= 0 || left > POOL_REMINDER_WINDOW_MS) continue;
+    try {
+      const hours = hoursLeft(paidAt.getTime() + poolMs, now);
+      await post(
+        order.id,
+        POOL_REMINDER_MARKER,
+        `${POOL_REMINDER_MARKER} mengambil pesanan ini; dana otomatis kembali ke saldo dalam ±${hours} jam.`,
+        {
+          userId: order.buyerId,
+          code: order.code,
+          title: `${order.code} belum diambil penjual`,
+          notification: `Sisa ±${hours} jam sebelum danamu kembali otomatis sebagai saldo.`,
+        },
+      );
+    } catch (err) {
+      console.error("sweep sendDeadlineReminders (pool) failed", order.code, err);
+    }
+  }
+
+  return sent;
 }

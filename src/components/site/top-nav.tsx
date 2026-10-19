@@ -7,6 +7,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { cx } from "@/lib/cx";
 import { blogUrl } from "@/lib/site";
 import { formatIDR } from "@/lib/format";
+import { useOrderUnread } from "@/lib/order-unread";
 import type { Category } from "@/lib/types";
 import { NotifBell } from "@/components/site/notif-bell";
 import { BrandMark } from "@/components/site/brand-mark";
@@ -60,6 +61,7 @@ export function TopNav({
   userRole,
   balance,
   logo,
+  orderUnread = 0,
 }: {
   authSlot?: ReactNode;
   categories: Category[];
@@ -68,10 +70,13 @@ export function TopNav({
   balance?: number | null;
   /** Custom logo data URL (null = built-in mark), read server-side in layout. */
   logo?: string | null;
+  /** Unread order-chat messages, read server-side so the badge never pops in. */
+  orderUnread?: number;
 }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [megaOpen, setMegaOpen] = useState(false);
+  const pendingOrders = useOrderUnread(orderUnread, Boolean(isLoggedIn));
 
   function closeMenus() {
     setMenuOpen(false);
@@ -213,6 +218,14 @@ export function TopNav({
                   )}
                 >
                   {link.label}
+                  {link.href === "/pesanan" && pendingOrders > 0 ? (
+                    <span
+                      aria-label={`${pendingOrders} pesan pesanan belum dibaca`}
+                      className="num absolute -right-0.5 -top-0.5 grid min-w-4 place-items-center rounded-full bg-astra px-1 text-[9px] font-extrabold text-on-bright"
+                    >
+                      {pendingOrders > 99 ? "99+" : pendingOrders}
+                    </span>
+                  ) : null}
                   {active ? (
                     <motion.span
                       layoutId="nav-active"
@@ -346,7 +359,14 @@ export function TopNav({
                     onClick={closeMenus}
                     className="flex items-center justify-between border-b border-line py-4 font-display text-2xl font-bold text-ink"
                   >
-                    {item.label}
+                    <span className="flex items-center gap-3">
+                      {item.label}
+                      {item.href === "/pesanan" && pendingOrders > 0 ? (
+                        <span className="num rounded-full bg-astra px-2.5 py-0.5 text-[12px] font-extrabold text-on-bright">
+                          {pendingOrders > 99 ? "99+" : pendingOrders}
+                        </span>
+                      ) : null}
+                    </span>
                     <IconArrowRight size={20} className="text-ink-mute" />
                   </Link>
                 </motion.div>

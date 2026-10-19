@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { formatDateTime, formatIDR } from "@/lib/format";
-import type { OrderDetail, OrderReview, OrderRoomMessage } from "@/lib/orders";
+import { compressImageFile } from "@/lib/image-compress";
+import type { OrderChatPresence, OrderDetail, OrderReview, OrderRoomMessage } from "@/lib/orders";
 import { cx } from "@/lib/cx";
 import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import {
   cancelOrderAfk,
   confirmOrderReceived,
   fileOrderDispute,
+  markOrderSeen,
   markOrderShipped,
   revealOrderCredentials,
   sendRoomMessage,
@@ -41,6 +43,8 @@ import {
   IconShieldCheck,
   IconStorefront,
   IconTimer,
+  IconUpload,
+  IconX,
 } from "@/components/ui/icons";
 
 const DISPUTE_REASONS = [
@@ -50,18 +54,36 @@ const DISPUTE_REASONS = [
   { id: "seller_unresponsive", title: "Penjual tidak merespons", description: "Penjual berhenti membalas padahal pesanan belum terkirim." },
 ];
 
+const CHAT_IMAGE_ACCEPT = "image/png,image/jpeg,image/gif,image/webp";
+const CHAT_IMAGE_MAX_BYTES = 1_500_000;
+
+/** "baru saja" / "12 menit lalu" / falls back to the absolute date. */
+function lastSeenLabel(iso: string): string {
+  const minutes = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60_000));
+  if (minutes < 1) return "baru saja";
+  if (minutes < 60) return `${minutes} menit lalu`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} jam lalu`;
+  return formatDateTime(iso);
+}
+
 export function OrderRoom({
   order,
   messages,
   review,
+  presence,
 }: {
   order: OrderDetail;
   messages: OrderRoomMessage[];
   review: OrderReview | null;
+  presence: OrderChatPresence;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [draft, setDraft] = useState("");
+  const [attachedImage, setAttachedImage] = useState<string | null>(null);
+  const [attachError, setAttachError] = useState<string | null>(null);
+  const [readingImage, setReadingImage] = useState(false);
   const [disputeOpen, setDisputeOpen] = useState(false);
   const [reason, setReason] = useState("not_received");
   const [notes, setNotes] = useState("");
@@ -77,6 +99,7 @@ export function OrderRoom({
     { tone: "astra" | "info" | "danger"; text: string } | null
   >(null);
   const chatRef = useRef<HTMLDivElement>(null);
+  const attachRef = useRef<HTMLInputElement>(null);
 
   const isBuyer = order.viewerRole === "buyer";
   const isSellerViewer = order.viewerRole === "seller";
@@ -87,6 +110,9 @@ export function OrderRoom({
   const live = ["pending_payment", "paid", "processing", "shipped", "disputed"].includes(
     order.state,
   );
+  const counterpartName = isBuyer ? order.sellerStoreName : order.buyerName;
+  const counterpartOnline = isBuyer ? presence.sellerOnline : presence.buyerOnline;
+  const counterpartLastSeenAt = isBuyer ? presence.sellerLastSeenAt : presence.buyerLastSeenAt;
 
   // Poll the room while it is live; only yank scroll when the reader is
   // already near the bottom (same guard as the seller group chat).
@@ -105,16 +131,29 @@ export function OrderRoom({
     if (nearBottom) node.scrollTop = node.scrollHeight;
   }, [messages.length]);
 
+  // Opening the room (or a new message landing while it is open) advances the
+  // read cursor, which is exactly what clears the list badges and nav count.
+  useEffect(() => {
+    if (document.visibilityState !== "visible") return;
+    void markOrderSeen(order.code);
+  }, [order.code, messages.length]);
+
   function refresh() {
     router.refresh();
   }
 
   function send() {
     const text = draft.trim();
-    if (!text) return;
+    if (!text && !attachedImage) return;
+    const image = attachedImage;
     setDraft("");
+    setAttachedImage(null);
     startTransition(async () => {
-      const result = await sendRoomMessage({ orderCode: order.code, body: text });
+      const result = await sendRoomMessage({
+        orderCode: order.code,
+        body: text,
+        ...(image ? { image } : {}),
+      });
       if (!result.ok) {
         setActionError(result.error);
         return;
@@ -122,6 +161,40 @@ export function OrderRoom({
       setActionError(null);
       refresh();
     });
+  }
+
+  async function attachImage(file: File | undefined) {
+    if (!file) return;
+    setAttachError(null);
+    if (!file.type.startsWith("image/")) {
+      setAttachError("Lampiran harus berupa gambar.");
+      return;
+    }
+    setReadingImage(true);
+    try {
+      let url: string | null;
+      if (file.size > CHAT_IMAGE_MAX_BYTES) {
+        // Screenshots are usually well over the cap — squeeze instead of refuse.
+        url = await compressImageFile(file, CHAT_IMAGE_MAX_BYTES);
+        if (!url) {
+          setAttachError(`"${file.name}" di atas 1,5MB dan gagal dikompres.`);
+          return;
+        }
+      } else {
+        url = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result));
+          reader.onerror = () => reject(new Error("read"));
+          reader.readAsDataURL(file);
+        });
+      }
+      setAttachedImage(url);
+    } catch {
+      setAttachError("Gagal membaca file. Coba lagi.");
+    } finally {
+      setReadingImage(false);
+      if (attachRef.current) attachRef.current.value = "";
+    }
   }
 
   function confirmReceived() {
@@ -272,9 +345,24 @@ export function OrderRoom({
               <IconChat size={16} className="text-astra-ink" />
               Ruang pesanan
             </span>
-            <span className="flex items-center gap-2 text-[11px] text-ink-mute">
-              <IconLock size={13} />
-              terenkripsi · hanya pembeli, penjual, dan admin
+            <span
+              className="flex max-w-[55%] items-center gap-2 text-[11px] text-ink-mute"
+              title="Terenkripsi · hanya pembeli, penjual, dan admin"
+            >
+              <span
+                aria-hidden
+                className={cx(
+                  "size-2 shrink-0 rounded-full",
+                  counterpartOnline ? "bg-astra" : "bg-ink-mute/40",
+                )}
+              />
+              <span className="truncate">
+                {counterpartOnline
+                  ? `${counterpartName} online`
+                  : counterpartLastSeenAt
+                    ? `${counterpartName} · terakhir buka ${lastSeenLabel(counterpartLastSeenAt)}`
+                    : `${counterpartName} offline`}
+              </span>
             </span>
           </div>
 
@@ -305,6 +393,25 @@ export function OrderRoom({
                           : "bg-canvas text-ink-dim outline outline-1 -outline-offset-1 outline-line",
                     )}
                   >
+                    {message.image && message.image.startsWith("data:image/") ? (
+                      <a
+                        href={message.image}
+                        target="_blank"
+                        rel="noreferrer"
+                        title="Klik untuk ukuran penuh"
+                        className={cx(
+                          "block overflow-hidden rounded-control",
+                          message.text && "mb-2",
+                        )}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={message.image}
+                          alt={`Lampiran dari ${message.from}`}
+                          className="max-h-72 w-full max-w-[16rem] rounded-control object-cover outline outline-1 -outline-offset-1 outline-line"
+                        />
+                      </a>
+                    ) : null}
                     {message.text}
                   </div>
                 </div>
@@ -312,23 +419,68 @@ export function OrderRoom({
             })}
           </div>
 
-          <div className="flex flex-col gap-2.5 border-t border-line p-4 sm:flex-row sm:items-end">
-            <Field label="Pesan" htmlFor="chat-input" className="flex-1">
-              <TextArea
-                id="chat-input"
-                value={draft}
-                onChange={(event) => setDraft(event.target.value)}
-                placeholder="Tulis instruksi atau tautan private server…"
-                className="min-h-12 py-2.5"
+          <div className="flex flex-col gap-2.5 border-t border-line p-4">
+            {attachedImage ? (
+              <div className="flex items-center gap-3">
+                <span className="relative block size-16 shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={attachedImage}
+                    alt="Pratinjau lampiran"
+                    className="size-full rounded-control object-cover outline outline-1 -outline-offset-1 outline-line"
+                  />
+                  <button
+                    type="button"
+                    aria-label="Hapus lampiran"
+                    onClick={() => setAttachedImage(null)}
+                    className="absolute -right-1.5 -top-1.5 grid size-6 place-items-center rounded-full bg-danger text-on-bright shadow"
+                  >
+                    <IconX size={12} />
+                  </button>
+                </span>
+                <span className="text-[11px] text-ink-mute">
+                  Lampiran siap dikirim bersama pesanmu.
+                </span>
+              </div>
+            ) : null}
+            {attachError ? <p className="text-xs font-bold text-danger">{attachError}</p> : null}
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-end">
+              <input
+                ref={attachRef}
+                type="file"
+                accept={CHAT_IMAGE_ACCEPT}
+                className="hidden"
+                aria-label="Lampirkan gambar"
+                onChange={(event) => void attachImage(event.target.files?.[0] ?? undefined)}
               />
-            </Field>
-            <Button
-              onClick={send}
-              disabled={!draft.trim() || isPending}
-              trailingIcon={<IconArrowRight size={15} />}
-            >
-              Kirim
-            </Button>
+              <Field label="Pesan" htmlFor="chat-input" className="flex-1">
+                <TextArea
+                  id="chat-input"
+                  value={draft}
+                  onChange={(event) => setDraft(event.target.value)}
+                  placeholder="Tulis instruksi atau tautan private server…"
+                  className="min-h-12 py-2.5"
+                />
+              </Field>
+              <div className="flex items-end gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => attachRef.current?.click()}
+                  disabled={readingImage || Boolean(attachedImage)}
+                  leadingIcon={<IconUpload size={15} />}
+                >
+                  {readingImage ? "Membaca…" : "Gambar"}
+                </Button>
+                <Button
+                  onClick={send}
+                  disabled={(!draft.trim() && !attachedImage) || isPending}
+                  trailingIcon={<IconArrowRight size={15} />}
+                >
+                  Kirim
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

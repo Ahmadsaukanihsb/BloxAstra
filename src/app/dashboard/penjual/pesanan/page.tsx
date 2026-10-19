@@ -53,8 +53,8 @@ async function OrdersContent() {
   }
 
   const [activeOrders, history, poolOrders] = await Promise.all([
-    getSellerActiveOrders(identity.sellerId),
-    getSellerOrderHistory(identity.sellerId),
+    getSellerActiveOrders(identity.sellerId, user.id),
+    getSellerOrderHistory(identity.sellerId, user.id),
     getPoolOrders(),
   ]);
 

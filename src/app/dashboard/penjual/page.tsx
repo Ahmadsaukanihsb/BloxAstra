@@ -92,7 +92,7 @@ async function OverviewContent() {
   }
 
   const [activeOrders, poolOrders] = await Promise.all([
-    getSellerActiveOrders(dashboard.sellerId),
+    getSellerActiveOrders(dashboard.sellerId, user.id),
     getPoolOrders(),
   ]);
 

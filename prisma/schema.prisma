@@ -239,6 +239,10 @@ model Order {
   isPoolOrder    Boolean  @default(false)
   expressBadge   Boolean  @default(false)
   autoReleaseAt  DateTime?
+  /// Chat read cursors per side: a message from the other party newer than the
+  /// viewer's cursor is unread (the badge count in lists and the nav).
+  buyerReadAt    DateTime?
+  sellerReadAt   DateTime?
   credentialsEnc String? // AES-256-GCM encrypted JSON (credential deliveries)
   gamepassUrl    String?
   buyerNote      String?
@@ -298,6 +302,8 @@ model Message {
   orderId String
   fromRole String  // buyer | seller | system
   body    String
+  /// Optional chat attachment: a data-URL image (magic bytes verified, ≤1.5MB).
+  image   String?
   at      DateTime @default(now())
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)

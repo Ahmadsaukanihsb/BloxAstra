@@ -9,6 +9,7 @@ export type NotificationKind =
   | "order_completed"
   | "order_refunded"
   | "order_cancelled"
+  | "order_reminder"
   | "dispute_opened"
   | "dispute_resolved"
   | "withdrawal_submitted"

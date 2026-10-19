@@ -5,9 +5,10 @@ import { revalidatePath, updateTag } from "next/cache";
 import { headers } from "next/headers";
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
-import { requireOrderParticipant } from "@/lib/auth";
+import { getCurrentUser, requireOrderParticipant } from "@/lib/auth";
 import { decryptCredentials } from "@/lib/credentials";
 import { validImageDataUrl } from "@/lib/images";
+import { getOrderUnreadTotal } from "@/lib/orders";
 import { checkThrottle } from "@/lib/throttle";
 import { adminUserIds, notify, notifyMany } from "@/lib/notifications";
 import {
@@ -29,10 +30,15 @@ async function clientIp(): Promise<string> {
 
 const CODE_PATTERN = /^BX-[A-Z0-9]{6}$/;
 
-const messageSchema = z.object({
-  orderCode: z.string().regex(CODE_PATTERN),
-  body: z.string().trim().min(1).max(2000),
-});
+const messageSchema = z
+  .object({
+    orderCode: z.string().regex(CODE_PATTERN),
+    body: z.string().trim().max(2000),
+    image: z.string().max(2_200_000).optional(),
+  })
+  .refine((value) => value.body.length > 0 || value.image !== undefined, {
+    message: "Tulis pesan atau lampirkan gambar.",
+  });
 
 const disputeSchema = z.object({
   orderCode: z.string().regex(CODE_PATTERN),
@@ -121,13 +127,44 @@ async function appendLedger(
   });
 }
 
+/**
+ * Phrases that give away a move off the platform. Deliberately narrow: a false
+ * positive only costs one system notice, but a wall of them would train people
+ * to ignore the real one.
+ */
+const OFF_PLATFORM_PATTERNS: RegExp[] = [
+  /(?:wa\.me|t\.me|whatsapp\.com)/i,
+  /\b(?:whatsapps?|telegrams?)\b/i,
+  /\bwa\s+(?:aku|saya|gue|kamu|nomor|nya)\b/i,
+  /(?:luar\s*(?:aplikasi|platform)|di\s*luar\s*blox)/i,
+  /(?:transfer|bayar)\s*(?:langsung|diluar|di\s*luar)/i,
+  /\b(?:nomor\s+rekening|rekening\s+(?:bank|pribadi))\b/i,
+  /\b(?:gopay|ovo|shopeepay)\b/i,
+  /\bdana\s+(?:ke\s+nomor|nomor|rekening)\b/i,
+];
+
+function looksOffPlatform(body: string): boolean {
+  // Flatten separators so "0812-3456-7890" and "+62 812 3456 7890" still read
+  // as the one phone number they are.
+  const flat = body.replace(/[\s.\-()]/g, "");
+  if (/(?:\+?62|0)8\d{8,12}/.test(flat)) return true;
+  return OFF_PLATFORM_PATTERNS.some((pattern) => pattern.test(body));
+}
+
 /** Buyer (or seller) sends a chat message in the order room. */
 export async function sendRoomMessage(rawInput: unknown): Promise<RoomActionResult> {
   const parsed = messageSchema.safeParse(rawInput);
-  if (!parsed.success) return fail("INVALID", "Pesan tidak valid.");
+  if (!parsed.success) {
+    return fail("INVALID", parsed.error.issues[0]?.message ?? "Pesan tidak valid.");
+  }
 
   const participant = await loadParticipant(parsed.data.orderCode);
   if (!participant) return fail("NOT_FOUND", "Pesanan tidak ditemukan.");
+
+  const image = parsed.data.image;
+  if (image !== undefined && !validImageDataUrl(image, 1_500_000)) {
+    return fail("INVALID", "Lampiran harus gambar PNG/JPEG/GIF/WebP maksimal 1,5MB.");
+  }
 
   // Each message pings the other side — throttle so a loop can't flood the
   // Message table and the recipient's inbox.
@@ -137,8 +174,31 @@ export async function sendRoomMessage(rawInput: unknown): Promise<RoomActionResu
 
   const fromRole = participant.order.buyerId === participant.user.id ? "buyer" : "seller";
   await db.message.create({
-    data: { orderId: participant.order.id, fromRole, body: parsed.data.body },
+    data: {
+      orderId: participant.order.id,
+      fromRole,
+      body: parsed.data.body,
+      image: image ?? null,
+    },
   });
+
+  // Off-platform drift is the leading edge of every escrow scam. The message
+  // still goes through — a false positive must never silence anyone — but both
+  // sides get one system reminder per order per 30 minutes.
+  if (
+    looksOffPlatform(parsed.data.body) &&
+    checkThrottle(`scam-warn:${participant.order.id}`, 30 * 60_000)
+  ) {
+    await db.message.create({
+      data: {
+        orderId: participant.order.id,
+        fromRole: "system",
+        body: "Peringatan sistem: pesan ini terindikasi mengarah ke transaksi atau komunikasi di luar Blox Astra. Transaksi di luar platform tidak dilindungi escrow dan tidak bisa dimediasi. Semua pembayaran wajib lewat ruang pesanan.",
+      },
+    });
+  }
+
+  const preview = parsed.data.body || "📷 Foto";
 
   // Ping the other side so replies are never missed.
   if (fromRole === "buyer" && participant.order.sellerId) {
@@ -151,7 +211,7 @@ export async function sendRoomMessage(rawInput: unknown): Promise<RoomActionResu
         userId: profile.userId,
         kind: "chat_message",
         title: `Pesan baru di ${parsed.data.orderCode}`,
-        body: parsed.data.body.slice(0, 120),
+        body: preview.slice(0, 120),
         link: `/pesanan/${parsed.data.orderCode}`,
       });
     }
@@ -160,13 +220,46 @@ export async function sendRoomMessage(rawInput: unknown): Promise<RoomActionResu
       userId: participant.order.buyerId,
       kind: "chat_message",
       title: `Penjual membalas di ${parsed.data.orderCode}`,
-      body: parsed.data.body.slice(0, 120),
+      body: preview.slice(0, 120),
       link: `/pesanan/${parsed.data.orderCode}`,
     });
   }
 
   revalidatePath(`/pesanan/${parsed.data.orderCode}`);
   return { ok: true };
+}
+
+/**
+ * Move the viewer's read cursor on this order to now — called by the open room
+ * once it has the newest messages on screen. Raw SQL on purpose: a normal
+ * update would bump `Order.updatedAt`, and that field feeds the 7-day
+ * credential wipe, so reading chat must never prolong it.
+ */
+export async function markOrderSeen(orderCode: string): Promise<void> {
+  try {
+    if (!validCode(orderCode)) return;
+    const participant = await loadParticipant(orderCode);
+    if (!participant) return;
+    const now = new Date();
+    if (participant.order.buyerId === participant.user.id) {
+      await db.$executeRaw`UPDATE "Order" SET "buyerReadAt" = ${now} WHERE id = ${participant.order.id}`;
+    } else if (participant.user.role !== "admin") {
+      await db.$executeRaw`UPDATE "Order" SET "sellerReadAt" = ${now} WHERE id = ${participant.order.id}`;
+    }
+  } catch {
+    // Signed out or a transient blip: the badge simply reappears next visit.
+  }
+}
+
+/** Unread chat total across the viewer's orders, for the "Pesanan" nav badge. */
+export async function fetchOrderUnreadTotal(): Promise<number> {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return 0;
+    return await getOrderUnreadTotal(user.id, user.role);
+  } catch {
+    return 0;
+  }
 }
 
 /** Buyer confirms receipt — releases escrow to the seller wallet. */

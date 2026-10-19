@@ -17,6 +17,7 @@ import { orderStates } from "@/lib/order-meta";
 import {
   IconArrowRight,
   IconBolt,
+  IconChat,
   IconHexCoin,
   IconReceipt,
   IconShieldCheck,
@@ -233,6 +234,11 @@ function OrderRow({
               </Badge>
             ) : null}
             {order.isPoolOrder ? <Badge tone="info">Pool order</Badge> : null}
+            {order.unread > 0 ? (
+              <Badge tone="astra" icon={<IconChat size={11} />}>
+                {order.unread} pesan baru
+              </Badge>
+            ) : null}
             <span className="num ml-auto text-[11px] text-ink-mute">
               {formatDateTime(order.createdAt)}
             </span>

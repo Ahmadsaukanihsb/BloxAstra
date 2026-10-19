@@ -1,5 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
+import { isUserOnline } from "@/lib/presence";
 import { decryptCredentials, maskSecret } from "@/lib/credentials";
 import { poolKindLabel } from "@/lib/discord";
 import { ACTIVE_ORDER_STATES, ESCROW_ORDER_STATES } from "@/lib/order-meta";
@@ -24,6 +25,8 @@ export interface OrderListItem {
   /** seconds left on the active SLA (null when no clock runs) */
   slaRemainingSeconds: number | null;
   slaLabel: string | null;
+  /** messages from the other side the viewer has not opened the room to read */
+  unread: number;
 }
 
 export interface OrderTimelineEntry {
@@ -38,6 +41,8 @@ export interface OrderRoomMessage {
   id: string;
   from: "system" | "buyer" | "seller" | "admin";
   text: string;
+  /** data-URL chat attachment (null for text-only messages) */
+  image: string | null;
   at: string;
 }
 
@@ -101,6 +106,7 @@ interface ListProjection {
   code: string;
   status: string;
   kind: string;
+  buyerId: string;
   robuxAmount: number | null;
   robloxUsername: string | null;
   total: number;
@@ -108,6 +114,8 @@ interface ListProjection {
   isPoolOrder: boolean;
   createdAt: Date;
   autoReleaseAt: Date | null;
+  buyerReadAt: Date | null;
+  sellerReadAt: Date | null;
   payment: { expiresAt: Date | null } | null;
   product: {
     title: string;
@@ -116,6 +124,8 @@ interface ListProjection {
   } | null;
   seller: { storeName: string } | null;
   events: { state: string; at: Date }[];
+  /** chat metadata only — never the bodies/attachments, so lists stay light */
+  messages: { fromRole: string; at: Date }[];
   dispute: { id: string } | null;
 }
 
@@ -143,7 +153,9 @@ const ROOM_INCLUDE = {
     },
   },
   events: { orderBy: { at: "asc" as const } },
-  messages: { orderBy: { at: "asc" as const } },
+  // Chat metadata only: bodies and attachments stay out of every list query,
+  // and this is still everything the unread badge needs.
+  messages: { select: { fromRole: true, at: true }, orderBy: { at: "asc" as const } },
   dispute: true,
   payment: { select: { expiresAt: true, status: true, checkoutUrl: true } },
 } satisfies NonNullable<Parameters<typeof db.order.findUnique>[0]>["include"];
@@ -246,7 +258,23 @@ const HANDOVER_STEPS = [
   { id: "rotate", label: "Rotasi keamanan akun", hint: "Ganti email & nomor telepon terikat setelah serah terima." },
 ] as const;
 
-function toListItem(row: ListProjection, now: number): OrderListItem {
+/**
+ * Unread chat messages for the viewer on one order: anything the other side
+ * (or the system) sent after the viewer's read cursor. `viewerId` null (pool
+ * browsing, admin lists) always reads as zero — no cursor, no badge.
+ */
+function unreadFor(row: ListProjection, viewerId: string | null): number {
+  if (!viewerId) return 0;
+  const isBuyer = row.buyerId === viewerId;
+  const ownRole = isBuyer ? "buyer" : "seller";
+  const cursor = isBuyer ? row.buyerReadAt : row.sellerReadAt;
+  const cutoff = cursor ? cursor.getTime() : 0;
+  return row.messages.filter(
+    (message) => message.fromRole !== ownRole && message.at.getTime() > cutoff,
+  ).length;
+}
+
+function toListItem(row: ListProjection, now: number, unread: number): OrderListItem {
   const sla = computeSla(row, now);
   return {
     id: row.id,
@@ -263,6 +291,7 @@ function toListItem(row: ListProjection, now: number): OrderListItem {
     isPoolOrder: row.isPoolOrder,
     slaRemainingSeconds: sla.seconds,
     slaLabel: sla.label,
+    unread,
   };
 }
 
@@ -270,13 +299,14 @@ function toListItem(row: ListProjection, now: number): OrderListItem {
 function summarizeOrders(
   rows: Parameters<typeof toListItem>[0][],
   now: number,
+  viewerId: string | null,
 ): {
   orders: OrderListItem[];
   heldTotal: number;
   activeCount: number;
   lifetimeTotal: number;
 } {
-  const orders = rows.map((row) => toListItem(row, now));
+  const orders = rows.map((row) => toListItem(row, now, unreadFor(row, viewerId)));
   const heldTotal = orders
     .filter((order) => ESCROW_ORDER_STATES.includes(order.state))
     .reduce((sum, order) => sum + order.total, 0);
@@ -300,7 +330,7 @@ export async function getBuyerOrders(userId: string): Promise<{
     orderBy: { createdAt: "desc" },
     include: ROOM_INCLUDE,
   });
-  return summarizeOrders(rows, Date.now());
+  return summarizeOrders(rows, Date.now(), userId);
 }
 
 /** All orders the viewer touches: purchases + (for sellers) sales, deduped. */
@@ -340,7 +370,7 @@ export async function getOrdersForViewer(user: {
     (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
   );
 
-  return summarizeOrders(rows, now);
+  return summarizeOrders(rows, now, user.id);
 }
 
 /** Full order-room payload for /pesanan/[code]. Returns null when not found. */
@@ -366,7 +396,7 @@ export async function getOrderRoom(
   if (!isBuyer && !isSeller && viewer.role !== "admin") return null;
 
   const now = Date.now();
-  const base = toListItem(row, now);
+  const base = toListItem(row, now, unreadFor(row, viewer.id));
   const viewerRole: OrderViewerRole = viewer.role === "admin" && !isBuyer && !isSeller ? "admin" : isBuyer ? "buyer" : "seller";
 
   let credentials: OrderDetail["credentials"] = null;
@@ -453,13 +483,78 @@ export async function getOrderMessages(orderId: string): Promise<OrderRoomMessag
   const rows = await db.message.findMany({
     where: { orderId },
     orderBy: { at: "asc" },
+    select: { id: true, fromRole: true, body: true, image: true, at: true },
   });
   return rows.map((row) => ({
     id: row.id,
     from: row.fromRole as OrderRoomMessage["from"],
     text: row.body,
+    image: row.image,
     at: row.at.toISOString(),
   }));
+}
+
+/**
+ * Every unread chat message across the viewer's orders, for the "Pesanan" nav
+ * badge. One count per side (as buyer, and as seller when a profile exists),
+ * both expressed as a join against the per-order read cursor so the number
+ * matches the per-row badges exactly.
+ */
+export async function getOrderUnreadTotal(userId: string, role: string): Promise<number> {
+  if (role === "admin") return 0;
+  const profile = await db.sellerProfile.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
+  const [buyerRows, sellerRows] = await Promise.all([
+    db.$queryRaw<{ count: bigint }[]>`
+      SELECT COUNT(*) AS count
+      FROM "Message" m JOIN "Order" o ON o.id = m."orderId"
+      WHERE o."buyerId" = ${userId}
+        AND m."fromRole" <> 'buyer'
+        AND (o."buyerReadAt" IS NULL OR m."at" > o."buyerReadAt")
+    `,
+    profile
+      ? db.$queryRaw<{ count: bigint }[]>`
+          SELECT COUNT(*) AS count
+          FROM "Message" m JOIN "Order" o ON o.id = m."orderId"
+          WHERE o."sellerId" = ${profile.id}
+            AND m."fromRole" <> 'seller'
+            AND (o."sellerReadAt" IS NULL OR m."at" > o."sellerReadAt")
+        `
+      : Promise.resolve([]),
+  ]);
+  return Number(buyerRows[0]?.count ?? 0) + Number(sellerRows[0]?.count ?? 0);
+}
+
+export interface OrderChatPresence {
+  buyerOnline: boolean;
+  sellerOnline: boolean;
+  /** when each side last opened this room (their read cursor) */
+  buyerLastSeenAt: string | null;
+  sellerLastSeenAt: string | null;
+}
+
+/** Who is around in an order room right now, and when each side last looked. */
+export async function getOrderChatPresence(orderId: string): Promise<OrderChatPresence> {
+  const order = await db.order.findUnique({
+    where: { id: orderId },
+    select: {
+      buyerId: true,
+      buyerReadAt: true,
+      sellerReadAt: true,
+      seller: { select: { userId: true } },
+    },
+  });
+  if (!order) {
+    return { buyerOnline: false, sellerOnline: false, buyerLastSeenAt: null, sellerLastSeenAt: null };
+  }
+  return {
+    buyerOnline: isUserOnline(order.buyerId),
+    sellerOnline: order.seller ? isUserOnline(order.seller.userId) : false,
+    buyerLastSeenAt: order.buyerReadAt?.toISOString() ?? null,
+    sellerLastSeenAt: order.sellerReadAt?.toISOString() ?? null,
+  };
 }
 
 export interface OrderReview {
@@ -562,7 +657,7 @@ export async function getPoolOrders(): Promise<OrderListItem[]> {
     take: 20,
     include: ROOM_INCLUDE,
   });
-  return rows.map((row) => toListItem(row, now));
+  return rows.map((row) => toListItem(row, now, 0));
 }
 
 export interface RobuxPoolItem {
@@ -622,7 +717,10 @@ export async function getRobuxPool(): Promise<RobuxPoolItem[]> {
 }
 
 /** Full order history for a seller's store (all statuses, newest first). */
-export async function getSellerOrderHistory(sellerId: string): Promise<{
+export async function getSellerOrderHistory(
+  sellerId: string,
+  viewerUserId: string,
+): Promise<{
   orders: OrderListItem[];
   heldTotal: number;
   activeCount: number;
@@ -636,7 +734,7 @@ export async function getSellerOrderHistory(sellerId: string): Promise<{
     take: 100,
     include: ROOM_INCLUDE,
   });
-  const summary = summarizeOrders(rows, now);
+  const summary = summarizeOrders(rows, now, viewerUserId);
   return {
     ...summary,
     completedCount: summary.orders.filter((order) => order.state === "completed").length,
@@ -644,7 +742,10 @@ export async function getSellerOrderHistory(sellerId: string): Promise<{
 }
 
 /** Seller's active orders for the dashboard strip. */
-export async function getSellerActiveOrders(sellerId: string): Promise<OrderListItem[]> {
+export async function getSellerActiveOrders(
+  sellerId: string,
+  viewerUserId: string,
+): Promise<OrderListItem[]> {
   const now = Date.now();
   const rows = await db.order.findMany({
     where: { sellerId, status: { in: [...ACTIVE_ORDER_STATES] } },
@@ -654,9 +755,10 @@ export async function getSellerActiveOrders(sellerId: string): Promise<OrderList
       product: { select: { title: true, slug: true, category: { select: { slug: true, name: true, slaMinutes: true, fulfillment: true } } } },
       seller: { select: { storeName: true } },
       events: { orderBy: { at: "asc" } },
+      messages: { select: { fromRole: true, at: true }, orderBy: { at: "asc" } },
       dispute: { select: { id: true } },
       payment: { select: { expiresAt: true, status: true } },
     },
   });
-  return rows.map((row) => toListItem(row, now));
+  return rows.map((row) => toListItem(row, now, unreadFor(row, viewerUserId)));
 }

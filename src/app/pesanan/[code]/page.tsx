@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { requireUser } from "@/lib/auth";
-import { getOrderRoom, getOrderMessages, getOrderReview } from "@/lib/orders";
+import { getOrderChatPresence, getOrderRoom, getOrderMessages, getOrderReview } from "@/lib/orders";
 import { orderStates } from "@/lib/order-meta";
 import { formatIDR, formatDateTime } from "@/lib/format";
 import { Badge, LivePill, TierBadge } from "@/components/ui/badge";
@@ -59,8 +59,11 @@ async function OrderDetailContent({ params }: { params: Promise<{ code: string }
   const user = await requireUser();
   const order = await getOrderRoom(code, { id: user.id, role: user.role });
   if (!order) notFound();
-  const messages = await getOrderMessages(order.id);
-  const review = await getOrderReview(order.id);
+  const [messages, review, presence] = await Promise.all([
+    getOrderMessages(order.id),
+    getOrderReview(order.id),
+    getOrderChatPresence(order.id),
+  ]);
 
   const stateMeta = orderStates[order.state];
   const releaseAt = order.autoReleaseAt;
@@ -118,7 +121,7 @@ async function OrderDetailContent({ params }: { params: Promise<{ code: string }
           </div>
 
           <Suspense fallback={<div className="h-40 animate-pulse rounded-card bg-canvas" />}>
-            <OrderRoom order={order} messages={messages} review={review} />
+            <OrderRoom order={order} messages={messages} review={review} presence={presence} />
           </Suspense>
         </div>
 

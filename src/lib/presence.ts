@@ -2,14 +2,14 @@ import "server-only";
 import { publishLive } from "@/lib/live-bus";
 
 /**
- * Who is around right now, for the seller room.
- *
- * Presence is inferred from the realtime channel that is already open: every
- * seller with a dashboard page has an `/api/live` stream (the unread badge opens
- * one), so a live stream *is* the signal — no new client, no new endpoint, no
- * websocket process. The registry is deliberately in memory: it describes open
- * sockets, and sockets live in exactly one process. A multi-instance
- * deployment would need Redis here, the same caveat the live bus carries.
+ * Who is around right now, inferred from the realtime channel that is already
+ * open: every signed-in page keeps an `/api/live` stream (the notification bell
+ * opens one), so a live stream *is* the signal — no new client, no new
+ * endpoint, no websocket process. Buyers are tracked too now: an order room
+ * needs to tell whether the counterparty is actually there. The registry is
+ * deliberately in memory: it describes open sockets, and sockets live in
+ * exactly one process. A multi-instance deployment would need Redis here, the
+ * same caveat the live bus carries.
  *
  * Entries age out: the SSE route touches its entry on every heartbeat (20s), so
  * an entry unheard from for longer than the window below is gone even if its
@@ -22,7 +22,9 @@ export interface OnlineSeller {
 
 interface PresenceEntry {
   name: string;
-  /** How many open streams this seller has — a second tab must not evict the first. */
+  /** Whether this user appears in the seller-room strip (sellers/admins only). */
+  sellerRoom: boolean;
+  /** How many open streams this user has — a second tab must not evict the first. */
   connections: number;
   lastSeen: number;
 }
@@ -41,19 +43,29 @@ function registry(): Map<string, PresenceEntry> {
   return created;
 }
 
-/** One open stream for this seller. Also tells every open room to look again. */
-export function joinPresence(userId: string, name: string): void {
+function isFresh(entry: PresenceEntry): boolean {
+  if (entry.lastSeen < Date.now() - STALE_MS) return false;
+  return true;
+}
+
+/**
+ * One open stream for this user. Joining or leaving the seller-room strip tells
+ * every open room to look again; an ordinary buyer joining stays silent — no
+ * seller-room surface shows them, so there is nothing to redraw.
+ */
+export function joinPresence(userId: string, name: string, sellerRoom: boolean): void {
   const entries = registry();
   const entry = entries.get(userId);
   entries.set(userId, {
     name,
+    sellerRoom,
     connections: (entry?.connections ?? 0) + 1,
     lastSeen: Date.now(),
   });
-  publishLive("presence", "sellers");
+  if (sellerRoom) publishLive("presence", "sellers");
 }
 
-/** A stream closed. The last one out removes the seller from the list. */
+/** A stream closed. The last one out removes the user from the registry. */
 export function leavePresence(userId: string): void {
   const entries = registry();
   const entry = entries.get(userId);
@@ -61,16 +73,27 @@ export function leavePresence(userId: string): void {
   if (entry.connections > 1) {
     entry.connections -= 1;
     entry.lastSeen = Date.now();
-  } else {
-    entries.delete(userId);
+    return;
   }
-  publishLive("presence", "sellers");
+  entries.delete(userId);
+  if (entry.sellerRoom) publishLive("presence", "sellers");
 }
 
 /** Heartbeat from the open stream — a dead entry expires without this. */
 export function touchPresence(userId: string): void {
   const entry = registry().get(userId);
   if (entry) entry.lastSeen = Date.now();
+}
+
+/** Is this user on the site right now (any open live stream)? */
+export function isUserOnline(userId: string): boolean {
+  const entry = registry().get(userId);
+  if (!entry) return false;
+  if (!isFresh(entry)) {
+    registry().delete(userId);
+    return false;
+  }
+  return true;
 }
 
 /**
@@ -86,6 +109,7 @@ export function listOnlineSellers(excludeUserId?: string): OnlineSeller[] {
       registry().delete(userId);
       continue;
     }
+    if (!entry.sellerRoom) continue;
     if (userId === excludeUserId) continue;
     online.push({ userId, name: entry.name });
   }

@@ -7,6 +7,7 @@ import { validateEnv } from "@/lib/env";
 import { getCurrentUser } from "@/lib/auth";
 import { getWalletBalance } from "@/lib/wallet";
 import { getSellerChatUnreadCount } from "@/lib/seller";
+import { getOrderUnreadTotal } from "@/lib/orders";
 import { getCategories } from "@/lib/catalog";
 import { getCachedActiveRates } from "@/lib/rate-card";
 import { getSiteLogo } from "@/lib/site-logo";
@@ -32,9 +33,10 @@ async function TopNavWithAuth({
 }) {
   await connection();
   const user = await getCurrentUser();
-  const [balance, logo] = await Promise.all([
+  const [balance, logo, orderUnread] = await Promise.all([
     user ? getWalletBalance(user.id) : Promise.resolve(null),
     getSiteLogo(),
+    user ? getOrderUnreadTotal(user.id, user.role) : Promise.resolve(0),
   ]);
   return (
     <TopNav
@@ -44,6 +46,7 @@ async function TopNavWithAuth({
       userRole={user?.role ?? null}
       balance={balance}
       logo={logo}
+      orderUnread={orderUnread}
     />
   );
 }
@@ -57,12 +60,11 @@ async function BottomNavWithAuth() {
   await connection();
   const user = await getCurrentUser();
   if (!user) return <BottomNav />;
-  return (
-    <BottomNav
-      role={user.role}
-      groupUnread={user.role === "seller" ? await getSellerChatUnreadCount(user.id) : 0}
-    />
-  );
+  const [groupUnread, orderUnread] = await Promise.all([
+    user.role === "seller" ? getSellerChatUnreadCount(user.id) : Promise.resolve(0),
+    getOrderUnreadTotal(user.id, user.role),
+  ]);
+  return <BottomNav role={user.role} groupUnread={groupUnread} orderUnread={orderUnread} />;
 }
 
 /**

@@ -27,29 +27,17 @@ export async function GET(request: NextRequest) {
   }
 
   const audiences = new Set<string>([`user:${user.id}`]);
-  // The name this connection shows as in the room's "who is online" strip.
-  // Null for anyone who cannot post there — a buyer browsing the catalogue must
-  // not appear in the seller room's presence list.
-  let presenceName: string | null = null;
-  if (user.role === "seller" || user.role === "admin") {
-    audiences.add("sellers");
-    const profile = await db.sellerProfile.findUnique({
-      where: { userId: user.id },
-      select: { storeName: true },
-    });
-    presenceName = profile?.storeName ?? user.username;
-  } else {
-    // Posting in the seller room needs a verified profile, so a buyer who
-    // somehow has one still gets live updates without broadcasting to buyers.
-    const profile = await db.sellerProfile.findUnique({
-      where: { userId: user.id },
-      select: { kycVerified: true, storeName: true },
-    });
-    if (profile?.kycVerified) {
-      audiences.add("sellers");
-      presenceName = profile.storeName;
-    }
-  }
+  // Everyone signed in joins the presence registry — an order room must be
+  // able to tell whether the counterparty is online. The seller-room strip is
+  // narrower: only sellers, admins, and verified profiles join that broadcast.
+  const profile = await db.sellerProfile.findUnique({
+    where: { userId: user.id },
+    select: { storeName: true, kycVerified: true },
+  });
+  const sellerRoom =
+    user.role === "seller" || user.role === "admin" || Boolean(profile?.kycVerified);
+  if (sellerRoom) audiences.add("sellers");
+  const presenceName = profile?.storeName ?? user.username;
 
   const encoder = new TextEncoder();
   let closed = false;
@@ -63,7 +51,7 @@ export async function GET(request: NextRequest) {
     unsubscribe = null;
     if (heartbeat) clearInterval(heartbeat);
     heartbeat = null;
-    if (presenceName) leavePresence(user.id);
+    leavePresence(user.id);
     request.signal.removeEventListener("abort", cleanup);
   };
 
@@ -88,13 +76,13 @@ export async function GET(request: NextRequest) {
       });
 
       heartbeat = setInterval(() => {
-        if (presenceName) touchPresence(user.id);
+        touchPresence(user.id);
         send(`: ping ${Date.now()}\n\n`);
       }, HEARTBEAT_MS);
       request.signal.addEventListener("abort", cleanup);
       // An open stream *is* presence: joined here, refreshed by the heartbeat
       // above, and dropped when the stream goes away.
-      if (presenceName) joinPresence(user.id, presenceName);
+      joinPresence(user.id, presenceName, sellerRoom);
     },
     cancel() {
       cleanup();
