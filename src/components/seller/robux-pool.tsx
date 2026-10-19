@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { startOrderProcessing } from "@/app/actions/room";
+import { useLiveStream } from "@/lib/live";
 import { formatDateTime, formatIDR, formatNumber } from "@/lib/format";
 import { cx } from "@/lib/cx";
 import { Badge } from "@/components/ui/badge";
@@ -61,6 +62,10 @@ export function RobuxPoolBoard({
       return same ? prev : next;
     });
   }, [initialOrders]);
+
+  // Push channel: a new pool order or another seller's claim lands here the
+  // second it happens; the 25s poll below stays as the blocked-stream net.
+  useLiveStream(["pool"], () => router.refresh());
 
   // Rebutan needs fresh data — poll quietly; countdowns keep ticking locally.
   useEffect(() => {
@@ -140,7 +145,7 @@ export function RobuxPoolBoard({
         </Badge>
         <span className="text-[11px] text-ink-mute">
           Yang pertama mengklik &quot;Ambil order&quot; yang mendapatkannya. Penjual lain otomatis kalah.
-          Pool diperbarui otomatis tiap 25 detik.
+          Pool muncul dan hilang langsung tanpa muat ulang.
         </span>
       </div>
 

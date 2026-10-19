@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef } from "react";
  * Change topics carried by /api/live. Keep in sync with LiveTopic in
  * `@/lib/live-bus` — the bus is server-only, so the union is mirrored here.
  */
-export type LiveTopic = "inbox" | "chat" | "presence";
+export type LiveTopic = "inbox" | "chat" | "presence" | "room" | "pool";
 
 /** Keeps the newest value reachable from callbacks that outlive one render. */
 function useLatest<T>(value: T) {
@@ -129,7 +129,7 @@ function subscribeTopic(topic: LiveTopic, handler: () => void): () => void {
       return () => {}; // blocked by the browser — the revision loop covers us
     }
     const listeners = new Map<LiveTopic, Set<() => void>>();
-    for (const name of ["inbox", "chat", "presence"] as const) {
+    for (const name of ["inbox", "chat", "presence", "room", "pool"] as const) {
       const set = new Set<() => void>();
       listeners.set(name, set);
       source.addEventListener(name, () => {

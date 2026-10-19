@@ -1,12 +1,13 @@
 import "server-only";
 
-export type LiveTopic = "inbox" | "chat" | "presence";
+export type LiveTopic = "inbox" | "chat" | "presence" | "room" | "pool";
 
 export interface LiveEvent {
   topic: LiveTopic;
   /**
-   * Who may see it: `user:<id>` for one inbox, `sellers` for the shared room
-   * (chat messages and who is currently online in it).
+   * Who may see it: `user:<id>` for anything aimed at one account (their
+   * inbox, their order rooms), `sellers` for the shared room (chat messages
+   * and who is currently online in it).
    */
   audience: string;
   seq: number;

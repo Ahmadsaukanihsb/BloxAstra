@@ -4,6 +4,7 @@ import { revalidateTag } from "next/cache";
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { broadcastPoolOrder, poolKindLabel } from "@/lib/discord";
+import { publishLive } from "@/lib/live-bus";
 import { notify } from "@/lib/notifications";
 import { classifyMidtransStatus } from "@/lib/midtrans";
 
@@ -278,7 +279,7 @@ export async function applyPaymentNotification(
       link: `/pesanan/${order.code}`,
     });
     // Pool race: the order is claimable from this instant — ping every
-    // seller Discord webhook. Fire-and-forget, never throws.
+    // seller Discord webhook and wake every open rebutan board.
     if (order.isPoolOrder && !order.sellerId) {
       await broadcastPoolOrder({
         code: order.code,
@@ -287,6 +288,7 @@ export async function applyPaymentNotification(
         robuxAmount: order.robuxAmount,
         total: order.total,
       });
+      publishLive("pool", "sellers");
     }
     return { ok: true };
   }

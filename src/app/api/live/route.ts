@@ -18,7 +18,7 @@ import { joinPresence, leavePresence, touchPresence } from "@/lib/presence";
  */
 const HEARTBEAT_MS = 20_000;
 
-const TOPICS: LiveTopic[] = ["inbox", "chat", "presence"];
+const TOPICS: LiveTopic[] = ["inbox", "chat", "presence", "room", "pool"];
 
 export async function GET(request: NextRequest) {
   const user = await getCurrentUser();

@@ -3,6 +3,7 @@ import { revalidateTag } from "next/cache";
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { expireStaleTopUps } from "@/lib/topup";
+import { publishLive } from "@/lib/live-bus";
 import { notify } from "@/lib/notifications";
 
 const AUTO_RELEASE_BATCH = 20;
@@ -126,6 +127,7 @@ async function releaseDueOrders(now: Date): Promise<string[]> {
       code: true,
       total: true,
       platformFee: true,
+      buyerId: true,
       seller: { select: { id: true, userId: true } },
     },
     take: AUTO_RELEASE_BATCH,
@@ -185,6 +187,8 @@ async function releaseDueOrders(now: Date): Promise<string[]> {
         body: "Jendela konfirmasi habis. Dana dilepas ke dompetmu.",
         link: `/pesanan/${order.code}`,
       });
+      // Both rooms are likely open waiting for this exact moment.
+      publishLive("room", [`user:${order.buyerId}`, `user:${order.seller!.userId}`]);
     } catch (err) {
       if (err instanceof SkipOrder || isUniqueCollision(err)) continue;
       // Isolate: one poison order must never abort the rest of the batch.
@@ -414,6 +418,8 @@ async function refundStalePoolOrders(now: Date, poolHours: number): Promise<stri
         body: "Tak ada penjual yang mengambil. Dana kembali sebagai saldo akun.",
         link: `/pesanan/${order.code}`,
       });
+      // The row has to drop off every open rebutan board.
+      publishLive("pool", "sellers");
     } catch (err) {
       if (err instanceof SkipOrder || isUniqueCollision(err)) continue;
       console.error("sweep refundStalePoolOrders failed", order.code, err);
@@ -513,6 +519,10 @@ async function refundStuckProcessingOrders(now: Date, processingDays: number): P
           link: `/pesanan/${order.code}`,
         });
       }
+      publishLive("room", [
+        `user:${order.buyerId}`,
+        ...(order.seller ? [`user:${order.seller.userId}`] : []),
+      ]);
     } catch (err) {
       if (err instanceof SkipOrder || isUniqueCollision(err)) continue;
       console.error("sweep refundStuckProcessingOrders failed", order.code, err);
@@ -611,6 +621,10 @@ async function refundIdleAssignedOrders(now: Date, assignedHours: number): Promi
           link: `/pesanan/${order.code}`,
         });
       }
+      publishLive("room", [
+        `user:${order.buyerId}`,
+        ...(order.seller ? [`user:${order.seller.userId}`] : []),
+      ]);
     } catch (err) {
       if (err instanceof SkipOrder || isUniqueCollision(err)) continue;
       console.error("sweep refundIdleAssignedOrders failed", order.code, err);
@@ -657,6 +671,17 @@ async function sendDeadlineReminders(now: Date, timeouts: SweepTimeouts): Promis
       body: recipient.notification,
       link: `/pesanan/${recipient.code}`,
     });
+    // The reminder is a room message too — push it to both participants.
+    const room = await db.order.findUnique({
+      where: { id: orderId },
+      select: { buyerId: true, seller: { select: { userId: true } } },
+    });
+    if (room) {
+      publishLive("room", [
+        `user:${room.buyerId}`,
+        ...(room.seller ? [`user:${room.seller.userId}`] : []),
+      ]);
+    }
     sent += 1;
   };
 

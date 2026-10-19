@@ -10,6 +10,7 @@ import { decryptCredentials } from "@/lib/credentials";
 import { validImageDataUrl } from "@/lib/images";
 import { getOrderUnreadTotal } from "@/lib/orders";
 import { checkThrottle } from "@/lib/throttle";
+import { publishLive } from "@/lib/live-bus";
 import { adminUserIds, notify, notifyMany } from "@/lib/notifications";
 import {
   DISPUTE_OPEN_STATE,
@@ -151,6 +152,18 @@ function looksOffPlatform(body: string): boolean {
   return OFF_PLATFORM_PATTERNS.some((pattern) => pattern.test(body));
 }
 
+/**
+ * Nudge both participants' open room streams so messages and status moves land
+ * within a second instead of waiting out the room's 20s fallback poll. The
+ * client refetches through the normal read path — this only says "look again".
+ * Admins watching a room stay on that poll; they are not pushed.
+ */
+function pingRoom(buyerId: string, sellerUserId: string | null | undefined): void {
+  const targets = [`user:${buyerId}`];
+  if (sellerUserId) targets.push(`user:${sellerUserId}`);
+  publishLive("room", targets);
+}
+
 /** Buyer (or seller) sends a chat message in the order room. */
 export async function sendRoomMessage(rawInput: unknown): Promise<RoomActionResult> {
   const parsed = messageSchema.safeParse(rawInput);
@@ -207,13 +220,16 @@ export async function sendRoomMessage(rawInput: unknown): Promise<RoomActionResu
 
   const preview = parsed.data.body || "📷 Foto";
 
-  // Ping the other side so replies are never missed.
+  // Ping the other side so replies are never missed, and push both rooms so
+  // the message appears on the counterpart's screen while the send is fresh.
+  const targets = [`user:${participant.user.id}`];
   if (fromRole === "buyer" && participant.order.sellerId) {
     const profile = await db.sellerProfile.findUnique({
       where: { id: participant.order.sellerId },
       select: { userId: true },
     });
     if (profile) {
+      targets.push(`user:${profile.userId}`);
       await notify({
         userId: profile.userId,
         kind: "chat_message",
@@ -223,6 +239,7 @@ export async function sendRoomMessage(rawInput: unknown): Promise<RoomActionResu
       });
     }
   } else if (fromRole !== "buyer") {
+    targets.push(`user:${participant.order.buyerId}`);
     await notify({
       userId: participant.order.buyerId,
       kind: "chat_message",
@@ -231,6 +248,7 @@ export async function sendRoomMessage(rawInput: unknown): Promise<RoomActionResu
       link: `/pesanan/${parsed.data.orderCode}`,
     });
   }
+  publishLive("room", targets);
 
   revalidatePath(`/pesanan/${parsed.data.orderCode}`);
   return { ok: true };
@@ -353,6 +371,7 @@ export async function confirmOrderReceived(orderCode: string): Promise<RoomActio
     link: `/pesanan/${orderCode}`,
   });
 
+  pingRoom(order.buyerId, seller.userId);
   revalidatePath(`/pesanan/${orderCode}`);
   return { ok: true };
 }
@@ -449,6 +468,7 @@ export async function cancelOrderAfk(orderCode: string): Promise<RoomActionResul
       link: `/pesanan/${orderCode}`,
     });
   }
+  pingRoom(order.buyerId, order.seller?.userId);
   return { ok: true };
 }
 
@@ -556,6 +576,9 @@ export async function fileOrderDispute(rawInput: unknown): Promise<RoomActionRes
     body: `${parsed.data.orderCode}: ${DISPUTE_REASON_LABELS[parsed.data.reasonId] ?? parsed.data.reasonId}`,
     link: `/pesanan/${parsed.data.orderCode}`,
   });
+  // A dispute on an unclaimed pool order takes it off every rebutan board.
+  if (!order.sellerId && order.status === "paid") publishLive("pool", "sellers");
+  pingRoom(order.buyerId, order.seller?.userId);
   return { ok: true };
 }
 
@@ -617,6 +640,7 @@ export async function replyDispute(rawInput: unknown): Promise<RoomActionResult>
     link: `/pesanan/${parsed.data.orderCode}`,
   });
 
+  pingRoom(participant.order.buyerId, participant.user.id);
   revalidatePath(`/pesanan/${parsed.data.orderCode}`);
   return { ok: true };
 }
@@ -753,6 +777,9 @@ export async function startOrderProcessing(orderCode: string): Promise<RoomActio
     });
   }
 
+  // A claimed pool row must leave every other seller's rebutan board at once.
+  if (!order.sellerId) publishLive("pool", "sellers");
+  pingRoom(order.buyerId, participant.user.id);
   revalidatePath(`/pesanan/${orderCode}`);
   revalidatePath("/dashboard/penjual/order-robux");
   revalidatePath("/dashboard/penjual");
@@ -832,6 +859,7 @@ export async function markOrderShipped(orderCode: string): Promise<RoomActionRes
     link: `/pesanan/${orderCode}`,
   });
 
+  pingRoom(participant.order.buyerId, participant.user.id);
   revalidatePath(`/pesanan/${orderCode}`);
   return { ok: true };
 }
@@ -978,6 +1006,7 @@ export async function submitReview(rawInput: unknown): Promise<RoomActionResult>
         body: comment || "Pembeli memberi bintang tanpa komentar.",
         link: `/pesanan/${orderCode}`,
       });
+      pingRoom(participant.order.buyerId, profile.userId);
     }
   }
   return { ok: true };

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { formatChatDay, formatDateTime, formatIDR } from "@/lib/format";
 import { compressImageFile } from "@/lib/image-compress";
+import { useLiveStream } from "@/lib/live";
 import type { OrderChatPresence, OrderDetail, OrderReview, OrderRoomMessage } from "@/lib/orders";
 import { cx } from "@/lib/cx";
 import { Badge } from "@/components/ui/badge";
@@ -147,8 +148,12 @@ export function OrderRoom({
   const counterpartOnline = isBuyer ? presence.sellerOnline : presence.buyerOnline;
   const counterpartLastSeenAt = isBuyer ? presence.sellerLastSeenAt : presence.buyerLastSeenAt;
 
-  // Poll the room while it is live; only yank scroll when the reader is
-  // already near the bottom (same guard as the seller group chat).
+  // Push channel: the counterpart's messages and every status move land here
+  // in well under a second. Reads still go through the normal server path.
+  useLiveStream(["room"], () => router.refresh(), live);
+
+  // Fallback poll while the room is live, in case the stream is blocked;
+  // only yank scroll when the reader is already near the bottom.
   useEffect(() => {
     if (!live) return;
     const id = window.setInterval(() => {
