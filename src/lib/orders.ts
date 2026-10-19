@@ -68,6 +68,8 @@ export interface OrderDetail extends OrderListItem {
   autoReleaseAt: string | null;
   createdAtFull: string;
   buyerName: string;
+  /** Buyer's profile photo (data URL) — rendered on the seller/admin view. */
+  buyerImage: string | null;
   sellerStoreName: string;
   sellerHandle: string;
   sellerTier: 1 | 2 | 3;
@@ -409,6 +411,19 @@ export async function getOrderRoom(
   const base = toListItem(row, now, unreadFor(row, viewer.id));
   const viewerRole: OrderViewerRole = viewer.role === "admin" && !isBuyer && !isSeller ? "admin" : isBuyer ? "buyer" : "seller";
 
+  // Buyer avatars are data URLs (up to 500KB), so they stay out of the shared
+  // list include and are fetched only for the side that renders them — the
+  // buyer never sees their own photo in the room.
+  const buyerImage =
+    viewerRole === "buyer"
+      ? null
+      : ((
+          await db.user.findUnique({
+            where: { id: row.buyerId },
+            select: { avatarImage: true },
+          })
+        )?.avatarImage ?? null);
+
   let credentials: OrderDetail["credentials"] = null;
   if (row.credentialsEnc) {
     try {
@@ -450,6 +465,7 @@ export async function getOrderRoom(
     autoReleaseAt: row.autoReleaseAt?.toISOString() ?? null,
     createdAtFull: row.createdAt.toISOString(),
     buyerName: row.buyer.username,
+    buyerImage,
     gamepassUrl: row.gamepassUrl,
     buyerNote: row.buyerNote,
     sellerStoreName: row.seller?.storeName ?? "Blox Astra",

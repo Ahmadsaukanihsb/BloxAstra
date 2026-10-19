@@ -143,7 +143,7 @@ export function OrderRoom({
     order.state,
   );
   const counterpartName = isBuyer ? order.sellerStoreName : order.buyerName;
-  const counterpartImage = isBuyer ? order.sellerStoreImage : null;
+  const counterpartImage = isBuyer ? order.sellerStoreImage : order.buyerImage;
   const counterpartOnline = isBuyer ? presence.sellerOnline : presence.buyerOnline;
   const counterpartLastSeenAt = isBuyer ? presence.sellerLastSeenAt : presence.buyerLastSeenAt;
 
@@ -457,7 +457,11 @@ export function OrderRoom({
                       ? order.sellerStoreName
                       : "Tim Blox Astra";
                 const senderImage =
-                  message.from === "seller" ? order.sellerStoreImage : null;
+                  message.from === "seller"
+                    ? order.sellerStoreImage
+                    : message.from === "buyer"
+                      ? order.buyerImage
+                      : null;
                 const rising = index >= mountCount;
 
                 // System notices are the room talking, not a person: a chip in
