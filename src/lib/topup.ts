@@ -154,11 +154,19 @@ export async function expireStaleTopUps(): Promise<string[]> {
   });
   if (stale.length === 0) return [];
 
-  await db.topUp.updateMany({
+  const flipped = await db.topUp.updateMany({
     where: { id: { in: stale.map((row) => row.id) }, status: "pending" },
     data: { status: "expired" },
   });
-  for (const row of stale) {
+  // Only the pass that actually flipped rows notifies. Two scheduled passes run
+  // back to back, and notifying from the pre-read list sent the "expired"
+  // message twice.
+  if (flipped.count === 0) return [];
+  const stillExpired = await db.topUp.findMany({
+    where: { id: { in: stale.map((row) => row.id) }, status: "expired" },
+    select: { id: true, code: true, userId: true },
+  });
+  for (const row of stillExpired) {
     await notify({
       userId: row.userId,
       kind: "topup_expired",
@@ -167,5 +175,5 @@ export async function expireStaleTopUps(): Promise<string[]> {
       link: "/dompet",
     });
   }
-  return stale.map((row) => row.code);
+  return stillExpired.map((row) => row.code);
 }

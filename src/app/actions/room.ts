@@ -142,6 +142,23 @@ export async function sendRoomMessage(rawInput: unknown): Promise<RoomActionResu
   const participant = await loadParticipant(parsed.data.orderCode);
   if (!participant) return fail("NOT_FOUND", "Pesanan tidak ditemukan.");
 
+  // A pool order is visible to every seller so they can inspect it — but only
+  // the buyer and the seller who actually holds the order may write in it.
+  // Otherwise any seller could post in an unclaimed pool room, and the buyer
+  // would see it labelled as coming from "the seller".
+  if (participant.order.buyerId !== participant.user.id && participant.user.role !== "admin") {
+    if (!participant.order.sellerId) {
+      return fail("FORBIDDEN", "Ambil pesanan ini dulu sebelum mengirim pesan.");
+    }
+    const holder = await db.sellerProfile.findUnique({
+      where: { id: participant.order.sellerId },
+      select: { userId: true },
+    });
+    if (holder?.userId !== participant.user.id) {
+      return fail("FORBIDDEN", "Pesanan ini sedang dipegang penjual lain.");
+    }
+  }
+
   // The room is part of the escrow workflow, not a mailbox: once the order is
   // settled there is nothing left to coordinate, and a closed room keeps
   // "lanjut di luar platform" drift out of finished orders.
