@@ -113,12 +113,12 @@ export function useLiveRevision<T>({
  */
 interface SharedStream {
   source: EventSource;
-  listeners: Map<LiveTopic, Set<() => void>>;
+  listeners: Map<LiveTopic, Set<(meta: string | null) => void>>;
 }
 
 let shared: SharedStream | null = null;
 
-function subscribeTopic(topic: LiveTopic, handler: () => void): () => void {
+function subscribeTopic(topic: LiveTopic, handler: (meta: string | null) => void): () => void {
   if (typeof EventSource === "undefined") return () => {};
 
   if (!shared) {
@@ -128,12 +128,22 @@ function subscribeTopic(topic: LiveTopic, handler: () => void): () => void {
     } catch {
       return () => {}; // blocked by the browser — the revision loop covers us
     }
-    const listeners = new Map<LiveTopic, Set<() => void>>();
+    const listeners = new Map<LiveTopic, Set<(meta: string | null) => void>>();
     for (const name of ["inbox", "chat", "presence", "room", "pool"] as const) {
-      const set = new Set<() => void>();
+      const set = new Set<(meta: string | null) => void>();
       listeners.set(name, set);
-      source.addEventListener(name, () => {
-        for (const listener of set) listener();
+      source.addEventListener(name, (event: MessageEvent) => {
+        // The payload is only a routing hint (see live-bus); anything else in
+        // it must never crash a listener, so a malformed frame reads as "no
+        // meta" and the surface still refetches.
+        let meta: string | null = null;
+        try {
+          const parsed = JSON.parse(String(event.data)) as { meta?: unknown };
+          if (typeof parsed.meta === "string") meta = parsed.meta;
+        } catch {
+          /* not JSON — treat as a plain change signal */
+        }
+        for (const listener of set) listener(meta);
       });
     }
     shared = { source, listeners };
@@ -167,7 +177,7 @@ function subscribeTopic(topic: LiveTopic, handler: () => void): () => void {
  */
 export function useLiveStream(
   topics: readonly LiveTopic[],
-  onEvent: (topic: LiveTopic) => void,
+  onEvent: (topic: LiveTopic, meta: string | null) => void,
   enabled = true,
 ) {
   const handlerRef = useLatest(onEvent);
@@ -177,7 +187,7 @@ export function useLiveStream(
     if (!enabled) return;
     const watched = topicKey.split(",").filter(Boolean) as LiveTopic[];
     const unsubscribes = watched.map((topic) =>
-      subscribeTopic(topic, () => handlerRef.current(topic)),
+      subscribeTopic(topic, (meta) => handlerRef.current(topic, meta)),
     );
     return () => {
       for (const unsubscribe of unsubscribes) unsubscribe();

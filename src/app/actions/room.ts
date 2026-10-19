@@ -222,6 +222,9 @@ export async function sendRoomMessage(rawInput: unknown): Promise<RoomActionResu
 
   // Ping the other side so replies are never missed, and push both rooms so
   // the message appears on the counterpart's screen while the send is fresh.
+  // Only the counterpart's event carries meta "message" — that is the signal
+  // the open tabs ring a sound on. The sender's own tabs refresh silently:
+  // they already watched the message leave the composer.
   const targets = [`user:${participant.user.id}`];
   if (fromRole === "buyer" && participant.order.sellerId) {
     const profile = await db.sellerProfile.findUnique({
@@ -248,7 +251,10 @@ export async function sendRoomMessage(rawInput: unknown): Promise<RoomActionResu
       link: `/pesanan/${parsed.data.orderCode}`,
     });
   }
-  publishLive("room", targets);
+  const selfTarget = `user:${participant.user.id}`;
+  const counterpartTargets = targets.filter((target) => target !== selfTarget);
+  publishLive("room", selfTarget);
+  if (counterpartTargets.length > 0) publishLive("room", counterpartTargets, "message");
 
   revalidatePath(`/pesanan/${parsed.data.orderCode}`);
   return { ok: true };

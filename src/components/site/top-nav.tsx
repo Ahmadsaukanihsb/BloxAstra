@@ -10,6 +10,7 @@ import { formatIDR } from "@/lib/format";
 import { useOrderUnread } from "@/lib/order-unread";
 import type { Category } from "@/lib/types";
 import { NotifBell } from "@/components/site/notif-bell";
+import { SoundToggle } from "@/components/site/live-sound";
 import { BrandMark } from "@/components/site/brand-mark";
 import {
   RobuxGlyph,
@@ -270,7 +271,8 @@ export function TopNav({
                 {formatIDR(balance)}
               </Link>
             ) : null}
-            {isLoggedIn ? <NotifBell /> : null}
+            {isLoggedIn ? <SoundToggle /> : null}
+          {isLoggedIn ? <NotifBell /> : null}
 
             {authSlot ?? (
               <Link

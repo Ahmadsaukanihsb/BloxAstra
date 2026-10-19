@@ -19,6 +19,7 @@ import { NavAuth } from "@/components/site/nav-auth";
 import { BottomNav } from "@/components/site/bottom-nav";
 import { SiteFooter } from "@/components/site/site-footer";
 import { LiveToaster } from "@/components/site/live-toaster";
+import { LiveSound } from "@/components/site/live-sound";
 import { RateProvider } from "@/components/rates/rate-store";
 import { SiteJsonLd } from "@/components/site/json-ld";
 import { SITE_URL } from "@/lib/site";
@@ -155,7 +156,12 @@ async function LiveToasterWithAuth() {
   await connection();
   const user = await getCurrentUser();
   if (!user) return null;
-  return <LiveToaster />;
+  return (
+    <>
+      <LiveToaster />
+      <LiveSound />
+    </>
+  );
 }
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {

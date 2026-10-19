@@ -279,7 +279,9 @@ export async function applyPaymentNotification(
       link: `/pesanan/${order.code}`,
     });
     // Pool race: the order is claimable from this instant — ping every
-    // seller Discord webhook and wake every open rebutan board.
+    // seller Discord webhook and wake every open rebutan board. The "arrived"
+    // meta is what lets an open dashboard ring a sound for a fresh order
+    // without also ringing when one is claimed away.
     if (order.isPoolOrder && !order.sellerId) {
       await broadcastPoolOrder({
         code: order.code,
@@ -288,7 +290,7 @@ export async function applyPaymentNotification(
         robuxAmount: order.robuxAmount,
         total: order.total,
       });
-      publishLive("pool", "sellers");
+      publishLive("pool", "sellers", "arrived");
     }
     return { ok: true };
   }

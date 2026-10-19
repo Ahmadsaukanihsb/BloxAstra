@@ -12,6 +12,14 @@ export interface LiveEvent {
   audience: string;
   seq: number;
   at: number;
+  /**
+   * Optional routing hint for client-side effects that must tell event kinds
+   * apart without fetching — today that is the sound layer: "arrived" on the
+   * pool topic rings when a claimable order lands, "message" on the room topic
+   * rings when a person (not a status move) writes in the room. It carries no
+   * data; the UI still refetches through the normal read path.
+   */
+  meta?: string;
 }
 
 type Listener = (event: LiveEvent) => void;
@@ -46,12 +54,12 @@ function bus(): LiveBus {
  * so one source of truth stays authoritative. A listener that throws (a dead
  * stream) must never break the caller that created the notification.
  */
-export function publishLive(topic: LiveTopic, audience: string | string[]): void {
+export function publishLive(topic: LiveTopic, audience: string | string[], meta?: string): void {
   const state = bus();
   const targets = Array.isArray(audience) ? audience : [audience];
   for (const target of targets) {
     state.seq += 1;
-    const event: LiveEvent = { topic, audience: target, seq: state.seq, at: Date.now() };
+    const event: LiveEvent = { topic, audience: target, seq: state.seq, at: Date.now(), meta };
     for (const listener of state.listeners) {
       try {
         listener(event);

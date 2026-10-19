@@ -206,6 +206,22 @@ export const IconBell = (p: IconProps) => (
   </Svg>
 );
 
+export const IconVolume = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4.4 9.6h2.8L11 6.2v11.6l-3.8-3.4H4.4z" />
+    <path d="M14.6 9.4a4.2 4.2 0 0 1 0 5.2" />
+    <path d="M17.2 7a8 8 0 0 1 0 10" />
+  </Svg>
+);
+
+export const IconVolumeMuted = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4.4 9.6h2.8L11 6.2v11.6l-3.8-3.4H4.4z" />
+    <path d="m15.2 9.8 4.6 4.6" />
+    <path d="m19.8 9.8-4.6 4.6" />
+  </Svg>
+);
+
 export const IconLock = (p: IconProps) => (
   <Svg {...p}>
     <rect x="4.4" y="10" width="15.2" height="10.6" rx="2.8" />

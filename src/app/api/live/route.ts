@@ -72,7 +72,8 @@ export async function GET(request: NextRequest) {
 
       unsubscribe = subscribeLive((event: LiveEvent) => {
         if (!audiences.has(event.audience)) return;
-        send(`event: ${event.topic}\ndata: ${JSON.stringify({ seq: event.seq, at: event.at })}\n\n`);
+        const data = event.meta ? { seq: event.seq, at: event.at, meta: event.meta } : { seq: event.seq, at: event.at };
+        send(`event: ${event.topic}\ndata: ${JSON.stringify(data)}\n\n`);
       });
 
       heartbeat = setInterval(() => {
