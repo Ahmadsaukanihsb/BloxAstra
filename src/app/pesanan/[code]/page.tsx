@@ -5,6 +5,8 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { getOrderChatPresence, getOrderRoom, getOrderMessages, getOrderReview } from "@/lib/orders";
+import { getServiceArt } from "@/lib/service-art";
+import { serviceArtSlotForKind } from "@/lib/service-art-slots";
 import { orderStates } from "@/lib/order-meta";
 import { formatIDR, formatDateTime } from "@/lib/format";
 import { Badge, LivePill, TierBadge } from "@/components/ui/badge";
@@ -59,11 +61,19 @@ async function OrderDetailContent({ params }: { params: Promise<{ code: string }
   const user = await requireUser();
   const order = await getOrderRoom(code, { id: user.id, role: user.role });
   if (!order) notFound();
-  const [messages, review, presence] = await Promise.all([
+  const [messages, review, presence, serviceArt] = await Promise.all([
     getOrderMessages(order.id),
     getOrderReview(order.id),
     getOrderChatPresence(order.id),
+    getServiceArt(),
   ]);
+
+  // The fund panel's tile prefers the seller's listing photo; a service order
+  // (robux via username/login/gamepass, premium) has no product, so it falls
+  // back to the artwork the admin uploaded for that card on the homepage.
+  const serviceArtSlot = serviceArtSlotForKind(order.kind);
+  const serviceArtImage =
+    order.productImageUrl === null && serviceArtSlot ? (serviceArt[serviceArtSlot] ?? null) : null;
 
   const stateMeta = orderStates[order.state];
   const releaseAt = order.autoReleaseAt;
@@ -87,7 +97,7 @@ async function OrderDetailContent({ params }: { params: Promise<{ code: string }
         <span className="num text-ink-dim">{order.code}</span>
       </nav>
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.4fr_1fr] lg:items-start">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.6fr_1fr] lg:items-start">
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center gap-2.5">
@@ -110,6 +120,11 @@ async function OrderDetailContent({ params }: { params: Promise<{ code: string }
             </p>
           </div>
 
+          {/* The room leads: it is the surface both sides actually work in. */}
+          <Suspense fallback={<div className="h-40 animate-pulse rounded-card bg-canvas" />}>
+            <OrderRoom order={order} messages={messages} review={review} presence={presence} />
+          </Suspense>
+
           <div className="bezel-shell p-1.5">
             <div className="bezel-core flex flex-col gap-5 p-5">
               <span className="flex items-center gap-2.5 text-[13px] font-bold text-ink">
@@ -119,10 +134,6 @@ async function OrderDetailContent({ params }: { params: Promise<{ code: string }
               <StateStepper state={order.state} timeline={order.timeline} />
             </div>
           </div>
-
-          <Suspense fallback={<div className="h-40 animate-pulse rounded-card bg-canvas" />}>
-            <OrderRoom order={order} messages={messages} review={review} presence={presence} />
-          </Suspense>
         </div>
 
         <aside className="flex flex-col gap-4 lg:sticky lg:top-28">
@@ -132,11 +143,29 @@ async function OrderDetailContent({ params }: { params: Promise<{ code: string }
                 Rincian dana
               </span>
               <div className="flex items-center gap-3.5">
-                <ProductArt
-                  seed={order.productSlug ?? order.code}
-                  category={order.categorySlug ?? "item"}
-                  className="size-16 shrink-0 rounded-well outline outline-1 -outline-offset-1 outline-line-strong"
-                />
+                {order.productImageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={order.productImageUrl}
+                    alt={order.productTitle}
+                    className="size-16 shrink-0 rounded-well object-cover outline outline-1 -outline-offset-1 outline-line-strong"
+                  />
+                ) : serviceArtImage ? (
+                  // Card artwork is a logo on a square canvas: `object-contain`,
+                  // matching how the homepage rail draws the same upload.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={serviceArtImage}
+                    alt={order.productTitle}
+                    className="size-16 shrink-0 rounded-well object-contain outline outline-1 -outline-offset-1 outline-line-strong"
+                  />
+                ) : (
+                  <ProductArt
+                    seed={order.productSlug ?? order.code}
+                    category={order.categorySlug ?? "item"}
+                    className="size-16 shrink-0 rounded-well outline outline-1 -outline-offset-1 outline-line-strong"
+                  />
+                )}
                 <div className="flex flex-col gap-1">
                   <span className="text-[12px] text-ink-dim">
                     {order.categoryName ?? "Pesanan Robux"}

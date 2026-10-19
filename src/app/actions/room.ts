@@ -161,6 +161,13 @@ export async function sendRoomMessage(rawInput: unknown): Promise<RoomActionResu
   const participant = await loadParticipant(parsed.data.orderCode);
   if (!participant) return fail("NOT_FOUND", "Pesanan tidak ditemukan.");
 
+  // The room is part of the escrow workflow, not a mailbox: once the order is
+  // settled there is nothing left to coordinate, and a closed room keeps
+  // "lanjut di luar platform" drift out of finished orders.
+  if (["completed", "cancelled", "refunded"].includes(participant.order.status)) {
+    return fail("STATE", "Pesanan sudah selesai — ruang obrolan ditutup.");
+  }
+
   const image = parsed.data.image;
   if (image !== undefined && !validImageDataUrl(image, 1_500_000)) {
     return fail("INVALID", "Lampiran harus gambar PNG/JPEG/GIF/WebP maksimal 1,5MB.");

@@ -79,6 +79,8 @@ export interface OrderDetail extends OrderListItem {
   categoryName: string | null;
   categorySlaMinutes: number | null;
   categoryFulfillment: string | null;
+  /** Seller/admin-set listing photo; null = generative art on the slug. */
+  productImageUrl: string | null;
   paymentCheckoutUrl: string | null;
   paymentStatus: string | null;
   canConfirm: boolean;
@@ -135,6 +137,7 @@ const ROOM_INCLUDE = {
     select: {
       title: true,
       slug: true,
+      imageUrl: true,
       autoReleaseHours: true,
       category: { select: { slug: true, name: true, slaMinutes: true, fulfillment: true } },
     },
@@ -455,6 +458,7 @@ export async function getOrderRoom(
     categoryName: row.product?.category.name ?? null,
     categorySlaMinutes: row.product?.category.slaMinutes ?? null,
     categoryFulfillment: row.product?.category.fulfillment ?? null,
+    productImageUrl: row.product?.imageUrl ?? null,
     paymentCheckoutUrl: row.payment?.checkoutUrl ?? null,
     paymentStatus: row.payment?.status ?? null,
     canConfirm:

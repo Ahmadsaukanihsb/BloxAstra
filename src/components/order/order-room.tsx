@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { Fragment, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { formatDateTime, formatIDR } from "@/lib/format";
+import { formatChatDay, formatDateTime, formatIDR } from "@/lib/format";
 import { compressImageFile } from "@/lib/image-compress";
 import type { OrderChatPresence, OrderDetail, OrderReview, OrderRoomMessage } from "@/lib/orders";
 import { cx } from "@/lib/cx";
@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Field, OptionCard, TextArea } from "@/components/ui/field";
 import { Notice } from "@/components/ui/feedback";
+import { SellerAvatar } from "@/components/ui/art";
 import { Countdown } from "@/components/order/runtime";
 import { DisputeThread, EvidencePicker } from "@/components/order/dispute-evidence";
 import { ReviewCard, ReviewForm } from "@/components/order/review-form";
@@ -67,6 +68,26 @@ function lastSeenLabel(iso: string): string {
   return formatDateTime(iso);
 }
 
+/** Jakarta day bucket — messages are grouped and separated by this key. */
+function dayKey(iso: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: "Asia/Jakarta",
+  }).format(new Date(iso));
+}
+
+function DayDivider({ label }: { label: string }) {
+  return (
+    <div className="my-4 flex items-center gap-3 text-[10px] font-extrabold uppercase tracking-[0.14em] text-ink-mute">
+      <span className="h-px flex-1 bg-line" />
+      {label}
+      <span className="h-px flex-1 bg-line" />
+    </div>
+  );
+}
+
 export function OrderRoom({
   order,
   messages,
@@ -100,12 +121,23 @@ export function OrderRoom({
   >(null);
   const chatRef = useRef<HTMLDivElement>(null);
   const attachRef = useRef<HTMLInputElement>(null);
+  // Day labels ("Hari ini") cannot be read from the clock during render — that
+  // is an impure read. It refreshes once a minute so a room left open across
+  // midnight flips its own dividers.
+  const [now, setNow] = useState<number | null>(null);
+  // Only messages that land while the room is open rise in; the backlog the
+  // visit was loaded with is already there. Initial state is read once — a
+  // refresh keeps the same component instance, so the count stays put.
+  const [mountCount] = useState(() => messages.length);
 
   const isBuyer = order.viewerRole === "buyer";
   const isSellerViewer = order.viewerRole === "seller";
   const isCredentialOrder = Boolean(order.credentials);
   const watermark = `BUKTI RESMI BLOX ASTRA | ORDER #${order.code}`;
   const locked = ["disputed", "refunded", "completed", "cancelled"].includes(order.state);
+  // A settled order has nothing left to coordinate; the composer is swapped
+  // for a closed bar and the server rejects sends either way.
+  const chatClosed = ["completed", "cancelled", "refunded"].includes(order.state);
   // Live states keep polling for counterpart messages + status moves.
   const live = ["pending_payment", "paid", "processing", "shipped", "disputed"].includes(
     order.state,
@@ -123,6 +155,13 @@ export function OrderRoom({
     }, 20_000);
     return () => window.clearInterval(id);
   }, [live, router]);
+
+  useEffect(() => {
+    const sync = () => setNow(Date.now());
+    sync();
+    const timer = window.setInterval(sync, 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const node = chatRef.current;
@@ -143,6 +182,7 @@ export function OrderRoom({
   }
 
   function send() {
+    if (isPending) return;
     const text = draft.trim();
     if (!text && !attachedImage) return;
     const image = attachedImage;
@@ -340,111 +380,228 @@ export function OrderRoom({
       {/* Chat room */}
       <div className="bezel-shell p-1.5">
         <div className="bezel-core flex flex-col">
-          <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3.5">
-            <span className="flex items-center gap-2.5 text-[13px] font-bold text-ink">
-              <IconChat size={16} className="text-astra-ink" />
-              Ruang pesanan
-            </span>
-            <span
-              className="flex max-w-[55%] items-center gap-2 text-[11px] text-ink-mute"
-              title="Terenkripsi · hanya pembeli, penjual, dan admin"
-            >
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-line px-5 py-3">
+            <span className="flex min-w-0 items-center gap-2.5">
+              <span className="grid size-8 shrink-0 place-items-center rounded-control bg-astra/10 text-astra-ink outline outline-1 -outline-offset-1 outline-astra/20">
+                <IconChat size={15} />
+              </span>
+              <span className="text-[13px] font-bold text-ink">Ruang pesanan</span>
               <span
-                aria-hidden
-                className={cx(
-                  "size-2 shrink-0 rounded-full",
-                  counterpartOnline ? "bg-astra" : "bg-ink-mute/40",
-                )}
-              />
-              <span className="truncate">
-                {counterpartOnline
-                  ? `${counterpartName} online`
-                  : counterpartLastSeenAt
-                    ? `${counterpartName} · terakhir buka ${lastSeenLabel(counterpartLastSeenAt)}`
-                    : `${counterpartName} offline`}
+                className="flex shrink-0 items-center gap-1.5 rounded-tag px-2 py-1 text-[10px] font-extrabold uppercase tracking-[0.1em] text-ink-mute"
+                title="Terenkripsi · hanya pembeli, penjual, dan admin"
+              >
+                <IconLock size={11} />
+                Terenkripsi
+              </span>
+            </span>
+            <span className="flex min-w-0 items-center gap-2.5">
+              <SellerAvatar name={counterpartName} size={30} className="shrink-0" />
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate text-[12px] font-bold text-ink">{counterpartName}</span>
+                <span className="flex min-w-0 items-center gap-1.5 text-[10.5px] text-ink-mute">
+                  <span
+                    aria-hidden
+                    className={cx(
+                      "size-1.5 shrink-0 rounded-full",
+                      counterpartOnline ? "bg-success" : "bg-ink-mute/40",
+                    )}
+                  />
+                  <span className="truncate">
+                    {counterpartOnline
+                      ? "Online sekarang"
+                      : counterpartLastSeenAt
+                        ? `Terakhir buka ${lastSeenLabel(counterpartLastSeenAt)}`
+                        : "Offline"}
+                  </span>
+                </span>
               </span>
             </span>
           </div>
 
-          <div ref={chatRef} className="flex max-h-[420px] flex-col gap-3.5 overflow-y-auto p-5">
+          <div ref={chatRef} className="flex h-[min(60vh,520px)] flex-col overflow-y-auto bg-canvas p-4">
             {messages.length === 0 ? (
-              <p className="text-[12px] text-ink-mute">
-                Belum ada pesan. Koordinasi serah terima lewat ruang ini ya.
-              </p>
-            ) : null}
-            {messages.map((message) => {
-              const mine = message.from === order.viewerRole;
-              const system = message.from === "system";
-              return (
-                <div
-                  key={message.id}
-                  className={cx("flex flex-col gap-1", mine ? "items-end" : "items-start")}
-                >
-                  <span className="text-[10px] uppercase tracking-[0.14em] text-ink-mute">
-                    {message.from} · {formatDateTime(message.at)}
-                  </span>
-                  <div
-                    className={cx(
-                      "max-w-[88%] rounded-well px-4 py-2.5 text-[12px] leading-relaxed",
-                      system
-                        ? "bg-astra/[0.07] text-astra-ink outline outline-1 -outline-offset-1 outline-astra/20"
-                        : mine
-                          ? "bg-canvas text-ink"
-                          : "bg-canvas text-ink-dim outline outline-1 -outline-offset-1 outline-line",
-                    )}
-                  >
-                    {message.image && message.image.startsWith("data:image/") ? (
-                      <a
-                        href={message.image}
-                        target="_blank"
-                        rel="noreferrer"
-                        title="Klik untuk ukuran penuh"
-                        className={cx(
-                          "block overflow-hidden rounded-control",
-                          message.text && "mb-2",
-                        )}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={message.image}
-                          alt={`Lampiran dari ${message.from}`}
-                          className="max-h-72 w-full max-w-[16rem] rounded-control object-cover outline outline-1 -outline-offset-1 outline-line"
-                        />
-                      </a>
+              <div className="m-auto flex max-w-[36ch] flex-col items-center gap-3 text-center">
+                <span className="grid size-12 place-items-center rounded-well text-ink-mute">
+                  <IconChat size={22} />
+                </span>
+                <p className="text-[13px] font-bold text-ink">Belum ada pesan</p>
+                <p className="text-[12px] leading-relaxed text-ink-mute">
+                  Koordinasi serah terima, kirim bukti, atau tanya progres di sini.
+                </p>
+              </div>
+            ) : (
+              messages.map((message, index) => {
+                const mine = message.from === order.viewerRole;
+                const system = message.from === "system";
+                const previous = messages[index - 1];
+                const next = messages[index + 1];
+                const newDay = !previous || dayKey(previous.at) !== dayKey(message.at);
+                // Consecutive messages from one side read as one block: the
+                // avatar and name print once, at the top of it.
+                const startsBlock = newDay || !previous || previous.from !== message.from;
+                const endsBlock =
+                  !next ||
+                  next.from === "system" ||
+                  next.from !== message.from ||
+                  dayKey(next.at) !== dayKey(message.at);
+                const senderDisplay =
+                  message.from === "buyer"
+                    ? order.buyerName
+                    : message.from === "seller"
+                      ? order.sellerStoreName
+                      : "Tim Blox Astra";
+                const rising = index >= mountCount;
+
+                // System notices are the room talking, not a person: a chip in
+                // the middle. Scam warnings earn the attention hue.
+                if (system) {
+                  const isWarning = message.text.startsWith("Peringatan sistem");
+                  return (
+                    <Fragment key={message.id}>
+                      {newDay && now !== null ? (
+                        <DayDivider label={formatChatDay(message.at, now)} />
+                      ) : null}
+                      <div className={cx("my-1 flex justify-center", rising && "animate-rise")}>
+                        <div
+                          className={cx(
+                            "flex max-w-[92%] items-start gap-2 rounded-well px-3.5 py-2.5 text-[11.5px] leading-relaxed outline outline-1 -outline-offset-1",
+                            isWarning
+                              ? "bg-robux/[0.07] text-ink-dim outline-robux/25"
+                              : "bg-paper text-ink-mute outline-line",
+                          )}
+                        >
+                          {isWarning ? (
+                            <IconAlert size={14} className="mt-0.5 shrink-0 text-robux" />
+                          ) : null}
+                          <span className="break-words whitespace-pre-wrap">{message.text}</span>
+                        </div>
+                      </div>
+                    </Fragment>
+                  );
+                }
+
+                return (
+                  <Fragment key={message.id}>
+                    {newDay && now !== null ? (
+                      <DayDivider label={formatChatDay(message.at, now)} />
                     ) : null}
-                    {message.text}
-                  </div>
-                </div>
-              );
-            })}
+                    <div
+                      className={cx(
+                        "flex w-full items-end gap-2.5",
+                        mine ? "justify-end" : "justify-start",
+                        startsBlock && !newDay ? "mt-3" : "mt-0.5",
+                        rising && "animate-rise",
+                      )}
+                    >
+                      {mine ? null : (
+                        <span className="w-[34px] shrink-0">
+                          {startsBlock ? <SellerAvatar name={senderDisplay} size={34} /> : null}
+                        </span>
+                      )}
+                      <div className="flex min-w-0 max-w-[min(78%,30rem)] flex-col gap-1">
+                        {startsBlock ? (
+                          <span
+                            className={cx(
+                              "px-1 text-[10px] font-extrabold",
+                              mine ? "text-right text-ink-mute" : "text-astra-ink",
+                            )}
+                          >
+                            {mine ? "kamu" : senderDisplay}
+                          </span>
+                        ) : null}
+                        <div
+                          className={cx(
+                            "w-fit max-w-full rounded-well px-3.5 py-2.5 text-[12px] leading-relaxed break-words whitespace-pre-wrap outline outline-1 -outline-offset-1",
+                            mine
+                              ? "rounded-br-[6px] bg-astra/15 text-ink outline-astra/30"
+                              : "rounded-bl-[6px] bg-paper text-ink outline-line",
+                          )}
+                        >
+                          {message.image && message.image.startsWith("data:image/") ? (
+                            <a
+                              href={message.image}
+                              target="_blank"
+                              rel="noreferrer"
+                              title="Klik untuk ukuran penuh"
+                              className={cx(
+                                "block overflow-hidden rounded-control",
+                                message.text && "mb-2",
+                              )}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={message.image}
+                                alt={`Lampiran dari ${senderDisplay}`}
+                                className="max-h-72 w-full max-w-[16rem] rounded-control object-cover outline outline-1 -outline-offset-1 outline-line"
+                              />
+                            </a>
+                          ) : null}
+                          {message.text}
+                        </div>
+                        {endsBlock ? (
+                          <span
+                            className={cx(
+                              "num flex items-center gap-1.5 px-1 text-[10px] text-ink-mute",
+                              mine ? "justify-end" : "justify-start",
+                            )}
+                          >
+                            {formatDateTime(message.at)}
+                          </span>
+                        ) : null}
+                      </div>
+                      {mine ? (
+                        <span className="w-[34px] shrink-0">
+                          {startsBlock ? <SellerAvatar name={senderDisplay} size={34} /> : null}
+                        </span>
+                      ) : null}
+                    </div>
+                  </Fragment>
+                );
+              })
+            )}
           </div>
 
-          <div className="flex flex-col gap-2.5 border-t border-line p-4">
+          {chatClosed ? (
+            <div className="border-t border-line p-4">
+              <span className="flex items-center gap-2.5 rounded-well bg-canvas px-4 py-3 text-[11px] leading-relaxed text-ink-mute outline outline-1 -outline-offset-1 outline-line">
+                <IconLock size={14} className="shrink-0" />
+                {order.state === "completed"
+                  ? "Pesanan sudah selesai — ruang obrolan ditutup."
+                  : "Pesanan dibatalkan — ruang obrolan ditutup."}
+              </span>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2.5 border-t border-line p-4">
             {attachedImage ? (
-              <div className="flex items-center gap-3">
-                <span className="relative block size-16 shrink-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={attachedImage}
-                    alt="Pratinjau lampiran"
-                    className="size-full rounded-control object-cover outline outline-1 -outline-offset-1 outline-line"
-                  />
-                  <button
-                    type="button"
-                    aria-label="Hapus lampiran"
-                    onClick={() => setAttachedImage(null)}
-                    className="absolute -right-1.5 -top-1.5 grid size-6 place-items-center rounded-full bg-danger text-on-bright shadow"
-                  >
-                    <IconX size={12} />
-                  </button>
+              <div className="flex items-center gap-3 rounded-well bg-canvas p-2 outline outline-1 -outline-offset-1 outline-line">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={attachedImage}
+                  alt="Pratinjau lampiran"
+                  className="size-12 shrink-0 rounded-control object-cover outline outline-1 -outline-offset-1 outline-line"
+                />
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="text-[11px] font-bold text-ink">Lampiran siap dikirim</span>
+                  <span className="text-[10px] text-ink-mute">Ikut terkirim bersama pesan ini</span>
                 </span>
-                <span className="text-[11px] text-ink-mute">
-                  Lampiran siap dikirim bersama pesanmu.
-                </span>
+                <button
+                  type="button"
+                  aria-label="Hapus lampiran"
+                  onClick={() => setAttachedImage(null)}
+                  className="grid size-7 shrink-0 place-items-center rounded-full text-ink-mute transition-colors hover:bg-paper hover:text-ink"
+                >
+                  <IconX size={15} />
+                </button>
               </div>
             ) : null}
             {attachError ? <p className="text-xs font-bold text-danger">{attachError}</p> : null}
-            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-end">
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                send();
+              }}
+              className="flex items-end gap-2.5"
+            >
               <input
                 ref={attachRef}
                 type="file"
@@ -453,35 +610,46 @@ export function OrderRoom({
                 aria-label="Lampirkan gambar"
                 onChange={(event) => void attachImage(event.target.files?.[0] ?? undefined)}
               />
-              <Field label="Pesan" htmlFor="chat-input" className="flex-1">
-                <TextArea
-                  id="chat-input"
-                  value={draft}
-                  onChange={(event) => setDraft(event.target.value)}
-                  placeholder="Tulis instruksi atau tautan private server…"
-                  className="min-h-12 py-2.5"
-                />
-              </Field>
-              <div className="flex items-end gap-2">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => attachRef.current?.click()}
-                  disabled={readingImage || Boolean(attachedImage)}
-                  leadingIcon={<IconUpload size={15} />}
-                >
-                  {readingImage ? "Membaca…" : "Gambar"}
-                </Button>
-                <Button
-                  onClick={send}
-                  disabled={(!draft.trim() && !attachedImage) || isPending}
-                  trailingIcon={<IconArrowRight size={15} />}
-                >
-                  Kirim
-                </Button>
-              </div>
+              <button
+                type="button"
+                aria-label="Lampirkan gambar"
+                title={readingImage ? "Membaca gambar…" : "Lampirkan gambar"}
+                onClick={() => attachRef.current?.click()}
+                disabled={readingImage || Boolean(attachedImage)}
+                className="grid size-11 shrink-0 place-items-center rounded-control bg-canvas text-ink-dim outline outline-1 -outline-offset-1 outline-line transition-colors duration-200 hover:text-ink disabled:pointer-events-none disabled:opacity-45"
+              >
+                <IconUpload size={16} />
+              </button>
+              <textarea
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    event.currentTarget.form?.requestSubmit();
+                  }
+                }}
+                placeholder="Tulis pesan…"
+                rows={1}
+                maxLength={2000}
+                className="min-h-[44px] w-full resize-none rounded-well bg-canvas px-4 py-3 text-[13px] text-ink outline outline-1 -outline-offset-1 outline-line placeholder:text-ink-mute focus:outline-astra/40"
+              />
+              <Button
+                type="submit"
+                disabled={(!draft.trim() && !attachedImage) || isPending}
+                className="shrink-0"
+              >
+                {isPending ? "Mengirim…" : "Kirim"}
+              </Button>
+            </form>
+            <div className="flex items-center justify-end gap-3 sm:justify-between">
+              <span className="hidden text-[10px] text-ink-mute sm:block">
+                Enter kirim · Shift+Enter baris baru
+              </span>
+              <p className="num text-right text-[10px] text-ink-mute">{draft.length}/2000</p>
             </div>
-          </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -489,14 +657,16 @@ export function OrderRoom({
       {isSellerViewer && (order.state === "paid" || order.state === "processing") ? (
         <div className="bezel-shell p-1.5">
           <div className="bezel-core flex flex-col gap-4 p-6">
-            <div className="flex flex-col gap-1">
-              <h2 className="flex items-center gap-2.5 text-base font-bold text-ink">
-                <IconStorefront size={18} className="text-astra-ink" />
-                Panel penjual
-              </h2>
-              <p className="text-[12px] text-ink-mute">
-                Perbarui status pesanan agar pembeli tahu progres dan SLA terjaga.
-              </p>
+            <div className="flex items-center gap-3">
+              <span className="grid size-9 shrink-0 place-items-center rounded-control bg-astra/10 text-astra-ink outline outline-1 -outline-offset-1 outline-astra/20">
+                <IconStorefront size={16} />
+              </span>
+              <div className="flex flex-col gap-0.5">
+                <h2 className="text-[15px] font-bold text-ink">Panel penjual</h2>
+                <p className="text-[12px] text-ink-mute">
+                  Perbarui status pesanan agar pembeli tahu progres dan SLA terjaga.
+                </p>
+              </div>
             </div>
             {order.state === "paid" ? (
               <Button
@@ -526,10 +696,12 @@ export function OrderRoom({
       {order.gamepassUrl || order.buyerNote ? (
         <div className="bezel-shell p-1.5">
           <div className="bezel-core flex flex-col gap-4 p-6">
-            <h2 className="flex items-center gap-2.5 text-base font-bold text-ink">
-              <IconInfo size={18} className="text-astra-ink" />
-              Detail pesanan
-            </h2>
+            <div className="flex items-center gap-3">
+              <span className="grid size-9 shrink-0 place-items-center rounded-control bg-astra/10 text-astra-ink outline outline-1 -outline-offset-1 outline-astra/20">
+                <IconInfo size={16} />
+              </span>
+              <h2 className="text-[15px] font-bold text-ink">Detail pesanan</h2>
+            </div>
               {order.gamepassUrl && /^https:\/\//i.test(order.gamepassUrl) ? (
                 <div className="flex flex-col gap-1">
                   <span className="text-[11px] text-ink-mute">Tautan gamepass</span>
@@ -563,14 +735,16 @@ export function OrderRoom({
         <div className="bezel-shell p-1.5">
           <div className="bezel-core flex flex-col gap-5 p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="flex flex-col gap-1">
-                <h2 className="flex items-center gap-2.5 text-base font-bold text-ink">
-                  <IconScanFace size={18} className="text-astra-ink" />
-                  Wizard serah terima akun
-                </h2>
-                <p className="text-[12px] text-ink-mute">
-                  Tandai setiap langkah setelah kamu verifikasi sendiri di pengaturan Roblox.
-                </p>
+              <div className="flex items-center gap-3">
+                <span className="grid size-9 shrink-0 place-items-center rounded-control bg-astra/10 text-astra-ink outline outline-1 -outline-offset-1 outline-astra/20">
+                  <IconScanFace size={16} />
+                </span>
+                <div className="flex flex-col gap-0.5">
+                  <h2 className="text-[15px] font-bold text-ink">Wizard serah terima akun</h2>
+                  <p className="text-[12px] text-ink-mute">
+                    Tandai setiap langkah setelah kamu verifikasi sendiri di pengaturan Roblox.
+                  </p>
+                </div>
               </div>
               <Badge tone="astra">
                 {completedSteps}/{steps.length} langkah selesai
@@ -743,11 +917,16 @@ export function OrderRoom({
       {isBuyer ? (
         <div className="bezel-shell p-1.5">
           <div className="bezel-core flex flex-col gap-5 p-6">
-            <div className="flex flex-col gap-1">
-              <h2 className="text-base font-bold text-ink">Tindakan pembeli</h2>
-              <p className="text-[12px] text-ink-mute">
-                Dana hanya bergerak atas tindakanmu, atau otomatis setelah masa tunggu berakhir.
-              </p>
+            <div className="flex items-center gap-3">
+              <span className="grid size-9 shrink-0 place-items-center rounded-control bg-astra/10 text-astra-ink outline outline-1 -outline-offset-1 outline-astra/20">
+                <IconShieldCheck size={16} />
+              </span>
+              <div className="flex flex-col gap-0.5">
+                <h2 className="text-[15px] font-bold text-ink">Tindakan pembeli</h2>
+                <p className="text-[12px] text-ink-mute">
+                  Dana hanya bergerak atas tindakanmu, atau otomatis setelah masa tunggu berakhir.
+                </p>
+              </div>
             </div>
 
             <div className="flex flex-col gap-3">
@@ -931,30 +1110,20 @@ export function OrderRoom({
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-        <div className="flex flex-col gap-2.5 rounded-card bg-canvas p-5 outline outline-1 -outline-offset-1 outline-line">
-          <span className="flex items-center gap-2 text-[12px] font-bold text-ink">
-            <IconShieldCheck size={15} className="text-astra-ink" />
-            Ditahan platform
-          </span>
-          <span className="num text-[18px] font-extrabold text-astra-ink">
-            {formatIDR(order.total)}
-          </span>
-          <span className="text-[11px] leading-relaxed text-ink-mute">
-            Auto-release berjalan otomatis bila kamu tidak mengajukan sengketa dalam masa tunggu.
-          </span>
-        </div>
-        <div className="flex flex-col gap-2.5 rounded-card bg-canvas p-5 outline outline-1 -outline-offset-1 outline-line">
-          <span className="flex items-center gap-2 text-[12px] font-bold text-ink">
-            <IconLock size={15} className="text-info" />
-            Bukti ter-watermark
-          </span>
-          <span className="num text-[12px] text-ink-dim">{watermark}</span>
-          <span className="text-[11px] leading-relaxed text-ink-mute">
-            Berkas mentah tanpa watermark langsung dimusnahkan agar tangkapan layar tidak bisa didaur
-            ulang.
-          </span>
-        </div>
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2.5 rounded-card bg-canvas px-5 py-4 outline outline-1 -outline-offset-1 outline-line">
+        <span className="flex items-center gap-2.5 text-[11px] text-ink-mute">
+          <IconShieldCheck size={14} className="shrink-0 text-astra-ink" />
+          Ditahan platform
+          <span className="num text-[13px] font-extrabold text-astra-ink">{formatIDR(order.total)}</span>
+          <span className="hidden text-ink-mute/80 sm:inline">· auto-release bila tidak ada sengketa</span>
+        </span>
+        <span
+          className="flex min-w-0 items-center gap-2.5 text-[11px] text-ink-mute"
+          title="Berkas mentah tanpa watermark langsung dimusnahkan agar tangkapan layar tidak bisa didaur ulang."
+        >
+          <IconLock size={14} className="shrink-0 text-info" />
+          <span className="num truncate text-ink-dim">{watermark}</span>
+        </span>
       </div>
     </div>
   );

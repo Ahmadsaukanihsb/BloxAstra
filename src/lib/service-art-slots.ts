@@ -56,3 +56,24 @@ export type ServiceArt = Partial<Record<ServiceArtKey, string>>;
 export function isServiceArtKey(value: string): value is ServiceArtKey {
   return SERVICE_ART_SLOTS.some((slot) => slot.key === value);
 }
+
+/**
+ * Maps an `Order.kind` onto the shelf-art slot of its service, so surfaces that
+ * show a tile for a non-catalog order (the order room's fund panel) can fall
+ * back to the artwork the admin uploaded for that card. Catalog orders carry
+ * kind "catalog" and map to nothing.
+ */
+export function serviceArtSlotForKind(kind: string): ServiceArtKey | null {
+  switch (kind) {
+    case "robux_username":
+      return "robux-username";
+    case "robux_login":
+      return "robux-login";
+    case "robux_gamepass":
+      return "robux-gamepass";
+    case "premium":
+      return "premium";
+    default:
+      return null;
+  }
+}

@@ -39,7 +39,10 @@ export function StateStepper({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-6 gap-1.5">
+      {/* A six-step rail cannot fit a phone: give every step real width and
+          let the rail scroll sideways instead of cramming the labels. */}
+      <div className="-mx-1 overflow-x-auto px-1 pb-1">
+        <div className="grid min-w-[30rem] grid-cols-6 gap-1.5">
         {FLOW.map((flowState, index) => {
           const done = terminal ? index <= reached : index < reached;
           const active = !terminal && index === reached;
@@ -63,6 +66,7 @@ export function StateStepper({
             </div>
           );
         })}
+        </div>
       </div>
 
       {terminal ? (
