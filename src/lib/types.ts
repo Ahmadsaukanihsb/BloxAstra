@@ -48,6 +48,8 @@ export interface Seller {
   city: string;
   kycVerified: boolean;
   bio: string;
+  /** shop logo (data URL or https image); null = monogram initials */
+  storeImage?: string | null;
 }
 
 export interface Product {

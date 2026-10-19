@@ -593,7 +593,9 @@ export function SellerChatBox({
                   {/* Others read left, with their shop identity visible. */}
                   {message.isSelf ? null : (
                     <span className="w-[34px] shrink-0">
-                      {startsBlock ? <SellerAvatar name={name} size={AVATAR_SIZE} /> : null}
+                      {startsBlock ? (
+                        <SellerAvatar name={name} size={AVATAR_SIZE} imageUrl={message.storeImage} />
+                      ) : null}
                     </span>
                   )}
 
@@ -787,7 +789,7 @@ export function SellerChatBox({
                   {/* ...and yours read right, so the two sides never blur. */}
                   {message.isSelf ? (
                     <span className="w-[34px] shrink-0">
-                      {startsBlock ? <SellerAvatar name={message.storeName ?? message.username} size={AVATAR_SIZE} /> : null}
+                      {startsBlock ? <SellerAvatar name={message.storeName ?? message.username} size={AVATAR_SIZE} imageUrl={message.storeImage} /> : null}
                     </span>
                   ) : null}
                 </div>
@@ -839,7 +841,7 @@ export function SellerChatBox({
                         index === activeIndex ? "bg-astra/10" : "hover:bg-canvas",
                       )}
                     >
-                      <SellerAvatar name={target.storeName ?? target.username} size={24} />
+                      <SellerAvatar name={target.storeName ?? target.username} size={24} imageUrl={target.storeImage} />
                       <span className="flex min-w-0 flex-1 flex-col">
                         <span className="truncate text-[12.5px] font-bold text-ink">
                           {target.storeName ?? target.username}

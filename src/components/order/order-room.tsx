@@ -143,6 +143,7 @@ export function OrderRoom({
     order.state,
   );
   const counterpartName = isBuyer ? order.sellerStoreName : order.buyerName;
+  const counterpartImage = isBuyer ? order.sellerStoreImage : null;
   const counterpartOnline = isBuyer ? presence.sellerOnline : presence.buyerOnline;
   const counterpartLastSeenAt = isBuyer ? presence.sellerLastSeenAt : presence.buyerLastSeenAt;
 
@@ -395,7 +396,12 @@ export function OrderRoom({
               </span>
             </span>
             <span className="flex min-w-0 items-center gap-2.5">
-              <SellerAvatar name={counterpartName} size={30} className="shrink-0" />
+              <SellerAvatar
+                name={counterpartName}
+                size={30}
+                imageUrl={counterpartImage}
+                className="shrink-0"
+              />
               <span className="flex min-w-0 flex-col">
                 <span className="truncate text-[12px] font-bold text-ink">{counterpartName}</span>
                 <span className="flex min-w-0 items-center gap-1.5 text-[10.5px] text-ink-mute">
@@ -450,6 +456,8 @@ export function OrderRoom({
                     : message.from === "seller"
                       ? order.sellerStoreName
                       : "Tim Blox Astra";
+                const senderImage =
+                  message.from === "seller" ? order.sellerStoreImage : null;
                 const rising = index >= mountCount;
 
                 // System notices are the room talking, not a person: a chip in
@@ -495,7 +503,9 @@ export function OrderRoom({
                     >
                       {mine ? null : (
                         <span className="w-[34px] shrink-0">
-                          {startsBlock ? <SellerAvatar name={senderDisplay} size={34} /> : null}
+                          {startsBlock ? (
+                            <SellerAvatar name={senderDisplay} size={34} imageUrl={senderImage} />
+                          ) : null}
                         </span>
                       )}
                       <div className="flex min-w-0 max-w-[min(78%,30rem)] flex-col gap-1">
@@ -551,7 +561,9 @@ export function OrderRoom({
                       </div>
                       {mine ? (
                         <span className="w-[34px] shrink-0">
-                          {startsBlock ? <SellerAvatar name={senderDisplay} size={34} /> : null}
+                          {startsBlock ? (
+                            <SellerAvatar name={senderDisplay} size={34} imageUrl={senderImage} />
+                          ) : null}
                         </span>
                       ) : null}
                     </div>

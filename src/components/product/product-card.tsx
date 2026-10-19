@@ -147,7 +147,7 @@ export function ProductCard({
 
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <SellerAvatar name={seller.storeName} size={26} />
+              <SellerAvatar name={seller.storeName} size={26} imageUrl={seller.storeImage} />
               <div className="flex flex-col">
                 <span className="truncate text-[11px] font-bold text-ink-dim">
                   {seller.storeName}

@@ -218,6 +218,7 @@ async function OrderDetailContent({ params }: { params: Promise<{ code: string }
                   name={order.sellerStoreName}
                   size={40}
                   online={order.sellerIsOnline}
+                  imageUrl={order.sellerStoreImage}
                 />
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="truncate text-[13px] font-bold text-ink">

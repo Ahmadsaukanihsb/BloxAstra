@@ -215,7 +215,12 @@ export function BuyBox({
         </ul>
 
         <div className="flex flex-wrap items-center gap-2">
-          <SellerAvatar name={seller.storeName} size={30} online={seller.isOnline} />
+          <SellerAvatar
+            name={seller.storeName}
+            size={30}
+            online={seller.isOnline}
+            imageUrl={seller.storeImage}
+          />
           <div className="flex flex-col">
             <span className="text-[12px] font-bold text-ink-dim">{seller.storeName}</span>
             <StarRating rating={seller.rating} count={seller.reviewCount} size={10} />

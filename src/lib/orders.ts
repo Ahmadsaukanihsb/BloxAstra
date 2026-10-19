@@ -17,6 +17,8 @@ export interface OrderListItem {
   productSlug: string | null;
   category: CategorySlug | null;
   sellerStore: string;
+  /** Seller's shop image (data URL), null = monogram initials */
+  sellerStoreImage: string | null;
   robloxUsername: string | null;
   total: number;
   createdAt: string;
@@ -124,7 +126,7 @@ interface ListProjection {
     slug: string;
     category: { slug: string; name: string; slaMinutes: number; fulfillment: string };
   } | null;
-  seller: { storeName: string } | null;
+  seller: { storeName: string; storeImage: string | null } | null;
   events: { state: string; at: Date }[];
   /** chat metadata only — never the bodies/attachments, so lists stay light */
   messages: { fromRole: string; at: Date }[];
@@ -145,6 +147,7 @@ const ROOM_INCLUDE = {
   seller: {
     select: {
       storeName: true,
+      storeImage: true,
       handle: true,
       tier: true,
       isOnline: true,
@@ -287,6 +290,7 @@ function toListItem(row: ListProjection, now: number, unread: number): OrderList
     productSlug: row.product?.slug ?? null,
     category: categoryOf(row),
     sellerStore: row.seller?.storeName ?? "Blox Astra",
+    sellerStoreImage: row.seller?.storeImage ?? null,
     robloxUsername: row.robloxUsername,
     total: row.total,
     createdAt: row.createdAt.toISOString(),
@@ -757,7 +761,7 @@ export async function getSellerActiveOrders(
     take: 8,
     include: {
       product: { select: { title: true, slug: true, category: { select: { slug: true, name: true, slaMinutes: true, fulfillment: true } } } },
-      seller: { select: { storeName: true } },
+      seller: { select: { storeName: true, storeImage: true } },
       events: { orderBy: { at: "asc" } },
       messages: { select: { fromRole: true, at: true }, orderBy: { at: "asc" } },
       dispute: { select: { id: true } },

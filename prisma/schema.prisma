@@ -120,6 +120,8 @@ model SellerProfile {
   city               String
   kycVerified        Boolean  @default(false)
   bio                String
+  /// Store logo/photo (data URL or https image). Null = monogram initials.
+  storeImage         String?
   fullName           String   @default("")
   /// KYC documents (data URLs) + last rejection reason for resubmits.
   idCardImage        String?

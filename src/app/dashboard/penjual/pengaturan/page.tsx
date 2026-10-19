@@ -7,6 +7,7 @@ import { Badge, TierBadge } from "@/components/ui/badge";
 import { Notice, Skeleton } from "@/components/ui/feedback";
 import { DiscordWebhookCard } from "@/components/seller/discord-webhook-card";
 import { KycResubmitForm } from "@/components/seller/kyc-resubmit";
+import { StoreProfileForm } from "@/components/seller/store-profile-form";
 import { SellerPageHeader, SellerSection, SellerStack } from "@/components/seller/seller-page";
 import { IconInfo, IconSealCheck, IconShieldCheck } from "@/components/ui/icons";
 
@@ -130,12 +131,24 @@ async function SettingsContent() {
           />
         </SellerSection>
 
-        <SellerSection title="Informasi toko">
+        <SellerSection
+          title="Profil toko"
+          description="Logo, nama, kota, dan bio tampil di katalog, halaman produk, ruang pesanan, dan daftar order. Perubahan langsung berlaku setelah disimpan."
+        >
+          <StoreProfileForm
+            storeName={identity.storeName}
+            city={identity.city}
+            bio={identity.bio}
+            storeImage={identity.storeImage}
+            handle={identity.handle}
+            disabled={isAdminPreview}
+          />
+        </SellerSection>
+
+        <SellerSection title="Statistik toko">
           <dl className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
             {[
-              { label: "Nama toko", value: identity.storeName },
               { label: "Handle", value: identity.handle ? `@${identity.handle}` : "—" },
-              { label: "Kota", value: identity.city || "—" },
               { label: "Status toko", value: identity.isOnline ? "Siap kirim" : "Istirahat" },
               {
                 label: "Penilaian",

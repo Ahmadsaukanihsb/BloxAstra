@@ -18,6 +18,7 @@ import { NavGate } from "@/components/site/nav-gate";
 import { NavAuth } from "@/components/site/nav-auth";
 import { BottomNav } from "@/components/site/bottom-nav";
 import { SiteFooter } from "@/components/site/site-footer";
+import { LiveToaster } from "@/components/site/live-toaster";
 import { RateProvider } from "@/components/rates/rate-store";
 import { SiteJsonLd } from "@/components/site/json-ld";
 import { SITE_URL } from "@/lib/site";
@@ -145,6 +146,18 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+/**
+ * Live toasts are for signed-in visitors only; signed-out pages skip the
+ * stream entirely. The toaster itself renders nothing until a fresh
+ * notification arrives, so it never blocks paint.
+ */
+async function LiveToasterWithAuth() {
+  await connection();
+  const user = await getCurrentUser();
+  if (!user) return null;
+  return <LiveToaster />;
+}
+
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const [categories, rates] = await Promise.all([getCategories(), getCachedActiveRates()]);
   return (
@@ -174,6 +187,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           </Suspense>
           <Suspense fallback={null}>
             <BottomNavWithAuth />
+          </Suspense>
+          <Suspense fallback={null}>
+            <LiveToasterWithAuth />
           </Suspense>
         </RateProvider>
       </body>

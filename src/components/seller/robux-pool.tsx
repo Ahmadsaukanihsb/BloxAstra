@@ -83,10 +83,9 @@ export function RobuxPoolBoard({
       return;
     }
     forget(order.code);
-    setFlash(
-      `Berhasil mengambil ${order.code}. Sekarang jadi milikmu. Buka ruang pesanan untuk mulai memproses.`,
-    );
-    router.refresh();
+    setFlash(`Berhasil mengambil ${order.code}. Mengalihkan ke ruang pesanan...`);
+    // Straight into the room: claiming is only half the job, hand-over happens there.
+    router.push(`/pesanan/${order.code}`);
   }
 
   if (orders.length === 0) {

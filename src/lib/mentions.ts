@@ -15,9 +15,11 @@
 
 export interface MentionTarget {
   userId: string;
-  /** Shop name — what the composer inserts and the reader sees. */
+  /** Shop name - what the composer inserts and the reader sees. */
   storeName: string | null;
   username: string;
+  /** Shop logo, when the seller has uploaded one. */
+  storeImage?: string | null;
 }
 
 export type MentionSegment =

@@ -255,7 +255,7 @@ function OrderRow({
                 {order.productTitle}
               </span>
               <div className="flex flex-wrap items-center gap-2.5">
-                <SellerAvatar name={order.sellerStore} size={22} />
+                <SellerAvatar name={order.sellerStore} size={22} imageUrl={order.sellerStoreImage} />
                 <span className="text-[11px] text-ink-dim">{order.sellerStore}</span>
                 {order.robloxUsername ? (
                   <span className="text-[11px] text-ink-mute">

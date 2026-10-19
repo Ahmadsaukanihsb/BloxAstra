@@ -198,6 +198,8 @@ export interface SellerIdentity {
   kycStatus: string;
   kycRejectReason: string | null;
   city: string;
+  bio: string;
+  storeImage: string | null;
   rating: number;
   reviewCount: number;
   /** Discord pool-alert webhook presence (the URL itself never leaves the server). */
@@ -217,6 +219,8 @@ export async function getSellerIdentity(userId: string): Promise<SellerIdentity 
       kycVerified: true,
       kycRejectReason: true,
       city: true,
+      bio: true,
+      storeImage: true,
       rating: true,
       reviewCount: true,
       discordWebhookUrl: true,
@@ -236,6 +240,8 @@ export async function getSellerIdentity(userId: string): Promise<SellerIdentity 
     kycStatus: profile.user.kycStatus,
     kycRejectReason: profile.kycRejectReason,
     city: profile.city,
+    bio: profile.bio,
+    storeImage: profile.storeImage,
     rating: profile.rating,
     reviewCount: profile.reviewCount,
     discordWebhook: {
@@ -288,6 +294,7 @@ export interface SellerChatItem {
   createdAt: string;
   username: string;
   storeName: string | null;
+  storeImage: string | null;
   isSelf: boolean;
   deleted: boolean;
   edited: boolean;
@@ -344,7 +351,12 @@ export interface SellerChatView {
  */
 export async function getMentionDirectory(limit = 300): Promise<MentionTarget[]> {
   const rows = await db.sellerProfile.findMany({
-    select: { userId: true, storeName: true, user: { select: { username: true } } },
+    select: {
+      userId: true,
+      storeName: true,
+      storeImage: true,
+      user: { select: { username: true } },
+    },
     orderBy: { storeName: "asc" },
     take: limit,
   });
@@ -352,6 +364,7 @@ export async function getMentionDirectory(limit = 300): Promise<MentionTarget[]>
     userId: row.userId,
     storeName: row.storeName,
     username: row.user.username,
+    storeImage: row.storeImage,
   }));
 }
 
@@ -395,7 +408,7 @@ export async function getSellerChat(viewerId: string): Promise<SellerChatView> {
           select: {
             id: true,
             username: true,
-            sellerProfile: { select: { storeName: true } },
+            sellerProfile: { select: { storeName: true, storeImage: true } },
           },
         },
         replyTo: {
@@ -406,7 +419,7 @@ export async function getSellerChat(viewerId: string): Promise<SellerChatView> {
             user: {
               select: {
                 username: true,
-                sellerProfile: { select: { storeName: true } },
+                sellerProfile: { select: { storeName: true, storeImage: true } },
               },
             },
           },
@@ -427,6 +440,7 @@ export async function getSellerChat(viewerId: string): Promise<SellerChatView> {
       createdAt: row.createdAt.toISOString(),
       username: row.user.username,
       storeName: row.user.sellerProfile?.storeName ?? null,
+      storeImage: row.user.sellerProfile?.storeImage ?? null,
       isSelf: row.user.id === viewerId,
       deleted: row.deletedAt !== null,
       edited: row.editedAt !== null,

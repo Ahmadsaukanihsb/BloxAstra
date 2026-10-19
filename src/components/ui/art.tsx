@@ -140,11 +140,14 @@ export function SellerAvatar({
   name,
   size = 40,
   online,
+  imageUrl,
   className,
 }: {
   name: string;
   size?: number;
   online?: boolean;
+  /** seller's uploaded store logo; falls back to the monogram when null */
+  imageUrl?: string | null;
   className?: string;
 }) {
   const tone = DUOTONES[Math.floor(seedFraction(name, 3) * DUOTONES.length) % DUOTONES.length];
@@ -161,17 +164,28 @@ export function SellerAvatar({
         aria-hidden="true"
         className={cx("relative inline-grid shrink-0 place-items-center", className)}
       >
-        <span
-          className="grid place-items-center rounded-well font-display font-extrabold text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.16)]"
-          style={{
-            width: size,
-            height: size,
-            fontSize: size * 0.36,
-            background: `linear-gradient(140deg, ${tone.from}, ${tone.to})`,
-          }}
-        >
-          {initials}
-        </span>
+        {imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={imageUrl}
+            alt={`Logo ${name}`}
+            loading="lazy"
+            className="rounded-well object-cover shadow-[inset_0_1px_0_rgba(255,255,255,0.16)]"
+            style={{ width: size, height: size }}
+          />
+        ) : (
+          <span
+            className="grid place-items-center rounded-well font-display font-extrabold text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.16)]"
+            style={{
+              width: size,
+              height: size,
+              fontSize: size * 0.36,
+              background: `linear-gradient(140deg, ${tone.from}, ${tone.to})`,
+            }}
+          >
+            {initials}
+          </span>
+        )}
         {online !== undefined ? (
           <span
             className={cx(

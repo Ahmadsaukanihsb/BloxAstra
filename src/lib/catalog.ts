@@ -54,6 +54,7 @@ function mapSeller(row: SellerRow): Seller {
     city: row.city,
     kycVerified: row.kycVerified,
     bio: row.bio,
+    storeImage: row.storeImage,
   };
 }
 

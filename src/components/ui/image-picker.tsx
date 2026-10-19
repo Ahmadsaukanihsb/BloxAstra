@@ -23,6 +23,7 @@ export function ImagePicker({
   label,
   hint = "PNG/JPG/GIF/WebP, maksimal 1,5MB. Kosongkan untuk pakai gambar otomatis.",
   maxBytes = 1_500_000,
+  pickTitle = "Pilih foto produk",
 }: {
   value: string | null;
   onChange: (next: string | null) => void;
@@ -34,6 +35,8 @@ export function ImagePicker({
    * choosing rather than after a round trip to the server.
    */
   maxBytes?: number;
+  /** CTA text on the dashed pick button (e.g. "Pilih logo toko"). */
+  pickTitle?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -150,7 +153,7 @@ export function ImagePicker({
           )}
           <span className="flex flex-col gap-0.5">
             <span className="text-[12px] font-bold text-ink">
-              {reading ? "Membaca..." : value ? "Foto terpasang, klik untuk ganti" : "Pilih foto produk"}
+              {reading ? "Membaca..." : value ? "Foto terpasang, klik untuk ganti" : pickTitle}
             </span>
             <span className="text-[11px] text-ink-mute">{hint}</span>
           </span>

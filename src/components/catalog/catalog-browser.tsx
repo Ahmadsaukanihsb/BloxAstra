@@ -654,7 +654,12 @@ function ProductRow({ product, seller }: { product: Product; seller: Seller }) {
               {product.title}
             </a>
             <div className="flex items-center gap-3">
-              <SellerAvatar name={seller.storeName} size={24} online={seller.isOnline} />
+              <SellerAvatar
+                name={seller.storeName}
+                size={24}
+                online={seller.isOnline}
+                imageUrl={seller.storeImage}
+              />
               <span className="text-[11px] text-ink-dim">{seller.storeName}</span>
               <StarRating rating={seller.rating} size={10} />
             </div>

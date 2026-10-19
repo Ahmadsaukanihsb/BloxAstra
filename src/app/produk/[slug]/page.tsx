@@ -217,7 +217,12 @@ async function ProductDetails({ params }: { params: Promise<{ slug: string }> })
 
             <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
               <div className="flex items-center gap-2.5">
-                <SellerAvatar name={seller.storeName} size={38} online={seller.isOnline} />
+                <SellerAvatar
+                  name={seller.storeName}
+                  size={38}
+                  online={seller.isOnline}
+                  imageUrl={seller.storeImage}
+                />
                 <div className="flex flex-col gap-0.5">
                   <Link
                     href="/katalog"
@@ -371,7 +376,12 @@ async function ProductDetails({ params }: { params: Promise<{ slug: string }> })
           <div className="bezel-shell p-1.5">
             <div className="bezel-core flex flex-col gap-4 p-5">
               <div className="flex items-center gap-3">
-                <SellerAvatar name={seller.storeName} size={40} online={seller.isOnline} />
+                <SellerAvatar
+                  name={seller.storeName}
+                  size={40}
+                  online={seller.isOnline}
+                  imageUrl={seller.storeImage}
+                />
                 <div className="flex flex-col gap-0.5">
                   <span className="text-[13px] font-bold text-ink">{seller.storeName}</span>
                   <span className="text-[11px] text-ink-mute">

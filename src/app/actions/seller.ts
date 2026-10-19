@@ -938,3 +938,65 @@ export async function testSellerWebhook(): Promise<SellerActionResult> {
   }
   return { ok: true };
 }
+
+const storeProfileSchema = z.object({
+  storeName: z
+    .string()
+    .trim()
+    .min(3, "Nama toko minimal 3 karakter.")
+    .max(60, "Nama toko maksimal 60 karakter."),
+  city: z.string().trim().min(2, "Kota minimal 2 karakter.").max(60, "Kota maksimal 60 karakter."),
+  bio: z.string().trim().max(280, "Bio maksimal 280 karakter."),
+  /** null / "" clears the logo; a data URL (≤300KB) sets it. Omitted = leave as-is. */
+  storeImage: z.string().max(500_000).nullable().optional(),
+});
+
+/** Update the seller's public store profile: name, city, bio, and logo. */
+export async function updateSellerProfile(rawInput: unknown): Promise<SellerActionResult> {
+  const user = await requireRole("seller");
+
+  const parsed = storeProfileSchema.safeParse(rawInput);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      code: "STATE",
+      error: parsed.error.issues[0]?.message ?? "Data tidak valid.",
+    };
+  }
+
+  const profile = await ownSellerProfile(user.id);
+  if (!profile) {
+    return { ok: false, code: "FORBIDDEN", error: "Profil penjual tidak ditemukan." };
+  }
+
+  const { storeName, city, bio, storeImage } = parsed.data;
+  if (storeImage && !validImageDataUrl(storeImage, 300_000)) {
+    return {
+      ok: false,
+      code: "STATE",
+      error: "Logo toko harus gambar PNG/JPEG/GIF/WebP maksimal 300KB.",
+    };
+  }
+
+  await db.sellerProfile.update({
+    where: { id: profile.id },
+    data: {
+      storeName,
+      city,
+      bio,
+      ...(storeImage !== undefined ? { storeImage: storeImage || null } : {}),
+    },
+  });
+
+  const products = await db.product.findMany({
+    where: { sellerId: profile.id },
+    select: { slug: true },
+  });
+  revalidatePath("/dashboard/penjual");
+  revalidatePath("/dashboard/penjual/pengaturan");
+  revalidatePath("/katalog");
+  revalidatePath("/");
+  for (const product of products) revalidatePath(`/produk/${product.slug}`);
+  updateTag("catalog");
+  return { ok: true };
+}

@@ -631,7 +631,12 @@ export function CheckoutFlow({
 
             <div className="flex flex-col gap-2.5 border-t border-line pt-4">
               <div className="flex items-center gap-2.5">
-                <SellerAvatar name={seller.storeName} size={30} online={seller.isOnline} />
+                <SellerAvatar
+                  name={seller.storeName}
+                  size={30}
+                  online={seller.isOnline}
+                  imageUrl={seller.storeImage}
+                />
                 <div className="flex min-w-0 flex-1 flex-col">
                   <span className="truncate text-[12px] text-ink">{seller.storeName}</span>
                   <span className="text-[10px] text-ink-mute">
