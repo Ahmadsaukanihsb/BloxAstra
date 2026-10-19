@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { requestOrigin } from "@/lib/site";
 import { normalizeRobloxCookie, probePlusEligibility } from "@/lib/roblox-plus";
+import { checkThrottle } from "@/lib/throttle";
 
 /**
  * Roblox Plus eligibility check.
@@ -49,6 +50,13 @@ export async function POST(request: NextRequest) {
     if (originHost !== new URL(requestOrigin(request.headers)).host) {
       return fail("Permintaan lintas-origin ditolak.", 403);
     }
+  }
+
+  // Each call fans out to ~7 outbound Roblox requests, so it is throttled like
+  // the checkout paths — an admin account (or a stolen admin session) must not
+  // be able to hammer Roblox through this endpoint.
+  if (!checkThrottle(`plus-check:${user.id}`, 5000)) {
+    return fail("Terlalu cepat. Tunggu beberapa detik sebelum memeriksa lagi.", 429);
   }
 
   let payload: unknown;

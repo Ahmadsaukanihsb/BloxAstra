@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  ACTIVE_ORDER_STATES,
   DECIDABLE_DISPUTE_STATES,
   DISPUTE_OPEN_STATE,
   DISPUTE_SELLER_REPLIED_STATE,
@@ -35,6 +36,12 @@ describe("dispute states", () => {
   it("classifies an unknown state as not decidable", () => {
     expect(isDecidableDispute("")).toBe(false);
     expect(isDecidableDispute("open_pool")).toBe(false);
+  });
+
+  it("keeps the dead open_pool status out of the in-progress set", () => {
+    // The pool lives on `paid` + sellerId null; nothing writes `open_pool`.
+    expect(ACTIVE_ORDER_STATES as readonly string[]).not.toContain("open_pool");
+    expect(ACTIVE_ORDER_STATES).toContain("paid");
   });
 
   it("keeps the decidable and resolved sets disjoint", () => {

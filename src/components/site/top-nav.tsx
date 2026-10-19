@@ -337,17 +337,14 @@ export function TopNav({
                       { href: "/notifikasi", label: "Notifikasi" },
                       { href: "/dompet", label: "Saldo Akun" },
                       { href: "/profil", label: "Profil Saya" },
-                      ...(userRole === "seller"
-                        ? [
-                            { href: "/dashboard/penjual", label: "Dashboard Penjual" },
-                            { href: "/dashboard/penjual/order-robux", label: "Order Robux" },
-                            { href: "/dashboard/penjual/grup", label: "Grup Seller" },
-                          ]
-                        : []),
-                      ...(userRole === "admin"
-                        ? [{ href: "/admin", label: "Panel Admin" }]
-                        : []),
-                    ]
+              ...(userRole === "seller"
+                ? [
+                    { href: "/dashboard/penjual", label: "Dashboard Penjual" },
+                    { href: "/dashboard/penjual/order-robux", label: "Order Robux" },
+                    { href: "/dashboard/penjual/grup", label: "Grup Seller" },
+                  ]
+                : []),
+            ]
                   : []),
               ].map((item, index) => (
                 <motion.div

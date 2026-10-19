@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { formatIDR, formatNumber } from "@/lib/format";
 import type { Category, CategorySlug, Product, Seller } from "@/lib/types";
@@ -647,12 +648,12 @@ function ProductRow({ product, seller }: { product: Product; seller: Seller }) {
                 </Badge>
               ) : null}
             </div>
-            <a
-              href={`/produk/${product.slug}`}
-              className="truncate text-[15px] font-bold text-ink transition-colors duration-300 hover:text-astra-ink"
-            >
-              {product.title}
-            </a>
+                    <Link
+                      href={`/produk/${product.slug}`}
+                      className="truncate text-[15px] font-bold text-ink transition-colors duration-300 hover:text-astra-ink"
+                    >
+                      {product.title}
+                    </Link>
             <div className="flex items-center gap-3">
               <SellerAvatar
                 name={seller.storeName}
@@ -669,12 +670,12 @@ function ProductRow({ product, seller }: { product: Product; seller: Seller }) {
             <span className="text-[11px] text-ink-mute">
               stok <span className="num text-ink-dim">{formatNumber(product.stock)}</span>
             </span>
-            <a
-              href={`/produk/${product.slug}`}
-              className="mt-1 rounded-full bg-astra/[0.07] px-3 py-1.5 text-[11px] font-bold text-astra-ink outline outline-1 -outline-offset-1 outline-astra/20 transition-colors duration-300 hover:bg-astra/[0.12]"
-            >
-              Lihat detail
-            </a>
+                  <Link
+                    href={`/produk/${product.slug}`}
+                    className="mt-1 rounded-full bg-astra/[0.07] px-3 py-1.5 text-[11px] font-bold text-astra-ink outline outline-1 -outline-offset-1 outline-astra/20 transition-colors duration-300 hover:bg-astra/[0.12]"
+                  >
+                    Lihat detail
+                  </Link>
           </div>
         </div>
       </div>

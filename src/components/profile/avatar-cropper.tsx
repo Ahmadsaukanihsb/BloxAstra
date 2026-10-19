@@ -116,7 +116,13 @@ export function AvatarCropper({
     }
     const k = OUTPUT / VIEW;
     const scale = scaleOf(natural, zoom);
-    ctx.fillStyle = "#0d0d11";
+    // The canvas backdrop must match the app floor exactly; the token is the
+    // one source (`--color-canvas` in globals.css). Read it instead of pasting
+    // the literal, so a palette change cannot leave JPEG avatars on a stale
+    // colour.
+    const canvasColor =
+      getComputedStyle(document.documentElement).getPropertyValue("--color-canvas").trim() || "#0d0d11";
+    ctx.fillStyle = canvasColor;
     ctx.fillRect(0, 0, OUTPUT, OUTPUT);
     ctx.drawImage(img, offset.x * k, offset.y * k, natural.w * scale * k, natural.h * scale * k);
     onConfirm(canvas.toDataURL("image/jpeg", 0.85));

@@ -1,9 +1,9 @@
-/**
+﻿/**
  * Seed the database with the demo catalogue, sellers, orders, wallet ledger
  * and admin audit rows that used to live in src/lib/mock.ts.
  *
  * Run with:  npm run db:seed
- * Safe to re-run — it wipes and rewrites every seeded table.
+ * Safe to re-run â€” it wipes and rewrites every seeded table.
  */
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
@@ -14,7 +14,7 @@ const prisma = new PrismaClient();
 
 const gamepassValue = (netRobux: number) => formatNumber(gamepassPriceForNet(netRobux));
 
-/** Slug → { featured, sortOrder } for the home-page shelves. */
+/** Slug â†’ { featured, sortOrder } for the home-page shelves. */
 const productCuration: Record<string, { featured?: boolean; sortOrder?: number; shelf?: string }> = {
   // Featured home shelf.
   "robux-1000-bersih-cover-tax-gamepass": { featured: true, sortOrder: 1, shelf: "pack" },
@@ -41,9 +41,20 @@ const productCuration: Record<string, { featured?: boolean; sortOrder?: number; 
 };
 
 async function main() {
-  console.log("Seeding BloxAstra …");
+  // Guard rail: this script deletes every table it touches. Pointed at the
+  // production DATABASE_URL it would wipe users, orders, ledger and audit rows,
+  // so it refuses a non-local database unless explicitly forced.
+  const databaseUrl = process.env.DATABASE_URL ?? "";
+  const isLocal = /(^|\/\/)(file:|localhost|127\.0\.0\.1)/.test(databaseUrl);
+  if (!isLocal && process.env.SEED_ALLOW_REMOTE !== "yes") {
+    throw new Error(
+      "Refusing to run the demo seed against a non-local DATABASE_URL. " +
+        "Set SEED_ALLOW_REMOTE=yes only for a scratch database.",
+    );
+  }
+  console.log("Seeding BloxAstra â€¦");
 
-  // ── wipe (reverse dependency order) ─────────────────────────────
+  // â”€â”€ wipe (reverse dependency order) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   await prisma.adminAuditLog.deleteMany();
   await prisma.withdrawal.deleteMany();
   await prisma.walletLedger.deleteMany();
@@ -60,7 +71,7 @@ async function main() {
   await prisma.user.deleteMany();
   await prisma.category.deleteMany();
 
-  // ── categories ──────────────────────────────────────────────────
+  // â”€â”€ categories â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const categories = [
     {
       slug: "gamepass",
@@ -116,7 +127,7 @@ async function main() {
   await prisma.category.createMany({ data: categories });
   console.log(`  categories: ${categories.length}`);
 
-  // ── users ───────────────────────────────────────────────────────
+  // â”€â”€ users â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const password = await bcrypt.hash("demo1234", 10);
   const adminHash = await bcrypt.hash("astra1234", 10);
 
@@ -291,7 +302,7 @@ async function main() {
   }
   console.log(`  users: 8 (1 admin, 1 buyer, 6 sellers)`);
 
-  // ── products ────────────────────────────────────────────────────
+  // â”€â”€ products â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const productDefs = [
     {
       id: "prd-01",
@@ -310,8 +321,8 @@ async function main() {
       description: `Kami membeli gamepass milikmu sehingga Robux masuk langsung ke akunmu. Harga gamepass diatur sistem menjadi ${gamepassValue(1000)} Robux agar hasil bersih setelah potongan marketplace Roblox tepat ${formatNumber(1000)} Robux.`,
       highlights: [
         "Instruksi gamepass otomatis dibuat setelah checkout",
-        `Cover pajak 30% — kamu tetap menerima ${formatNumber(1000)} Robux bersih`,
-        "Hasil penjualan berstatus Pending Robux 3–7 hari di sisi Roblox",
+        `Cover pajak 30% â€” kamu tetap menerima ${formatNumber(1000)} Robux bersih`,
+        "Hasil penjualan berstatus Pending Robux 3â€“7 hari di sisi Roblox",
       ],
       autoReleaseHours: 72,
       instantDelivery: false,
@@ -408,7 +419,7 @@ async function main() {
     {
       id: "prd-06",
       slug: "blox-fruits-permanent-dough",
-      title: "Blox Fruits — Permanent Dough",
+      title: "Blox Fruits â€” Permanent Dough",
       categorySlug: "item",
       game: "Blox Fruits",
       price: 219000,
@@ -429,7 +440,7 @@ async function main() {
     {
       id: "prd-07",
       slug: "blox-fruits-permanent-kitsune",
-      title: "Blox Fruits — Permanent Kitsune",
+      title: "Blox Fruits â€” Permanent Kitsune",
       categorySlug: "item",
       game: "Blox Fruits",
       price: 385000,
@@ -450,7 +461,7 @@ async function main() {
     {
       id: "prd-08",
       slug: "pet-simulator-99-huge-hellish",
-      title: "Pet Simulator 99 — Huge Hellish Pet",
+      title: "Pet Simulator 99 â€” Huge Hellish Pet",
       categorySlug: "item",
       game: "Pet Simulator 99",
       price: 645000,
@@ -471,7 +482,7 @@ async function main() {
     {
       id: "prd-09",
       slug: "anime-vanguards-secret-unit",
-      title: "Anime Vanguards — Secret Unit Braindog",
+      title: "Anime Vanguards â€” Secret Unit Braindog",
       categorySlug: "item",
       game: "Anime Vanguards",
       price: 158000,
@@ -492,7 +503,7 @@ async function main() {
     {
       id: "prd-10",
       slug: "steal-a-brainrot-sahur-tier",
-      title: "Steal a Brainrot — Sahur Tier God",
+      title: "Steal a Brainrot â€” Sahur Tier God",
       categorySlug: "gift",
       game: "Steal a Brainrot",
       price: 96000,
@@ -513,7 +524,7 @@ async function main() {
     {
       id: "prd-11",
       slug: "grow-a-garden-moonlit-seed-pack",
-      title: "Grow a Garden — Moonlit Seed Pack",
+      title: "Grow a Garden â€” Moonlit Seed Pack",
       categorySlug: "gift",
       game: "Grow a Garden",
       price: 74000,
@@ -759,7 +770,7 @@ async function main() {
   }
   console.log(`  products: ${productDefs.length}`);
 
-  // ── rate card (active default) ──────────────────────────────────
+  // â”€â”€ rate card (active default) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   await prisma.rateCard.create({
     data: {
       active: true,
@@ -779,7 +790,7 @@ async function main() {
   });
   console.log("  rateCard: 1 (active default)");
 
-  // ── settings ────────────────────────────────────────────────────
+  // â”€â”€ settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const settings: [string, unknown][] = [
     ["payment.fees", { qris: 0, va: 4000, ewallet: 2500 }],
     ["withdrawal", { minAmount: 20000, fee: 2500 }],
@@ -795,13 +806,13 @@ async function main() {
   }
   console.log(`  settings: ${settings.length}`);
 
-  // ── promo ───────────────────────────────────────────────────────
+  // â”€â”€ promo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   await prisma.promoCode.create({
     data: { code: "HEMAT5RB", type: "fixed", value: 5000, active: true, note: "Promo awal" },
   });
   console.log("  promoCodes: 1");
 
-  // ── orders ──────────────────────────────────────────────────────
+  // â”€â”€ orders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const orderDefs = [
     {
       id: "ord-01",
@@ -835,7 +846,7 @@ async function main() {
       createdAt: new Date("2026-10-09T12:44:00+07:00"),
       events: [
         { state: "paid", label: "Pembayaran terverifikasi", note: "Rp96.120 ditahan di rekening penampungan Blox Astra", actor: "system", at: new Date("2026-10-09T12:45:12+07:00") },
-        { state: "processing", label: "Penjual membuka kredensial", note: "Akses dicatat di audit log · pesanan #BX-9F0C18", actor: "seller", at: new Date("2026-10-09T12:47:55+07:00") },
+        { state: "processing", label: "Penjual membuka kredensial", note: "Akses dicatat di audit log Â· pesanan #BX-9F0C18", actor: "seller", at: new Date("2026-10-09T12:47:55+07:00") },
       ],
     },
     {
@@ -852,8 +863,8 @@ async function main() {
       expressBadge: true,
       createdAt: new Date("2026-10-09T09:02:00+07:00"),
       events: [
-        { state: "open_pool", label: "Dibayar & dilempar ke pool", note: "Diklaim Kirana Blox dalam 6 detik", actor: "system", at: new Date("2026-10-09T09:03:10+07:00") },
-        { state: "shipped", label: "Kode voucher terkirim otomatis", note: "Kode RA9F-2K71-••••-•••• tersimpan pada ruang pesanan", actor: "system", at: new Date("2026-10-09T09:04:22+07:00") },
+        { state: "paid", label: "Dibayar & dilempar ke pool", note: "Diklaim Kirana Blox dalam 6 detik", actor: "system", at: new Date("2026-10-09T09:03:10+07:00") },
+        { state: "shipped", label: "Kode voucher terkirim otomatis", note: "Kode RA9F-2K71-â€¢â€¢â€¢â€¢-â€¢â€¢â€¢â€¢ tersimpan pada ruang pesanan", actor: "system", at: new Date("2026-10-09T09:04:22+07:00") },
       ],
     },
     {
@@ -906,7 +917,7 @@ async function main() {
       expressBadge: true,
       createdAt: new Date("2026-10-06T20:11:00+07:00"),
       events: [
-        { state: "open_pool", label: "Dibayar & dilempar ke pool", note: "Diklaim Pilar Vault dalam 9 detik", actor: "system", at: new Date("2026-10-06T20:11:44+07:00") },
+        { state: "paid", label: "Dibayar & dilempar ke pool", note: "Diklaim Pilar Vault dalam 9 detik", actor: "system", at: new Date("2026-10-06T20:11:44+07:00") },
         { state: "paid", label: "Pembayaran terverifikasi", note: "Rp78.440 ditahan di rekening penampungan Blox Astra", actor: "system", at: new Date("2026-10-06T20:11:40+07:00") },
         { state: "processing", label: "Penjual memulai proses", note: "Menunggu konfirmasi pengiriman in-game", actor: "seller", at: new Date("2026-10-06T20:14:03+07:00") },
         { state: "shipped", label: "Pesanan ditandai terkirim", note: "Penjual menandai pack sudah dikirim ke inventaris", actor: "seller", at: new Date("2026-10-06T20:29:51+07:00") },
@@ -975,7 +986,7 @@ async function main() {
   }
   console.log(`  orders: ${orderDefs.length} (+events, +2 disputes)`);
 
-  // ── seed chat for ord-01 ────────────────────────────────────────
+  // â”€â”€ seed chat for ord-01 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const ord01 = orderIdMap["ord-01"];
   await prisma.message.createMany({
     data: [
@@ -986,16 +997,16 @@ async function main() {
   });
   console.log("  messages: 3 (ord-01)");
 
-  // ── wallet ledger (for slr-01) ──────────────────────────────────
+  // â”€â”€ wallet ledger (for slr-01) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const slr01 = sellerIdMap["slr-01"];
   const ledger = [
-    { type: "earning", amount: 271400, balanceAfter: 3428790, orderCode: "BX-9E77C1", note: "Pencairan dana order selesai — komisi platform 4,5%", createdAt: new Date("2026-10-09T11:02:00+07:00") },
+    { type: "earning", amount: 271400, balanceAfter: 3428790, orderCode: "BX-9E77C1", note: "Pencairan dana order selesai â€” komisi platform 4,5%", createdAt: new Date("2026-10-09T11:02:00+07:00") },
     { type: "protection_bailout", amount: -5000, balanceAfter: 3157390, orderCode: "BX-9E4A08", note: "Voucher kompensasi keterlambatan SLA Kilat 10 Menit", createdAt: new Date("2026-10-09T09:18:00+07:00") },
-    { type: "withdrawal", amount: -1200000, balanceAfter: 3162390, note: "Penarikan ke BCA ····4471 disetujui", createdAt: new Date("2026-10-08T20:40:00+07:00") },
+    { type: "withdrawal", amount: -1200000, balanceAfter: 3162390, note: "Penarikan ke BCA Â·Â·Â·Â·4471 disetujui", createdAt: new Date("2026-10-08T20:40:00+07:00") },
     { type: "earning", amount: 187000, balanceAfter: 4362390, orderCode: "BX-9D9F33", note: "Pencairan dana order selesai", createdAt: new Date("2026-10-08T17:11:00+07:00") },
-    { type: "penalty_debt", amount: -720000, balanceAfter: 4175390, orderCode: "BX-9C12BB", note: "Debit paksa kasus carding — dalam masa penyelesaian 1×24 jam", createdAt: new Date("2026-10-07T22:55:00+07:00") },
+    { type: "penalty_debt", amount: -720000, balanceAfter: 4175390, orderCode: "BX-9C12BB", note: "Debit paksa kasus carding â€” dalam masa penyelesaian 1Ã—24 jam", createdAt: new Date("2026-10-07T22:55:00+07:00") },
     { type: "earning", amount: 412800, balanceAfter: 4895390, orderCode: "BX-9B88A0", note: "Pencairan dana order selesai", createdAt: new Date("2026-10-07T14:31:00+07:00") },
-    { type: "refund", amount: -96000, balanceAfter: 4482590, orderCode: "BX-9A5561", note: "Refund sengketa diterima pembeli — barang tidak sesuai", createdAt: new Date("2026-10-06T19:24:00+07:00") },
+    { type: "refund", amount: -96000, balanceAfter: 4482590, orderCode: "BX-9A5561", note: "Refund sengketa diterima pembeli â€” barang tidak sesuai", createdAt: new Date("2026-10-06T19:24:00+07:00") },
     { type: "earning", amount: 156400, balanceAfter: 4578590, orderCode: "BX-99E712", note: "Pencairan dana order selesai", createdAt: new Date("2026-10-06T11:07:00+07:00") },
   ];
   for (const l of ledger) {
@@ -1005,12 +1016,12 @@ async function main() {
   }
   console.log(`  walletLedger: ${ledger.length}`);
 
-  // ── admin audit logs ────────────────────────────────────────────
+  // â”€â”€ admin audit logs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const auditLogs = [
     { actionType: "credential.decrypt", targetResource: "credentials", targetId: "ord-02", diffPayload: `{ token: "sess_9d1f", released_to: "seller:slr-06", ttl_seconds: 120 }`, ipAddress: "103.94.12.8", actor: "seller:slr-06", createdAt: new Date("2026-10-09T14:02:41+07:00") },
-    { actionType: "kyc.approve", targetResource: "users", targetId: "slr-04", diffPayload: `{ kyc_status: "pending → verified", tier: "2 → 3", reviewer: "admin@bloxastra" }`, ipAddress: "103.94.12.8", actor: "admin@bloxastra", createdAt: new Date("2026-10-09T11:20:03+07:00") },
-    { actionType: "dispute.open", targetResource: "orders", targetId: "ord-04", diffPayload: `{ state: "shipped → disputed", escrow: "frozen", buyer: "nadhira_udh" }`, ipAddress: "103.94.12.8", actor: "system", createdAt: new Date("2026-10-08T09:18:06+07:00") },
-    { actionType: "dispute.open", targetResource: "orders", targetId: "ord-05", diffPayload: `{ state: "shipped → disputed", escrow: "frozen", buyer: "rafly_afx" }`, ipAddress: "103.94.12.8", actor: "system", createdAt: new Date("2026-10-07T08:02:20+07:00") },
+    { actionType: "kyc.approve", targetResource: "users", targetId: "slr-04", diffPayload: `{ kyc_status: "pending â†’ verified", tier: "2 â†’ 3", reviewer: "admin@bloxastra" }`, ipAddress: "103.94.12.8", actor: "admin@bloxastra", createdAt: new Date("2026-10-09T11:20:03+07:00") },
+    { actionType: "dispute.open", targetResource: "orders", targetId: "ord-04", diffPayload: `{ state: "shipped â†’ disputed", escrow: "frozen", buyer: "nadhira_udh" }`, ipAddress: "103.94.12.8", actor: "system", createdAt: new Date("2026-10-08T09:18:06+07:00") },
+    { actionType: "dispute.open", targetResource: "orders", targetId: "ord-05", diffPayload: `{ state: "shipped â†’ disputed", escrow: "frozen", buyer: "rafly_afx" }`, ipAddress: "103.94.12.8", actor: "system", createdAt: new Date("2026-10-07T08:02:20+07:00") },
     { actionType: "escrow.release", targetResource: "wallets", targetId: "ord-03", diffPayload: `{ amount: 178000, payout: "manual", reference: "manual_payout_20261006" }`, ipAddress: "103.94.12.8", actor: "admin@bloxastra", createdAt: new Date("2026-10-06T19:44:55+07:00") },
   ];
   for (const a of auditLogs) {
@@ -1022,7 +1033,7 @@ async function main() {
   console.log("");
   console.log("Demo accounts (password in parentheses):");
   console.log("  buyer   pembeli@bloxastra  (demo1234)");
-  console.log("  seller  slr01@bloxastra    (demo1234)  … slr06@bloxastra");
+  console.log("  seller  slr01@bloxastra    (demo1234)  â€¦ slr06@bloxastra");
   console.log("  admin   admin@bloxastra    (astra1234)");
 }
 

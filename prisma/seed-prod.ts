@@ -130,24 +130,34 @@ async function main() {
     console.log("  rateCard: active card already present, skipped");
   }
 
-  const adminEmail = "admin@bloxastra";
-  const existingAdmin = await prisma.user.findUnique({
-    where: { email: adminEmail },
-    select: { id: true },
-  });
-  if (!existingAdmin) {
-    await prisma.user.create({
-      data: {
-        email: adminEmail,
-        username: "admin",
-        passwordHash: await bcrypt.hash("astra1234", 10),
-        role: "admin",
-      },
-    });
-    console.log("  admin: created (admin@bloxastra / astra1234 — GANTI PASSWORD SEGERA)");
-  } else {
-    console.log("  admin: already present, skipped");
+const adminEmail = "admin@bloxastra";
+const existingAdmin = await prisma.user.findUnique({
+  where: { email: adminEmail },
+  select: { id: true },
+});
+if (!existingAdmin) {
+  // No literal fallback: a committed password is a public password. Pass the
+  // first admin password in via SEED_ADMIN_PASSWORD, or create the account
+  // through the normal registration + admin-promotion flow.
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD;
+  if (!adminPassword || adminPassword.length < 12) {
+    throw new Error(
+      "SEED_ADMIN_PASSWORD is required (min 12 chars) to create the first admin; " +
+        "no built-in default is shipped.",
+    );
   }
+  await prisma.user.create({
+    data: {
+      email: adminEmail,
+      username: "admin",
+      passwordHash: await bcrypt.hash(adminPassword, 10),
+      role: "admin",
+    },
+  });
+  console.log("  admin: created from SEED_ADMIN_PASSWORD (store it in a password manager)");
+} else {
+  console.log("  admin: already present, skipped");
+}
 
   console.log("Done.");
 }

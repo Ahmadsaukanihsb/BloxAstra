@@ -15,6 +15,13 @@ const REQUIRED_KEYS = [
   // OTP is returned to the caller. This is the token for our own Baileys bot
   // (WA_BOT_URL); see actions/whatsapp.ts and wa-bot/bot.mjs.
   "WA_BOT_TOKEN",
+  // The sweep worker (escrow auto-release, payment expiry, pool/idle refunds)
+  // is triggered with this secret from a Windows Scheduled Task. Without it in
+  // production the route answers 403 and nothing ever sweeps.
+  "CRON_SECRET",
+  // Bot protection on the auth forms; absent, the site quietly loses it.
+  "TURNSTILE_SECRET_KEY",
+  "NEXT_PUBLIC_TURNSTILE_SITE_KEY",
 ] as const;
 
 const DEV_FALLBACKS: Record<string, string> = {

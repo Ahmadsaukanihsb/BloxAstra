@@ -4,6 +4,7 @@ import { isUserOnline } from "@/lib/presence";
 import { decryptCredentials, maskSecret } from "@/lib/credentials";
 import { poolKindLabel } from "@/lib/discord";
 import { ACTIVE_ORDER_STATES, ESCROW_ORDER_STATES } from "@/lib/order-meta";
+import { getSweepTimeouts } from "@/lib/sweep";
 import type { CategorySlug, OrderState } from "@/lib/types";
 
 /** Role of the viewer inside an order room. */
@@ -271,17 +272,19 @@ const HANDOVER_STEPS = [
 
 /**
  * Unread chat messages for the viewer on one order: anything the other side
- * (or the system) sent after the viewer's read cursor. `viewerId` null (pool
- * browsing, admin lists) always reads as zero — no cursor, no badge.
+ * sent after the viewer's read cursor. A `system` message is written by the
+ * order itself (a status move), not by the counterparty, so it never raises a
+ * badge — otherwise acting on your own order would ping you. `viewerId` null
+ * (pool browsing, admin lists) always reads as zero — no cursor, no badge.
  */
 function unreadFor(row: ListProjection, viewerId: string | null): number {
   if (!viewerId) return 0;
   const isBuyer = row.buyerId === viewerId;
-  const ownRole = isBuyer ? "buyer" : "seller";
+  const counterpartRole = isBuyer ? "seller" : "buyer";
   const cursor = isBuyer ? row.buyerReadAt : row.sellerReadAt;
   const cutoff = cursor ? cursor.getTime() : 0;
   return row.messages.filter(
-    (message) => message.fromRole !== ownRole && message.at.getTime() > cutoff,
+    (message) => message.fromRole === counterpartRole && message.at.getTime() > cutoff,
   ).length;
 }
 
@@ -408,8 +411,11 @@ export async function getOrderRoom(
   if (!isBuyer && !isSeller && viewer.role !== "admin") return null;
 
   const now = Date.now();
-  const base = toListItem(row, now, unreadFor(row, viewer.id));
   const viewerRole: OrderViewerRole = viewer.role === "admin" && !isBuyer && !isSeller ? "admin" : isBuyer ? "buyer" : "seller";
+  // Admins moderate, they do not correspond: like `getOrderUnreadTotal`, their
+  // badge stays at zero instead of counting every message they never "read"
+  // (markOrderSeen deliberately never moves an admin's cursor).
+  const base = toListItem(row, now, viewerRole === "admin" ? 0 : unreadFor(row, viewer.id));
 
   // Buyer avatars are data URLs (up to 500KB), so they stay out of the shared
   // list include and are fetched here only. The seller/admin side renders the
@@ -541,7 +547,7 @@ export async function getOrderUnreadTotal(userId: string, role: string): Promise
       SELECT COUNT(*) AS count
       FROM "Message" m JOIN "Order" o ON o.id = m."orderId"
       WHERE o."buyerId" = ${userId}
-        AND m."fromRole" <> 'buyer'
+        AND m."fromRole" = 'seller'
         AND (o."buyerReadAt" IS NULL OR m."at" > o."buyerReadAt")
     `,
     profile
@@ -549,7 +555,7 @@ export async function getOrderUnreadTotal(userId: string, role: string): Promise
           SELECT COUNT(*) AS count
           FROM "Message" m JOIN "Order" o ON o.id = m."orderId"
           WHERE o."sellerId" = ${profile.id}
-            AND m."fromRole" <> 'seller'
+            AND m."fromRole" = 'buyer'
             AND (o."sellerReadAt" IS NULL OR m."at" > o."sellerReadAt")
         `
       : Promise.resolve([]),
@@ -700,13 +706,23 @@ export interface RobuxPoolItem {
   total: number;
   expressBadge: boolean;
   createdAt: string;
-  /** seconds left before the 30-minute claim window closes */
+  /** Seconds left before the pool refund window closes; 0 = still claimable. */
   claimSecondsLeft: number;
+  /**
+   * False once the window is past. The card then says "lewat jendela" instead
+   * of "berakhir": the sweep refunds on its own, and until it runs the order is
+   * still claimable — calling that "berakhir" read as "you can stop refreshing".
+   */
+  claimable: boolean;
 }
 
 /** Paid Robux/premium pool orders that sellers fight over (rebutan). */
 export async function getRobuxPool(): Promise<RobuxPoolItem[]> {
   const now = Date.now();
+  // One source for the window: the same setting the sweep refunds on. This used
+  // to be a hardcoded 30 minutes while the sweep used `poolHours` (24h default),
+  // so the UI clock expired the order ~23 hours before the server did.
+  const { poolHours } = await getSweepTimeouts();
   const rows = await db.order.findMany({
     where: {
       sellerId: null,
@@ -730,7 +746,8 @@ export async function getRobuxPool(): Promise<RobuxPoolItem[]> {
   });
   return rows.map((row) => {
     const paidAt = row.events[0]?.at ?? row.createdAt;
-    const claimSecondsLeft = Math.max(0, Math.floor((paidAt.getTime() + 30 * 60_000 - now) / 1000));
+    const windowMs = poolHours * 3_600_000;
+    const remainingMs = paidAt.getTime() + windowMs - now;
     return {
       id: row.id,
       code: row.code,
@@ -741,7 +758,8 @@ export async function getRobuxPool(): Promise<RobuxPoolItem[]> {
       total: row.total,
       expressBadge: row.expressBadge,
       createdAt: row.createdAt.toISOString(),
-      claimSecondsLeft,
+      claimSecondsLeft: Math.max(0, Math.floor(remainingMs / 1000)),
+      claimable: remainingMs > 0,
     };
   });
 }

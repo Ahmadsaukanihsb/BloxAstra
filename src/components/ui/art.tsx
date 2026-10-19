@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { CategorySlug, Product } from "@/lib/types";
-import { seedFraction } from "@/lib/format";
+import { formatNumber, seedFraction } from "@/lib/format";
 import { cx } from "@/lib/cx";
 import {
   IconCrown,
@@ -36,6 +36,13 @@ const CATEGORY_GLYPH: Record<CategorySlug, (props: { size?: number; className?: 
 /**
  * Generated listing artwork. Deterministic from the slug so a product always
  * renders the same tile — no remote images, no broken placeholders.
+ *
+ * `category` is nullable on purpose: `OrderListItem.category` comes from a
+ * `onDelete: SetNull` relation, so a deleted listing leaves its past orders
+ * without a category. Callers used to paper over that with
+ * `?? ("roblox" as CategorySlug)` — a value outside the union, which made the
+ * lookup undefined and crashed the page with "Element type is invalid". An
+ * unknown category now falls back to the neutral package glyph.
  */
 export function ProductArt({
   seed,
@@ -45,7 +52,7 @@ export function ProductArt({
   label,
 }: {
   seed: string;
-  category: CategorySlug;
+  category: string | null | undefined;
   className?: string;
   glyphClassName?: string;
   label?: string;
@@ -54,7 +61,7 @@ export function ProductArt({
   const glowX = 22 + seedFraction(seed, 7) * 56;
   const glowY = 18 + seedFraction(seed, 13) * 44;
   const rotation = -14 + seedFraction(seed, 23) * 28;
-  const Glyph = CATEGORY_GLYPH[category];
+  const Glyph = CATEGORY_GLYPH[category as CategorySlug] ?? IconPackage;
 
   return (
     <div
@@ -223,7 +230,7 @@ export function StarRating({
       </span>
       <span className="num text-xs font-bold text-ink">{rating.toFixed(2).replace(".", ",")}</span>
       {count !== undefined ? (
-        <span className="text-[11px] text-ink-mute">({count.toLocaleString("id-ID")})</span>
+        <span className="text-[11px] text-ink-mute">({formatNumber(count)})</span>
       ) : null}
     </span>
   );

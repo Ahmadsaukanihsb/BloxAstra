@@ -66,3 +66,8 @@ tmp-*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local scratch DBs from migration drills
+prisma/.shadow-*.db
+prisma/*.db-journal
+

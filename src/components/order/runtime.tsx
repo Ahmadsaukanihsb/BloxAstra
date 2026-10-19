@@ -78,7 +78,6 @@ export function Countdown({
 
 const PILL_TONE: Record<OrderState, "astra" | "neutral" | "warn" | "danger" | "robux"> = {
   pending_payment: "warn",
-  open_pool: "neutral",
   paid: "astra",
   processing: "astra",
   shipped: "robux",

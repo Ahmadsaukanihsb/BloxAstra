@@ -1,8 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
 import { fetchOrderUnreadTotal } from "@/app/actions/room";
-import { useLiveRevision, useLiveStream } from "@/lib/live";
+import { useLiveCount } from "@/lib/live-count";
 
 /**
  * Unread order-chat messages across every order, kept live.
@@ -13,30 +12,11 @@ import { useLiveRevision, useLiveStream } from "@/lib/live";
  * blocked stream.
  */
 export function useOrderUnread(initial: number, enabled = true): number {
-  const [unread, setUnread] = useState(initial);
-
-  const sample = useCallback(async () => {
-    try {
-      setUnread(await fetchOrderUnreadTotal());
-    } catch {
-      // Signed out or a blip: the last known number is better than a flicker.
-    }
-  }, []);
-
-  useLiveStream(
-    ["inbox"],
-    () => {
-      void sample();
-    },
-    enabled,
-  );
-
-  useLiveRevision({
+  return useLiveCount({
+    initial,
     read: fetchOrderUnreadTotal,
+    topic: "inbox",
     intervalMs: 60_000,
     enabled,
-    onChange: (value) => setUnread(value),
   });
-
-  return unread;
 }

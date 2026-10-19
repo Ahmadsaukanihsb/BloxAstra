@@ -39,14 +39,12 @@ export function ProductCard({
   seller,
   className,
   style,
-  layout = "grid",
   wishlisted = false,
 }: {
   product: Product;
   seller: Seller;
   className?: string;
   style?: CSSProperties;
-  layout?: "grid" | "row";
   wishlisted?: boolean;
 }) {
   const rateCard = useRateCard();
@@ -54,41 +52,6 @@ export function ProductCard({
   const discount = product.compareAtPrice
     ? Math.round((1 - price / product.compareAtPrice) * 100)
     : null;
-
-  if (layout === "row") {
-    return (
-      <Link
-        href={`/produk/${product.slug}`}
-        style={style}
-        className={cx(
-          "group flex items-center gap-4 rounded-card bg-paper p-2.5 outline outline-1 -outline-offset-1 outline-line transition-[outline-color,transform] duration-300 ease-[var(--ease-astra)] hover:outline-astra/50 active:translate-y-px",
-          className,
-        )}
-      >
-        <ProductImage
-          product={product}
-          className="size-16 shrink-0 rounded-well outline outline-1 -outline-offset-1 outline-line-strong"
-        />
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <p className="truncate font-display text-[13px] font-extrabold text-ink">
-            {product.title}
-          </p>
-          <div className="flex items-center gap-2 text-[11px] text-ink-mute">
-            <span className="truncate">{seller.storeName}</span>
-            <span className="size-1 rounded-full bg-ink-mute/60" />
-            <span>{product.game}</span>
-          </div>
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-1">
-          <span className="price text-[14px] text-gold">{formatIDR(price)}</span>
-          <span className="text-[11px] text-ink-mute">
-            {formatNumber(product.sold)} terjual
-          </span>
-        </div>
-        <WishlistButton productId={product.id} initialSaved={wishlisted} size={15} />
-      </Link>
-    );
-  }
 
   return (
     // One raised panel, not a tray holding a core: the nested double-bezel made

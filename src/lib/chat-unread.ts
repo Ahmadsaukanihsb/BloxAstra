@@ -1,8 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
 import { fetchSellerChatUnread } from "@/app/actions/seller";
-import { useLiveRevision, useLiveStream } from "@/lib/live";
+import { useLiveCount } from "@/lib/live-count";
 
 /**
  * Unread seller-group messages, kept live.
@@ -17,30 +16,11 @@ import { useLiveRevision, useLiveStream } from "@/lib/live";
  * so the two badges never read as the same thing.
  */
 export function useGroupChatUnread(initial: number, enabled = true): number {
-  const [unread, setUnread] = useState(initial);
-
-  const sample = useCallback(async () => {
-    try {
-      setUnread(await fetchSellerChatUnread());
-    } catch {
-      // Signed out or a blip: the last known number is better than a flicker.
-    }
-  }, []);
-
-  useLiveStream(
-    ["chat"],
-    () => {
-      void sample();
-    },
-    enabled,
-  );
-
-  useLiveRevision({
+  return useLiveCount({
+    initial,
     read: fetchSellerChatUnread,
+    topic: "chat",
     intervalMs: 60_000,
     enabled,
-    onChange: (value) => setUnread(value),
   });
-
-  return unread;
 }

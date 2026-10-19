@@ -45,12 +45,17 @@ export const sessionOptions: SessionOptions = {
 
 /**
  * Shared HMAC secret for sealing non-session cookies (OAuth state).
- * Same dev fallback as the session password so local OAuth works out of
- * the box; production refuses to boot without a real secret (see above).
+ *
+ * Mirrors `sessionPassword()`, including its production refusal: a missing
+ * secret in production must never silently fall back to the public dev
+ * constant, or every OAuth state cookie becomes forgeable.
  */
 export function sealSecret(): string {
   const secret = process.env.SESSION_SECRET;
   if (secret) return secret;
+  if (isProd) {
+    throw new Error("SESSION_SECRET is not set — refusing to seal with the dev fallback in production.");
+  }
   return "dev-only-change-me-to-a-long-random-string-32-bytes-min";
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
@@ -108,14 +108,6 @@ export function CheckoutFlow({
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
   const [expired, setExpired] = useState(false);
-  const verifyTimer = useRef<number | null>(null);
-
-  useEffect(
-    () => () => {
-      if (verifyTimer.current) window.clearTimeout(verifyTimer.current);
-    },
-    [],
-  );
 
   const isGamepass = product.category === "gamepass";
   const netRobux = product.netRobux ?? 0;
@@ -139,9 +131,8 @@ export function CheckoutFlow({
       );
       return;
     }
-    setChecking(true);
-    if (verifyTimer.current) window.clearTimeout(verifyTimer.current);
-    void (async () => {
+  setChecking(true);
+  void (async () => {
       const result = await verifyRobloxUsername(username.trim());
       if (result.ok && result.found) {
         setVerified({ name: result.canonicalName ?? username });

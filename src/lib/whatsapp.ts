@@ -32,7 +32,9 @@ export async function sendWhatsappOtp(
   code: string,
 ): Promise<{ sent: boolean; sim: boolean; error?: string }> {
   if (isWhatsappSimMode()) {
-    console.info(`[whatsapp-sim] OTP ${code} → ${phone}`);
+    // Never log the code itself: PM2 keeps stdout on disk, and in sim mode
+    // that would put a live OTP next to the phone number in a file.
+    console.info(`[whatsapp-sim] OTP issued for ${phone.replace(/\d(?=\d{3})/g, "*")} (code hidden)`);
     return { sent: true, sim: true };
   }
 

@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { getProducts } from "@/lib/catalog";
 import { cx } from "@/lib/cx";
 import { formatIDR } from "@/lib/format";
@@ -20,7 +20,7 @@ export async function PremiumPlans() {
     .sort((a, b) => a.price - b.price)[0];
 
   // Terms can only be priced off a live monthly listing, but Premium itself can
-  // still be bought straight from the platform — so the empty state sells that
+  // still be bought straight from the platform â€” so the empty state sells that
   // instead of disappearing.
   if (!monthly) {
     return (
@@ -30,7 +30,7 @@ export async function PremiumPlans() {
             Roblox <span className="text-astra-ink">Premium</span>
           </>
         }
-        description="Term 1, 3, dan 12 bulan dihitung dari harga penjual — belum ada listing Premium yang aktif hari ini."
+        description="Term 1, 3, dan 12 bulan dihitung dari harga penjual â€” belum ada listing Premium yang aktif hari ini."
         action={{ href: "/beli/premium", label: "Beli Premium langsung", variant: "primary" }}
         label="Rak Premium masih kosong"
         body="Jalur Premium milik platform tidak butuh stok penjual: pilih durasinya, bayar, dan langganan diproses seperti biasa."
@@ -78,7 +78,7 @@ export async function PremiumPlans() {
           </div>
         </Reveal>
 
-        <RevealGroup className="grid grid-cols-1 gap-3.5 sm:grid-cols-3" stagger={0.06}>
+        <RevealGroup className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
           {PLANS.map((plan) => (
             <RevealItem key={plan.term} className="h-full">
               <div className="relative flex h-full flex-col gap-4 rounded-card border border-line bg-paper p-5">

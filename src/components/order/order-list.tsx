@@ -28,7 +28,6 @@ type Tab = "aktif" | "selesai" | "semua";
 
 // Money that actually moved: excludes unpaid bills and reversed orders.
 const PAID_STATES: OrderState[] = [
-  "open_pool",
   "paid",
   "processing",
   "shipped",

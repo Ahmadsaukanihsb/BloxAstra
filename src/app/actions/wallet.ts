@@ -1,5 +1,6 @@
 "use server";
 
+import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
@@ -7,7 +8,7 @@ import { requireRole } from "@/lib/auth";
 import { getWithdrawalConfig } from "@/lib/wallet";
 import { formatIDR } from "@/lib/format";
 import { adminUserIds, notifyMany } from "@/lib/notifications";
-import type { Prisma } from "@prisma/client";
+import { appendLedger, isUniqueCollision } from "@/lib/ledger";
 
 export type WithdrawalResult =
   | { ok: true; ref: string }
@@ -20,39 +21,14 @@ const withdrawalSchema = z.object({
 });
 
 function randomRef(): string {
+  // The ref is the admin-facing identifier of a money movement, so it uses the
+  // CSPRNG like order/top-up codes — `Math.random()` draws from a ~1M space
+  // and is predictable.
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = randomBytes(4);
   let out = "";
-  for (let i = 0; i < 4; i += 1) out += alphabet[Math.floor(Math.random() * alphabet.length)];
+  for (let i = 0; i < 4; i += 1) out += alphabet[bytes[i] % alphabet.length];
   return `WD-${out}`;
-}
-
-async function appendLedger(
-  tx: Prisma.TransactionClient,
-  data: {
-    userId: string;
-    sellerId: string;
-    type: string;
-    amount: number;
-    note: string;
-    orderCode?: string;
-  },
-) {
-  const aggregate = await tx.walletLedger.aggregate({
-    where: { userId: data.userId },
-    _sum: { amount: true },
-  });
-  const balanceAfter = (aggregate._sum.amount ?? 0) + data.amount;
-  return tx.walletLedger.create({
-    data: {
-      userId: data.userId,
-      sellerId: data.sellerId,
-      type: data.type,
-      amount: data.amount,
-      balanceAfter,
-      note: data.note,
-      orderCode: data.orderCode ?? null,
-    },
-  });
 }
 
 /** Seller requests a wallet withdrawal — deducts balance immediately. */
@@ -170,11 +146,3 @@ export async function requestWithdrawal(rawInput: unknown): Promise<WithdrawalRe
   return { ok: false, code: "STATE", error: "Gagal membuat referensi penarikan. Coba lagi." };
 }
 
-function isUniqueCollision(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: string }).code === "P2002"
-  );
-}

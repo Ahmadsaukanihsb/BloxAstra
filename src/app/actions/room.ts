@@ -3,7 +3,6 @@
 import { z } from "zod";
 import { revalidatePath, updateTag } from "next/cache";
 import { headers } from "next/headers";
-import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { getCurrentUser, requireOrderParticipant } from "@/lib/auth";
 import { decryptCredentials } from "@/lib/credentials";
@@ -12,10 +11,11 @@ import { getOrderUnreadTotal } from "@/lib/orders";
 import { checkThrottle } from "@/lib/throttle";
 import { publishLive } from "@/lib/live-bus";
 import { adminUserIds, notify, notifyMany } from "@/lib/notifications";
+import { appendLedger, isUniqueCollision } from "@/lib/ledger";
 import {
+  DECIDABLE_DISPUTE_STATES,
   DISPUTE_OPEN_STATE,
   DISPUTE_SELLER_REPLIED_STATE,
-  isDecidableDispute,
 } from "@/lib/order-meta";
 
 export type RoomActionResult =
@@ -85,10 +85,6 @@ class AbortTxError extends Error {
   }
 }
 
-function isUniqueCollision(err: unknown): boolean {
-  return typeof err === "object" && err !== null && "code" in err && (err as { code?: string }).code === "P2002";
-}
-
 async function loadParticipant(orderCode: string) {
   const order = await db.order.findUnique({
     where: { code: orderCode },
@@ -99,34 +95,6 @@ async function loadParticipant(orderCode: string) {
 }
 
 /** Append a ledger row on top of the user's running balance. */
-async function appendLedger(
-  tx: Prisma.TransactionClient,
-  data: {
-    userId: string;
-    sellerId?: string | null;
-    type: string;
-    amount: number;
-    note: string;
-    orderCode?: string;
-  },
-) {
-  const aggregate = await tx.walletLedger.aggregate({
-    where: { userId: data.userId },
-    _sum: { amount: true },
-  });
-  const balanceAfter = (aggregate._sum.amount ?? 0) + data.amount;
-  return tx.walletLedger.create({
-    data: {
-      userId: data.userId,
-      sellerId: data.sellerId ?? null,
-      type: data.type,
-      amount: data.amount,
-      balanceAfter,
-      note: data.note,
-      orderCode: data.orderCode ?? null,
-    },
-  });
-}
 
 /**
  * Phrases that give away a move off the platform. Deliberately narrow: a false
@@ -487,6 +455,9 @@ export async function fileOrderDispute(rawInput: unknown): Promise<RoomActionRes
 
   const participant = await loadParticipant(parsed.data.orderCode);
   if (!participant) return fail("NOT_FOUND", "Pesanan tidak ditemukan.");
+  if (!checkThrottle(`dispute-open:${participant.user.id}`, 30_000)) {
+    return fail("STATE", "Terlalu cepat. Tunggu 30 detik sebelum mengirim sengketa lain.");
+  }
   if (participant.order.buyerId !== participant.user.id) {
     return fail("FORBIDDEN", "Hanya pembeli yang bisa mengajukan sengketa.");
   }
@@ -613,24 +584,30 @@ export async function replyDispute(rawInput: unknown): Promise<RoomActionResult>
     select: { id: true, ref: true, status: true },
   });
   if (!dispute) return fail("STATE", "Pesanan ini tidak dalam sengketa.");
-  if (!isDecidableDispute(dispute.status)) {
+  if (!DECIDABLE_DISPUTE_STATES.includes(dispute.status as (typeof DECIDABLE_DISPUTE_STATES)[number])) {
     return fail("STATE", "Sengketa sudah diputus admin. Balasan dikunci.");
   }
 
-  await db.$transaction([
-    db.dispute.update({
-      where: { id: dispute.id },
+  // Guarded inside the update: an admin decision can land between the read
+  // above and this write, and a reply must never drag a resolved case back to
+  // `under_review` (the money has already moved).
+  const replied = await db.$transaction(async (tx) => {
+    const flipped = await tx.dispute.updateMany({
+      where: { id: dispute.id, status: { in: [...DECIDABLE_DISPUTE_STATES] } },
       data: { sellerReply: parsed.data.sellerReply, status: DISPUTE_SELLER_REPLIED_STATE },
-    }),
-    db.orderEvent.create({
+    });
+    if (flipped.count === 0) return false;
+    await tx.orderEvent.create({
       data: {
         orderId: participant.order.id,
         state: "disputed",
         label: "Penjual mengirim balasan sengketa",
         actor: "seller",
       },
-    }),
-  ]);
+    });
+    return true;
+  });
+  if (!replied) return fail("STATE", "Sengketa sudah diputus admin. Balasan dikunci.");
 
   await notify({
     userId: participant.order.buyerId,
@@ -882,6 +859,11 @@ export async function revealOrderCredentials(orderCode: string): Promise<
   if (participant.order.buyerId !== participant.user.id) {
     return { ok: false, error: "Hanya pembeli yang bisa melihat kredensial." };
   }
+  // Every reveal writes an audit row and decrypts a secret; throttle it so a
+  // loop cannot hammer the decrypt path or flood the audit log.
+  if (!checkThrottle(`reveal-creds:${participant.user.id}`, 3000)) {
+    return { ok: false, error: "Terlalu cepat. Tunggu 3 detik." };
+  }
 
   const order = await db.order.findUnique({
     where: { id: participant.order.id },
@@ -937,6 +919,9 @@ export async function submitReview(rawInput: unknown): Promise<RoomActionResult>
   if (!participant) return fail("NOT_FOUND", "Pesanan tidak ditemukan.");
   if (participant.order.buyerId !== participant.user.id) {
     return fail("FORBIDDEN", "Hanya pembeli yang bisa memberi ulasan.");
+  }
+  if (!checkThrottle(`review:${participant.user.id}`, 10_000)) {
+    return fail("STATE", "Terlalu cepat. Tunggu 10 detik sebelum mengirim ulasan lain.");
   }
 
   const order = await db.order.findUnique({

@@ -19,11 +19,6 @@ export const orderStates: Record<
     buyerHint: "Selesaikan pembayaran dalam 15 menit sebelum tagihan kedaluwarsa.",
     tone: "warn",
   },
-  open_pool: {
-    label: "Rebutan Orderan",
-    buyerHint: "Pesanan sedang ditawarkan ke semua penjual aktif. Tercepat menang.",
-    tone: "info",
-  },
   paid: {
     label: "Dibayar · Dana Ditahan",
     buyerHint: "Dana ditahan sistem. Penjual diminta segera memulai. Pesanan yang terlalu lama tak tersentuh dikembalikan otomatis.",
@@ -61,10 +56,15 @@ export const orderStates: Record<
   },
 };
 
-/** Order states that still count as "in progress" on the buyer list. */
+/**
+ * Order states that still count as "in progress" on the buyer list.
+ *
+ * `open_pool` is intentionally absent: no code ever writes it (the pool lives
+ * on `paid` + `sellerId: null`), so listing it here only promised a state that
+ * cannot occur.
+ */
 export const ACTIVE_ORDER_STATES: OrderState[] = [
   "pending_payment",
-  "open_pool",
   "paid",
   "processing",
   "shipped",

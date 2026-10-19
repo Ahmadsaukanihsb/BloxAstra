@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -6,7 +6,6 @@ import { cx } from "@/lib/cx";
 import { formatDateTime, formatIDR } from "@/lib/format";
 import type { OrderListItem } from "@/lib/orders";
 import { ACTIVE_ORDER_STATES } from "@/lib/order-meta";
-import type { CategorySlug } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/feedback";
 import { Countdown, StatusPill } from "@/components/order/runtime";
@@ -25,7 +24,7 @@ export function ActiveOrderRow({ order }: { order: OrderListItem }) {
     >
       <ProductArt
         seed={order.productSlug ?? order.code}
-        category={order.category ?? ("roblox" as CategorySlug)}
+          category={order.category}
         className="size-11 shrink-0 rounded-control outline outline-1 -outline-offset-1 outline-line-strong"
       />
       <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -33,7 +32,7 @@ export function ActiveOrderRow({ order }: { order: OrderListItem }) {
           {order.productTitle}
         </span>
         <span className="num text-[10px] text-ink-mute">
-          {order.code} · @{order.robloxUsername ?? "—"}
+          {order.code} Â· @{order.robloxUsername ?? "â€”"}
         </span>
         {sla !== null ? (
           <span
@@ -44,11 +43,11 @@ export function ActiveOrderRow({ order }: { order: OrderListItem }) {
           >
             <IconTimer size={11} />
             {expired ? (
-              <>SLA lewat{order.slaLabel ? ` · ${order.slaLabel}` : null}</>
+              <>SLA lewat{order.slaLabel ? ` Â· ${order.slaLabel}` : null}</>
             ) : (
               <>
                 <Countdown seconds={sla} className="text-[10px]" />
-                {order.slaLabel ? <span>· {order.slaLabel}</span> : null}
+                {order.slaLabel ? <span>Â· {order.slaLabel}</span> : null}
               </>
             )}
           </span>
@@ -134,7 +133,7 @@ export function SellerHistory({
               <span className="min-w-0 flex-1 truncate text-[12px] text-ink">
                 {order.productTitle}
                 {order.robloxUsername ? (
-                  <span className="num text-ink-mute"> · @{order.robloxUsername}</span>
+                  <span className="num text-ink-mute"> Â· @{order.robloxUsername}</span>
                 ) : null}
               </span>
               <span className="num text-[12px] font-extrabold text-ink">

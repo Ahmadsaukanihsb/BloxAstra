@@ -315,6 +315,9 @@ export async function fetchSellerChatRevision(): Promise<ChatRevision> {
 /** Create a new product listing owned by the logged-in seller. */
 export async function createSellerListing(rawInput: unknown): Promise<CreateListingResult> {
   const user = await requireRole("seller");
+  if (!checkThrottle(`listing-create:${user.id}`, 5000)) {
+    return { ok: false, code: "STATE", error: "Terlalu cepat. Tunggu beberapa detik." };
+  }
 
   const parsed = listingSchema.safeParse(rawInput);
   if (!parsed.success) {
@@ -443,6 +446,9 @@ async function requireKycVerified(userId: string): Promise<string | null> {
 /** Edit an owned listing. Category/game stay fixed — they define the listing. */
 export async function updateSellerListing(rawInput: unknown): Promise<SellerActionResult> {
   const user = await requireRole("seller");
+  if (!checkThrottle(`listing-update:${user.id}`, 3000)) {
+    return { ok: false, code: "STATE", error: "Terlalu cepat. Tunggu beberapa detik." };
+  }
 
   const parsed = updateListingSchema.safeParse(rawInput);
   if (!parsed.success) {
@@ -600,6 +606,9 @@ const resubmitSchema = z.object({
 /** Rejected sellers upload fresh documents and re-enter the KYC queue. */
 export async function resubmitKyc(rawInput: unknown): Promise<SellerActionResult> {
   const user = await requireRole("seller");
+  if (!checkThrottle(`kyc-resubmit:${user.id}`, 30_000)) {
+    return { ok: false, code: "STATE", error: "Terlalu cepat. Tunggu 30 detik sebelum mengirim ulang." };
+  }
 
   const parsed = resubmitSchema.safeParse(rawInput);
   if (!parsed.success) {
@@ -736,6 +745,9 @@ const applySellerSchema = z.object({
  */
 export async function applyAsSeller(rawInput: unknown): Promise<SellerActionResult> {
   const user = await requireUser();
+  if (!checkThrottle(`seller-apply:${user.id}`, 30_000)) {
+    return { ok: false, code: "STATE", error: "Terlalu cepat. Tunggu 30 detik sebelum mengirim ulang." };
+  }
 
   const parsed = applySellerSchema.safeParse(rawInput);
   if (!parsed.success) {

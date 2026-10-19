@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import {
   fetchInboxRevision,
@@ -14,7 +14,7 @@ import { cx } from "@/lib/cx";
 import { IconBell, IconCheck } from "@/components/ui/icons";
 
 /**
- * Bell with a floating inbox panel — sellers read notifications without
+ * Bell with a floating inbox panel â€” sellers read notifications without
  * leaving the dashboard. The /notifikasi page stays as the full archive
  * (linked from the panel footer + sidebar).
  */
@@ -24,7 +24,6 @@ export function NotifBell() {
   const [items, setItems] = useState<NotificationItem[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [marking, startMarking] = useTransition();
-  const panelRef = useRef<HTMLDivElement>(null);
 
   // Push first: the server tells this tab the moment the inbox moves, so the
   // badge updates in well under a second and an open panel refreshes in place.
@@ -32,13 +31,17 @@ export function NotifBell() {
     void loadItems({ quiet: true });
   });
 
-  // Fallback loop for a blocked or buffered stream — and the safety net that
+  // Fallback loop for a blocked or buffered stream â€” and the safety net that
   // re-checks the moment this tab comes back to the foreground.
   useLiveRevision({
     read: fetchInboxRevision,
     intervalMs: 60_000,
-    onChange: (revision) => {
+    onChange: (revision, previous) => {
       setUnread(revision.unread);
+      // Skip the first observation: the page just rendered with fresh unread
+      // data, so refetching right after mount is wasted work (the sibling
+      // live surfaces guard the same way).
+      if (!previous) return;
       if (open) void loadItems({ quiet: true });
     },
   });
@@ -86,7 +89,7 @@ export function NotifBell() {
   }
 
   return (
-    <div ref={panelRef} className="relative shrink-0">
+    <div className="relative shrink-0">
       <button
         type="button"
         onClick={toggle}
@@ -134,7 +137,7 @@ export function NotifBell() {
                 className="flex items-center gap-1 text-[11px] font-bold text-ink-dim transition-colors hover:text-astra-ink disabled:opacity-40"
               >
                 <IconCheck size={13} />
-                {marking ? "Menandai…" : "Tandai dibaca"}
+                {marking ? "Menandaiâ€¦" : "Tandai dibaca"}
               </button>
             </div>
 

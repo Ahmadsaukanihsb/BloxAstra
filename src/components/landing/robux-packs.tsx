@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useMemo } from "react";
@@ -51,7 +51,7 @@ export function RobuxPacks({ products }: { products: Product[] }) {
             Robux <span className="text-astra-ink">Bersih</span>
           </>
         }
-        description="Paket di rak ini dipasang penjual dari stok mereka — belum ada yang aktif hari ini."
+        description="Paket di rak ini dipasang penjual dari stok mereka â€” belum ada yang aktif hari ini."
         action={{ href: "/beli/robux-gamepass", label: "Beli via gamepass", variant: "primary" }}
         label="Belum ada paket dari penjual"
         body="Gamepass milik platform selalu tersedia: pajak 30% kami yang tanggung dan Robux masuk ke akunmu sendiri."
@@ -72,7 +72,7 @@ export function RobuxPacks({ products }: { products: Product[] }) {
                 Paket Robux <span className="text-astra-ink">dari penjual</span>
               </>
             }
-            description="Stok milik toko terverifikasi — harga dan pengiriman mengikuti masing-masing penjual. Mau instan tanpa pilih toko? Pakai kalkulator di atas."
+            description="Stok milik toko terverifikasi â€” harga dan pengiriman mengikuti masing-masing penjual. Mau instan tanpa pilih toko? Pakai kalkulator di atas."
             action={
               <ButtonLink
                 href="/katalog?kategori=gamepass"
@@ -88,7 +88,6 @@ export function RobuxPacks({ products }: { products: Product[] }) {
 
         <RevealGroup
           className="grid grid-cols-2 gap-3.5 lg:grid-cols-5 lg:gap-4"
-          stagger={0.05}
         >
           {packs.map((pack) => (
             <RevealItem key={pack.slug} className="h-full">

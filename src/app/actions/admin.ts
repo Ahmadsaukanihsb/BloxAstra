@@ -43,6 +43,7 @@ import {
   slugifyBlogTitle,
 } from "@/lib/blog";
 import { isDecidableDispute, ACTIVE_ORDER_STATES } from "@/lib/order-meta";
+import { appendLedger, isUniqueCollision } from "@/lib/ledger";
 import {
   SERVICE_ART_KEY,
   SERVICE_ART_MAX_BYTES,
@@ -89,42 +90,9 @@ class AbortTxError extends Error {
   }
 }
 
-function isUniqueCollision(err: unknown): boolean {
-  return typeof err === "object" && err !== null && "code" in err && (err as { code?: string }).code === "P2002";
-}
-
 async function clientIp(): Promise<string> {
   const h = await headers();
   return h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "0.0.0.0";
-}
-
-async function appendLedger(
-  tx: import("@prisma/client").Prisma.TransactionClient,
-  data: {
-    userId: string;
-    sellerId?: string | null;
-    type: string;
-    amount: number;
-    note: string;
-    orderCode?: string;
-  },
-) {
-  const aggregate = await tx.walletLedger.aggregate({
-    where: { userId: data.userId },
-    _sum: { amount: true },
-  });
-  const balanceAfter = (aggregate._sum.amount ?? 0) + data.amount;
-  return tx.walletLedger.create({
-    data: {
-      userId: data.userId,
-      sellerId: data.sellerId ?? null,
-      type: data.type,
-      amount: data.amount,
-      balanceAfter,
-      note: data.note,
-      orderCode: data.orderCode ?? null,
-    },
-  });
 }
 
 /** Resolve a dispute: refund buyer or release to seller. Always writes AdminAuditLog. */

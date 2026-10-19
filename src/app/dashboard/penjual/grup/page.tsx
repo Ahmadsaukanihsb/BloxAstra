@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { connection } from "next/server";
+import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { getSellerChat } from "@/lib/seller";
 import { Skeleton } from "@/components/ui/feedback";
@@ -30,7 +31,13 @@ export default function SellerGroupPage() {
 
 async function SellerGroupContent() {
   await connection();
+  // The seller group is seller-and-admin only. This page used `requireUser`,
+  // so any signed-in buyer could open it and read the sellers' coordination
+  // room (the write action already refused non-sellers, but the reads did not).
   const user = await requireUser();
+  if (user.role !== "seller" && user.role !== "admin") {
+    redirect("/");
+  }
   const chat = await getSellerChat(user.id);
 
   return (

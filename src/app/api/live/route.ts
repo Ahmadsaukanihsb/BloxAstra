@@ -29,13 +29,18 @@ export async function GET(request: NextRequest) {
   const audiences = new Set<string>([`user:${user.id}`]);
   // Everyone signed in joins the presence registry — an order room must be
   // able to tell whether the counterparty is online. The seller-room strip is
-  // narrower: only sellers, admins, and verified profiles join that broadcast.
+  // narrower: only sellers and admins.
+  //
+  // Role alone decides this, deliberately: a demoted seller keeps
+  // `kycVerified = true` on the profile (the demote path flips `role` and
+  // leaves the row for the orders/reviews that reference it), so keying the
+  // audience off `kycVerified` kept a demoted account receiving the seller
+  // group's chat and presence events.
   const profile = await db.sellerProfile.findUnique({
     where: { userId: user.id },
-    select: { storeName: true, kycVerified: true },
+    select: { storeName: true },
   });
-  const sellerRoom =
-    user.role === "seller" || user.role === "admin" || Boolean(profile?.kycVerified);
+  const sellerRoom = user.role === "seller" || user.role === "admin";
   if (sellerRoom) audiences.add("sellers");
   const presenceName = profile?.storeName ?? user.username;
 

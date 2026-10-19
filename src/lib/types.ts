@@ -9,7 +9,6 @@ export type DeliveryKind = "gamepass_auto" | "manual" | "instant_code" | "creden
 
 export type OrderState =
   | "pending_payment"
-  | "open_pool"
   | "paid"
   | "processing"
   | "shipped"
@@ -111,19 +110,6 @@ export interface WalletEntry {
   createdAt: string;
 }
 
-export interface PoolOrder {
-  id: string;
-  orderNumber: string;
-  productTitle: string;
-  category: CategorySlug;
-  total: number;
-  robloxUsername: string;
-  createdAt: string;
-  /** seconds left before the pool order is re-broadcast to the next seller */
-  claimWindowSeconds: number;
-  expressBadge: boolean;
-}
-
 export interface OrderTimelineEntry {
   state: OrderState;
   label: string;
@@ -132,53 +118,5 @@ export interface OrderTimelineEntry {
   actor?: "system" | "buyer" | "seller" | "admin";
 }
 
-export interface MockOrder {
-  id: string;
-  orderNumber: string;
-  state: OrderState;
-  productSlug: string;
-  sellerId: string;
-  robloxUsername: string;
-  robloxAvatarSeed: string;
-  unitPrice: number;
-  platformFee: number;
-  total: number;
-  isPoolOrder: boolean;
-  expressBadge: boolean;
-  createdAt: string;
-  /** seconds left on the active SLA for this order (counted down on the client) */
-  slaRemainingSeconds: number | null;
-  /** what the running SLA clock means, shown next to the countdown */
-  slaLabel: string | null;
-  canCancelAfk: boolean;
-  timeline: OrderTimelineEntry[];
-  credentials: { username: string; passwordMasked: string; parentalPin: string } | null;
-  handoverSteps: { id: string; label: string; hint: string; done: boolean }[];
-  /** present only while the order sits in the admin dispute queue */
-  dispute?: OrderDispute;
-}
-
 /** buyer complaint + seller defence, one per disputed order */
-export interface OrderDispute {
-  ref: string;
-  reasonId: string;
-  reasonLabel: string;
-  buyerNote: string;
-  sellerReply: string;
-  evidence: string[];
-  openedAt: string;
-  /** until this moment the seller may still appeal with extra evidence */
-  slaHoursLeft: number;
-}
-
 /** mirror of the admin_audit_logs table (product-requirements.md §6.1 table 20) */
-export interface AdminAuditEntry {
-  id: string;
-  actionType: string;
-  targetResource: "orders" | "wallets" | "credentials" | "users";
-  targetResourceId: string;
-  diffPayload: string;
-  ipAddress: string;
-  actor: string;
-  createdAt: string;
-}

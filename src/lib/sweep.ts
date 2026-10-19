@@ -1,10 +1,10 @@
 import "server-only";
 import { revalidateTag } from "next/cache";
-import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { expireStaleTopUps } from "@/lib/topup";
 import { publishLive } from "@/lib/live-bus";
 import { notify } from "@/lib/notifications";
+import { appendLedger, isUniqueCollision } from "@/lib/ledger";
 
 const AUTO_RELEASE_BATCH = 20;
 const EXPIRE_BATCH = 20;
@@ -78,44 +78,6 @@ export async function getSweepTimeouts(): Promise<SweepTimeouts> {
 }
 
 class SkipOrder extends Error {}
-
-function isUniqueCollision(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: string }).code === "P2002"
-  );
-}
-
-async function appendLedger(
-  tx: Prisma.TransactionClient,
-  data: {
-    userId: string;
-    sellerId?: string | null;
-    type: string;
-    amount: number;
-    note: string;
-    orderCode?: string;
-  },
-) {
-  const aggregate = await tx.walletLedger.aggregate({
-    where: { userId: data.userId },
-    _sum: { amount: true },
-  });
-  const balanceAfter = (aggregate._sum.amount ?? 0) + data.amount;
-  return tx.walletLedger.create({
-    data: {
-      userId: data.userId,
-      sellerId: data.sellerId ?? null,
-      type: data.type,
-      amount: data.amount,
-      balanceAfter,
-      note: data.note,
-      orderCode: data.orderCode ?? null,
-    },
-  });
-}
 
 /** Release shipped orders whose confirm window elapsed — same payout as the
  *  buyer's "confirm received", guarded so a retry can never double-pay. */
@@ -344,6 +306,12 @@ async function refundStalePoolOrders(now: Date, poolHours: number): Promise<stri
   // with `take: 20` and no ordering, a batch of 20 *fresh* paid orders would
   // fill every pass and the older refundable ones would never be selected —
   // escrow locked forever. Oldest-first guarantees progress.
+  //
+  // The SQL cutoff is on `createdAt` on purpose, and it is only a *superset* of
+  // the real window: `paidAt >= createdAt` always holds (see the event re-read
+  // below, which is authoritative), so this filter can never hide an order that
+  // is genuinely due. An event-based `at:` filter here would be narrower but
+  // would cost the index-ordered batch selection this depends on.
   const stale = await db.order.findMany({
     where: {
       status: "paid",
@@ -658,11 +626,19 @@ async function sendDeadlineReminders(now: Date, timeouts: SweepTimeouts): Promis
     body: string,
     recipient: { userId: string; title: string; notification: string; code: string },
   ): Promise<void> => {
-    const existing = await db.message.findFirst({
-      where: { orderId, fromRole: "system", body: { startsWith: marker } },
-      select: { id: true },
-    });
-    if (existing) return;
+    // Atomic claim instead of read-then-write. The Windows Scheduled Task
+    // genuinely fires two passes back to back (see logs/sweep-task.log), and a
+    // `findFirst` followed by `create` has no uniqueness behind it — both
+    // passes saw no marker and both posted. The `Setting` key is the primary
+    // key, so the create is the claim: whoever loses gets P2002 and skips.
+    // The `Message` marker stays as the readable copy in the chat timeline.
+    const seenKey = `sweep.reminder.${orderId}.${marker}`;
+    try {
+      await db.setting.create({ data: { key: seenKey, value: now.toISOString() } });
+    } catch (error) {
+      if (isUniqueCollision(error)) return;
+      throw error;
+    }
     await db.message.create({ data: { orderId, fromRole: "system", body } });
     await notify({
       userId: recipient.userId,

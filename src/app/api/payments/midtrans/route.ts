@@ -36,9 +36,10 @@ export async function POST(request: NextRequest) {
   try {
     signatureOk = verifyMidtransSignature(payload);
   } catch {
-    // Config error (e.g. missing server key) — answer 200 so Midtrans does
-    // not retry-storm a condition webhooks can never fix.
-    return NextResponse.json({ message: "verifier_unavailable", handled: false }, { status: 200 });
+    // Config error (missing server key): 5xx so Midtrans keeps retrying and
+    // monitoring catches it. Answering 200 here silently dropped every
+    // settlement — buyers stopped being credited with no signal anywhere.
+    return NextResponse.json({ message: "verifier_unavailable", handled: false }, { status: 503 });
   }
   if (!signatureOk) {
     return NextResponse.json({ message: "Invalid signature" }, { status: 401 });

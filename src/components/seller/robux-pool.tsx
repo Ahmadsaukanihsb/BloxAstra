@@ -184,17 +184,17 @@ export function RobuxPoolBoard({
               </div>
 
               <div className="flex flex-col items-end gap-2.5">
-                {order.claimSecondsLeft > 0 ? (
-                  <Countdown
-                    seconds={order.claimSecondsLeft}
-                    className="text-[11px]"
-                  />
-                ) : (
-                  <span className="flex items-center gap-1.5 text-[11px] text-ink-mute">
-                    <IconTimer size={13} />
-                    jendela rebutan berakhir
-                  </span>
-                )}
+                {order.claimable ? (
+                <Countdown
+                  seconds={order.claimSecondsLeft}
+                  className="text-[11px]"
+                />
+              ) : (
+                <span className="flex items-center gap-1.5 text-[11px] text-warn">
+                  <IconTimer size={13} />
+                  lewat jendela — segera di-refund
+                </span>
+              )}
                 <div className="flex flex-wrap justify-end gap-2.5">
                   <Button
                     size="sm"

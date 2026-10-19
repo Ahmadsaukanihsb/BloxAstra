@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { connection } from "next/server";
@@ -6,7 +6,6 @@ import { requireUser } from "@/lib/auth";
 import { getSellerDashboard } from "@/lib/seller";
 import { formatDuration, formatIDR } from "@/lib/format";
 import { EXPRESS_SLA_SECONDS } from "@/lib/order-meta";
-import type { CategorySlug } from "@/lib/types";
 import { Badge, LivePill, TierBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { Notice, Skeleton } from "@/components/ui/feedback";
@@ -78,7 +77,7 @@ async function OverviewContent() {
           </Notice>
         ) : (
           <Notice tone="info" icon={<IconStorefront size={15} />} title="Belum jadi penjual">
-            Akun ini masih pembeli. Ajukan penjual dari halaman profil — unggah KTP dan selfie,
+            Akun ini masih pembeli. Ajukan penjual dari halaman profil â€” unggah KTP dan selfie,
             lalu tunggu verifikasi admin. Setelah disetujui, dashboard ini terbuka penuh.
             <span className="mt-3 block">
               <ButtonLink href="/profil" size="sm" trailingIcon={<IconArrowRight size={14} />}>
@@ -212,7 +211,7 @@ async function OverviewContent() {
                     >
                       <ProductArt
                         seed={order.productSlug ?? order.code}
-                        category={order.category ?? ("roblox" as CategorySlug)}
+                        category={order.category}
                         className="size-11 shrink-0 rounded-control outline outline-1 -outline-offset-1 outline-line-strong"
                       />
                       <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -220,7 +219,7 @@ async function OverviewContent() {
                           {order.productTitle}
                         </span>
                         <span className="num text-[10px] text-ink-mute">
-                          {order.code} · @{order.robloxUsername ?? "—"}
+                          {order.code} Â· @{order.robloxUsername ?? "â€”"}
                         </span>
                       </div>
                       <StatusPill state={order.state} />

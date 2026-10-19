@@ -9,7 +9,7 @@ export interface LinkedAccountView {
   createdAt: string;
 }
 
-const PAID_ORDER_STATES = ["open_pool", "paid", "processing", "shipped", "completed", "disputed"];
+const PAID_ORDER_STATES = ["paid", "processing", "shipped", "completed", "disputed"];
 
 export interface ProfileView {
   username: string;

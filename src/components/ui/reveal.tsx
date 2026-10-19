@@ -19,7 +19,6 @@ export function Reveal({
   delay?: number;
   y?: number;
   className?: string;
-  once?: boolean;
 }) {
   const style = {
     "--reveal-shift": `${y}px`,
@@ -39,7 +38,6 @@ export function RevealGroup({
 }: {
   children: ReactNode;
   className?: string;
-  stagger?: number;
 }) {
   return <div className={cx("reveal-group", className)}>{children}</div>;
 }

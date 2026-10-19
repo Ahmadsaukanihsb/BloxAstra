@@ -12,6 +12,7 @@ import {
   registerSellerSchema,
 } from "@/lib/validation";
 import { turnstileConfigured, verifyTurnstile } from "@/lib/turnstile";
+import { isUniqueCollision } from "@/lib/ledger";
 
 export interface AuthActionState {
   error?: string;
@@ -24,6 +25,7 @@ export interface AuthActionState {
 const loginAttempts = new Map<string, { count: number; resetAt: number }>();
 
 function isLocked(identifier: string): boolean {
+  pruneLoginAttempts();
   const entry = loginAttempts.get(identifier);
   if (!entry) return false;
   if (Date.now() > entry.resetAt) {
@@ -31,6 +33,20 @@ function isLocked(identifier: string): boolean {
     return false;
   }
   return entry.count >= 5;
+}
+
+/**
+ * Drop expired locks. Without this the map keeps one entry per identifier
+ * that ever failed, for the life of the process.
+ */
+let lastLoginSweep = 0;
+function pruneLoginAttempts(): void {
+  const now = Date.now();
+  if (now - lastLoginSweep < 60_000) return;
+  lastLoginSweep = now;
+  for (const [key, entry] of loginAttempts) {
+    if (now > entry.resetAt) loginAttempts.delete(key);
+  }
 }
 
 function recordFailure(identifier: string) {
@@ -57,15 +73,6 @@ function fieldErrorsOf(result: {
     if (!out[key]) out[key] = issue.message;
   }
   return out;
-}
-
-function isUniqueCollision(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: string }).code === "P2002"
-  );
 }
 
 /**

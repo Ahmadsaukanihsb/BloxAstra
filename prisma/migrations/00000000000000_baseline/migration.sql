@@ -3,12 +3,44 @@ CREATE TABLE "User" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "email" TEXT NOT NULL,
     "username" TEXT NOT NULL,
-    "passwordHash" TEXT NOT NULL,
+    "passwordHash" TEXT,
     "role" TEXT NOT NULL DEFAULT 'buyer',
+    "avatarImage" TEXT,
     "whatsapp" TEXT,
+    "whatsappVerified" BOOLEAN NOT NULL DEFAULT false,
     "kycStatus" TEXT NOT NULL DEFAULT 'none',
+    "suspendedAt" DATETIME,
+    "suspendReason" TEXT,
+    "sessionVersion" INTEGER NOT NULL DEFAULT 0,
+    "groupChatSeenAt" DATETIME,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL
+);
+
+-- CreateTable
+CREATE TABLE "LinkedAccount" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "provider" TEXT NOT NULL,
+    "providerUserId" TEXT NOT NULL,
+    "email" TEXT,
+    "name" TEXT,
+    "avatarUrl" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "LinkedAccount_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "WhatsappOtp" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "phone" TEXT NOT NULL,
+    "codeHash" TEXT NOT NULL,
+    "attempts" INTEGER NOT NULL DEFAULT 0,
+    "expiresAt" DATETIME NOT NULL,
+    "consumedAt" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "WhatsappOtp_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -41,6 +73,13 @@ CREATE TABLE "SellerProfile" (
     "city" TEXT NOT NULL,
     "kycVerified" BOOLEAN NOT NULL DEFAULT false,
     "bio" TEXT NOT NULL,
+    "storeImage" TEXT,
+    "fullName" TEXT NOT NULL DEFAULT '',
+    "idCardImage" TEXT,
+    "selfieImage" TEXT,
+    "kycRejectReason" TEXT,
+    "discordWebhookUrl" TEXT,
+    "discordWebhookEnabled" BOOLEAN NOT NULL DEFAULT true,
     CONSTRAINT "SellerProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -63,6 +102,11 @@ CREATE TABLE "Product" (
     "highlights" TEXT NOT NULL,
     "autoReleaseHours" INTEGER NOT NULL DEFAULT 24,
     "instantDelivery" BOOLEAN NOT NULL DEFAULT false,
+    "featured" BOOLEAN NOT NULL DEFAULT false,
+    "imageUrl" TEXT,
+    "isListed" BOOLEAN NOT NULL DEFAULT true,
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "shelf" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
     CONSTRAINT "Product_categorySlug_fkey" FOREIGN KEY ("categorySlug") REFERENCES "Category" ("slug") ON DELETE RESTRICT ON UPDATE CASCADE,
@@ -81,6 +125,8 @@ CREATE TABLE "RateCard" (
     "orderUsername" REAL NOT NULL DEFAULT 160,
     "orderLogin" REAL NOT NULL DEFAULT 150,
     "orderGamepass" REAL NOT NULL DEFAULT 89.6,
+    "orderGamepassNoCover" REAL NOT NULL DEFAULT 62.72,
+    "orderPremium" REAL NOT NULL DEFAULT 185000,
     "adminFee" REAL NOT NULL DEFAULT 564,
     "updatedBy" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -113,7 +159,11 @@ CREATE TABLE "Order" (
     "isPoolOrder" BOOLEAN NOT NULL DEFAULT false,
     "expressBadge" BOOLEAN NOT NULL DEFAULT false,
     "autoReleaseAt" DATETIME,
+    "buyerReadAt" DATETIME,
+    "sellerReadAt" DATETIME,
     "credentialsEnc" TEXT,
+    "gamepassUrl" TEXT,
+    "buyerNote" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
     CONSTRAINT "Order_buyerId_fkey" FOREIGN KEY ("buyerId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
@@ -156,8 +206,33 @@ CREATE TABLE "Message" (
     "orderId" TEXT NOT NULL,
     "fromRole" TEXT NOT NULL,
     "body" TEXT NOT NULL,
+    "image" TEXT,
     "at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "Message_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "SellerChatMessage" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "body" TEXT NOT NULL,
+    "deletedAt" DATETIME,
+    "editedAt" DATETIME,
+    "replyToId" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "SellerChatMessage_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "SellerChatMessage_replyToId_fkey" FOREIGN KEY ("replyToId") REFERENCES "SellerChatMessage" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "SellerChatReport" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "messageId" TEXT NOT NULL,
+    "reporterId" TEXT NOT NULL,
+    "reason" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "SellerChatReport_messageId_fkey" FOREIGN KEY ("messageId") REFERENCES "SellerChatMessage" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "SellerChatReport_reporterId_fkey" FOREIGN KEY ("reporterId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -175,6 +250,65 @@ CREATE TABLE "Dispute" (
     "openedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "resolvedAt" DATETIME,
     CONSTRAINT "Dispute_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "Review" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "orderId" TEXT NOT NULL,
+    "productId" TEXT,
+    "sellerId" TEXT,
+    "buyerId" TEXT NOT NULL,
+    "rating" INTEGER NOT NULL,
+    "comment" TEXT NOT NULL DEFAULT '',
+    "hidden" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Review_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "Review_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "Review_sellerId_fkey" FOREIGN KEY ("sellerId") REFERENCES "SellerProfile" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "Review_buyerId_fkey" FOREIGN KEY ("buyerId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "WishlistItem" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "productId" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "WishlistItem_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "WishlistItem_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "Notification" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "kind" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "body" TEXT NOT NULL DEFAULT '',
+    "link" TEXT,
+    "readAt" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Notification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "TopUp" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "amount" INTEGER NOT NULL,
+    "fee" INTEGER NOT NULL DEFAULT 0,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "paymentMethod" TEXT NOT NULL DEFAULT 'qris',
+    "provider" TEXT NOT NULL DEFAULT 'sim',
+    "providerToken" TEXT,
+    "checkoutUrl" TEXT,
+    "providerOrderId" TEXT,
+    "expiresAt" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "creditedAt" DATETIME,
+    CONSTRAINT "TopUp_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -228,7 +362,25 @@ CREATE TABLE "PromoCode" (
     "type" TEXT NOT NULL DEFAULT 'fixed',
     "value" INTEGER NOT NULL,
     "active" BOOLEAN NOT NULL DEFAULT true,
-    "note" TEXT
+    "note" TEXT,
+    "maxUses" INTEGER,
+    "usedCount" INTEGER NOT NULL DEFAULT 0
+);
+
+-- CreateTable
+CREATE TABLE "BlogPost" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "slug" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "excerpt" TEXT NOT NULL DEFAULT '',
+    "content" TEXT NOT NULL DEFAULT '',
+    "coverImage" TEXT,
+    "tags" TEXT NOT NULL DEFAULT '',
+    "status" TEXT NOT NULL DEFAULT 'draft',
+    "publishedAt" DATETIME,
+    "authorEmail" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
 );
 
 -- CreateIndex
@@ -239,6 +391,15 @@ CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
 
 -- CreateIndex
 CREATE INDEX "User_role_idx" ON "User"("role");
+
+-- CreateIndex
+CREATE INDEX "LinkedAccount_userId_idx" ON "LinkedAccount"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "LinkedAccount_provider_providerUserId_key" ON "LinkedAccount"("provider", "providerUserId");
+
+-- CreateIndex
+CREATE INDEX "WhatsappOtp_userId_idx" ON "WhatsappOtp"("userId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "SellerProfile_userId_key" ON "SellerProfile"("userId");
@@ -257,6 +418,18 @@ CREATE INDEX "Product_categorySlug_idx" ON "Product"("categorySlug");
 
 -- CreateIndex
 CREATE INDEX "Product_sellerId_idx" ON "Product"("sellerId");
+
+-- CreateIndex
+CREATE INDEX "Product_featured_idx" ON "Product"("featured");
+
+-- CreateIndex
+CREATE INDEX "Product_isListed_idx" ON "Product"("isListed");
+
+-- CreateIndex
+CREATE INDEX "Product_sortOrder_idx" ON "Product"("sortOrder");
+
+-- CreateIndex
+CREATE INDEX "Product_shelf_idx" ON "Product"("shelf");
 
 -- CreateIndex
 CREATE INDEX "RateCard_active_idx" ON "RateCard"("active");
@@ -289,6 +462,21 @@ CREATE INDEX "Payment_status_idx" ON "Payment"("status");
 CREATE INDEX "Message_orderId_idx" ON "Message"("orderId");
 
 -- CreateIndex
+CREATE INDEX "SellerChatMessage_createdAt_idx" ON "SellerChatMessage"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "SellerChatMessage_userId_idx" ON "SellerChatMessage"("userId");
+
+-- CreateIndex
+CREATE INDEX "SellerChatMessage_replyToId_idx" ON "SellerChatMessage"("replyToId");
+
+-- CreateIndex
+CREATE INDEX "SellerChatReport_createdAt_idx" ON "SellerChatReport"("createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "SellerChatReport_messageId_reporterId_key" ON "SellerChatReport"("messageId", "reporterId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Dispute_orderId_key" ON "Dispute"("orderId");
 
 -- CreateIndex
@@ -298,6 +486,48 @@ CREATE UNIQUE INDEX "Dispute_ref_key" ON "Dispute"("ref");
 CREATE INDEX "Dispute_status_idx" ON "Dispute"("status");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Review_orderId_key" ON "Review"("orderId");
+
+-- CreateIndex
+CREATE INDEX "Review_productId_idx" ON "Review"("productId");
+
+-- CreateIndex
+CREATE INDEX "Review_sellerId_idx" ON "Review"("sellerId");
+
+-- CreateIndex
+CREATE INDEX "Review_buyerId_idx" ON "Review"("buyerId");
+
+-- CreateIndex
+CREATE INDEX "Review_rating_idx" ON "Review"("rating");
+
+-- CreateIndex
+CREATE INDEX "WishlistItem_userId_idx" ON "WishlistItem"("userId");
+
+-- CreateIndex
+CREATE INDEX "WishlistItem_productId_idx" ON "WishlistItem"("productId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "WishlistItem_userId_productId_key" ON "WishlistItem"("userId", "productId");
+
+-- CreateIndex
+CREATE INDEX "Notification_userId_idx" ON "Notification"("userId");
+
+-- CreateIndex
+CREATE INDEX "Notification_userId_readAt_idx" ON "Notification"("userId", "readAt");
+
+-- CreateIndex
+CREATE INDEX "Notification_createdAt_idx" ON "Notification"("createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TopUp_code_key" ON "TopUp"("code");
+
+-- CreateIndex
+CREATE INDEX "TopUp_userId_idx" ON "TopUp"("userId");
+
+-- CreateIndex
+CREATE INDEX "TopUp_status_idx" ON "TopUp"("status");
+
+-- CreateIndex
 CREATE INDEX "WalletLedger_userId_idx" ON "WalletLedger"("userId");
 
 -- CreateIndex
@@ -305,6 +535,9 @@ CREATE INDEX "WalletLedger_sellerId_idx" ON "WalletLedger"("sellerId");
 
 -- CreateIndex
 CREATE INDEX "WalletLedger_orderCode_idx" ON "WalletLedger"("orderCode");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "WalletLedger_orderCode_type_key" ON "WalletLedger"("orderCode", "type");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Withdrawal_ref_key" ON "Withdrawal"("ref");
@@ -323,3 +556,10 @@ CREATE INDEX "AdminAuditLog_actor_idx" ON "AdminAuditLog"("actor");
 
 -- CreateIndex
 CREATE INDEX "AdminAuditLog_createdAt_idx" ON "AdminAuditLog"("createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "BlogPost_slug_key" ON "BlogPost"("slug");
+
+-- CreateIndex
+CREATE INDEX "BlogPost_status_publishedAt_idx" ON "BlogPost"("status", "publishedAt");
+

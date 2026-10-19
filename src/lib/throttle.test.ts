@@ -33,4 +33,15 @@ describe("checkThrottle", () => {
     clearThrottle("user-e");
     expect(checkThrottle("user-e", 60_000)).toBe(true);
   });
+
+  it("forgets keys that are far past any window, so the map cannot grow forever", () => {
+    expect(checkThrottle("stale-key", 5000)).toBe(true);
+    // Jump past the internal sweep threshold (one hour) and fire another key,
+    // which triggers a sweep; the stale entry must be gone.
+    vi.setSystemTime(new Date("2026-10-11T02:00:01Z"));
+    expect(checkThrottle("fresh-key", 5000)).toBe(true);
+    vi.setSystemTime(new Date("2026-10-11T02:00:02Z"));
+    // A window long enough to outlive a sweep still sees the fresh key...
+    expect(checkThrottle("fresh-key", 3_600_000)).toBe(false);
+  });
 });

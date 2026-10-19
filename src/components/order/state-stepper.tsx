@@ -7,7 +7,6 @@ import { IconCheck } from "@/components/ui/icons";
 
 const FLOW = [
   "pending_payment",
-  "open_pool",
   "paid",
   "processing",
   "shipped",

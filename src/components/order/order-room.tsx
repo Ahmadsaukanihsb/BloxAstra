@@ -59,9 +59,15 @@ const DISPUTE_REASONS = [
 const CHAT_IMAGE_ACCEPT = "image/png,image/jpeg,image/gif,image/webp";
 const CHAT_IMAGE_MAX_BYTES = 1_500_000;
 
-/** "baru saja" / "12 menit lalu" / falls back to the absolute date. */
-function lastSeenLabel(iso: string): string {
-  const minutes = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60_000));
+/** "baru saja" / "12 menit lalu" / falls back to the absolute date.
+ *
+ * `nowMs` is passed in (the room's ticking `now` state) instead of reading
+ * `Date.now()`: a clock read during render is impure and the server/client
+ * renders can straddle a minute boundary, which is exactly the hydration
+ * mismatch the day-label state at the top of this file is written to avoid.
+ */
+function lastSeenLabel(iso: string, nowMs: number): string {
+  const minutes = Math.max(0, Math.round((nowMs - new Date(iso).getTime()) / 60_000));
   if (minutes < 1) return "baru saja";
   if (minutes < 60) return `${minutes} menit lalu`;
   const hours = Math.round(minutes / 60);
@@ -126,6 +132,10 @@ export function OrderRoom({
   // is an impure read. It refreshes once a minute so a room left open across
   // midnight flips its own dividers.
   const [now, setNow] = useState<number | null>(null);
+  // A stable clock for server and first client render: `now` is null until the
+  // first tick, so relative labels ("3 menit lalu") would otherwise read
+  // Date.now() and could cross a minute between the two renders.
+  const [mountNow] = useState(() => Date.now());
   // Only messages that land while the room is open rise in; the backlog the
   // visit was loaded with is already there. Initial state is read once — a
   // refresh keeps the same component instance, so the count stays put.
@@ -428,8 +438,8 @@ export function OrderRoom({
                   <span className="truncate">
                     {counterpartOnline
                       ? "Online sekarang"
-                      : counterpartLastSeenAt
-                        ? `Terakhir buka ${lastSeenLabel(counterpartLastSeenAt)}`
+              : counterpartLastSeenAt
+                ? `Terakhir buka ${lastSeenLabel(counterpartLastSeenAt, now ?? mountNow)}`
                         : "Offline"}
                   </span>
                 </span>
@@ -918,10 +928,16 @@ export function OrderRoom({
                   leadingIcon={<IconCopy size={14} />}
                   onClick={() => {
                     const text = `Username: ${order.credentials?.username ?? ""}\nPassword: ${revealedPassword ?? order.credentials?.passwordMasked ?? ""}\nPIN: ${revealedPin ?? order.credentials?.parentalPinMasked ?? ""}\n2FA: ${revealed2fa ?? order.credentials?.twoFactorMasked ?? ""}`;
-                    navigator.clipboard.writeText(text).then(() => {
-                      setCopied(true);
-                      window.setTimeout(() => setCopied(false), 1800);
-                    });
+                navigator.clipboard
+                  .writeText(text)
+                  .then(() => {
+                    setCopied(true);
+                    window.setTimeout(() => setCopied(false), 1800);
+                  })
+                  // Clipboard writes reject on an insecure context or when the
+                  // document is not focused; without this the button silently
+                  // did nothing and never said so.
+                  .catch(() => setActionError("Gagal menyalin. Salin manual dari kolom di atas."));
                   }}
                 >
                   {copied ? "Tersalin" : "Salin kredensial"}

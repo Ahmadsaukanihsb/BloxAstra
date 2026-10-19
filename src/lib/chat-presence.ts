@@ -1,8 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
 import { fetchSellerChatPresence } from "@/app/actions/seller";
-import { useLiveRevision, useLiveStream } from "@/lib/live";
+import { useLiveCount } from "@/lib/live-count";
 import type { OnlineSeller } from "@/lib/presence";
 
 export type { OnlineSeller };
@@ -17,25 +16,10 @@ export type { OnlineSeller };
  * leaves the list on its own.
  */
 export function useChatPresence(initial: OnlineSeller[]): OnlineSeller[] {
-  const [online, setOnline] = useState(initial);
-
-  const sample = useCallback(async () => {
-    try {
-      setOnline(await fetchSellerChatPresence());
-    } catch {
-      // Offline or a blip: the last list is better than an empty room.
-    }
-  }, []);
-
-  useLiveStream(["presence"], () => {
-    void sample();
-  });
-
-  useLiveRevision({
+  return useLiveCount({
+    initial,
     read: fetchSellerChatPresence,
+    topic: "presence",
     intervalMs: 45_000,
-    onChange: (value) => setOnline(value),
   });
-
-  return online;
 }

@@ -295,10 +295,11 @@ export async function applyPaymentNotification(
     return { ok: true };
   }
 
-  // Failure/cancel/expire/refund/deny path.
-  const failStatus = isFailureStatus || (isSuccessStatus && input.fraudStatus === "deny");
-  if (failStatus) {
-    const key = isSuccessStatus ? "deny" : input.status;
+  // Failure/cancel/expire/refund path. `deny` arrives from the gateway as a
+  // retiring status already (see classifyMidtransStatus), so a settled verdict
+  // can never carry it — testing `isSuccessStatus && deny` here was dead.
+  if (isFailureStatus) {
+    const key = input.status;
     const nextPaymentStatus = FAILURE_PAYMENT_STATUS[key] ?? "failed";
     const nextOrderStatus = FAILURE_ORDER_STATUS[key] ?? "cancelled";
     const isRefund = nextOrderStatus === "refunded";
