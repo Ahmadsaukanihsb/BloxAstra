@@ -36,7 +36,7 @@ const TOAST_LIMIT = 4;
 
 type ToastTone = "astra" | "success" | "danger";
 
-const DANGER_KINDS = new Set(["order_cancelled", "dispute_opened", "chat_report", "kyc_rejected"]);
+const DANGER_KINDS = new Set(["order_cancelled", "dispute_opened", "chat_report", "kyc_rejected", "topup_expired"]);
 const SUCCESS_KINDS = new Set([
   "order_completed",
   "dispute_resolved",
@@ -49,6 +49,7 @@ type ToastIcon = (props: { size?: number }) => ReactNode;
 const ICON_BY_KIND: Record<string, ToastIcon> = {
   order_paid: IconReceipt,
   topup_paid: IconReceipt,
+  topup_expired: IconTimer,
   order_processing: IconPackage,
   order_shipped: IconBolt,
   order_completed: IconCheckCircle,

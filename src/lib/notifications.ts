@@ -22,7 +22,8 @@ export type NotificationKind =
   | "kyc_approved"
   | "kyc_rejected"
   | "role_changed"
-  | "topup_paid";
+  | "topup_paid"
+  | "topup_expired";
 export interface NotifyInput {
   userId: string;
   kind: NotificationKind;

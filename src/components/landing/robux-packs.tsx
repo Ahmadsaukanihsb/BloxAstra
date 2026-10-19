@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { formatIDR } from "@/lib/format";
+import { formatIDR, formatNumber } from "@/lib/format";
 import { listingQuote } from "@/lib/robux-pricing";
 import type { Product } from "@/lib/types";
 import { useRateCard } from "@/components/rates/rate-store";
@@ -97,7 +97,7 @@ export function RobuxPacks({ products }: { products: Product[] }) {
                 </span>
                 <span className="flex flex-col gap-0.5">
                   <span className="num text-[19px] font-extrabold text-ink">
-                    {pack.robux.toLocaleString("id-ID")}
+                    {formatNumber(pack.robux)}
                   </span>
                   <span className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-astra-ink">
                     Robux

@@ -251,16 +251,16 @@ export function CatalogBrowser({
   const rangeFrom = results.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
   const rangeTo = Math.min(safePage * PAGE_SIZE, results.length);
 
-  // Filters (but not the page) reset pagination — skipped on first mount so a
-  // shared ?hal= link lands on the right page.
-  const mountedRef = useRef(false);
-  useEffect(() => {
-    if (!mountedRef.current) {
-      mountedRef.current = true;
-      return;
-    }
+  // Filters (but not the page) reset pagination — adjusted during render (the
+  // React pattern for state derived from another value) so the effect body
+  // stays free of setState. `pageFilterKey` starts equal to the mount-time
+  // filter, so the first pass never resets and a shared ?hal= link keeps its
+  // page; only a real filter change jumps back to page 1.
+  const [pageFilterKey, setPageFilterKey] = useState(filterKey);
+  if (pageFilterKey !== filterKey) {
+    setPageFilterKey(filterKey);
     setPage(1);
-  }, [filterKey]);
+  }
 
   // Keep the URL shareable without a server roundtrip. Back/forward restores
   // state via the popstate listener below.

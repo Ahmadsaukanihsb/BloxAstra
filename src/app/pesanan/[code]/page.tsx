@@ -8,7 +8,7 @@ import { getOrderChatPresence, getOrderRoom, getOrderMessages, getOrderReview } 
 import { getServiceArt } from "@/lib/service-art";
 import { serviceArtSlotForKind } from "@/lib/service-art-slots";
 import { orderStates } from "@/lib/order-meta";
-import { formatIDR, formatDateTime } from "@/lib/format";
+import { formatIDR, formatDateTime, formatNumber } from "@/lib/format";
 import { Badge, LivePill, TierBadge } from "@/components/ui/badge";
 import { Notice } from "@/components/ui/feedback";
 import { ProductArt, SellerAvatar, StarRating } from "@/components/ui/art";
@@ -240,7 +240,7 @@ async function OrderDetailContent({ params }: { params: Promise<{ code: string }
                   },
                   {
                     label: "Order selesai",
-                    value: order.sellerOrdersCompleted.toLocaleString("id-ID"),
+                    value: formatNumber(order.sellerOrdersCompleted),
                   },
                   {
                     label: "Rasio sengketa",

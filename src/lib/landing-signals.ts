@@ -1,4 +1,5 @@
 import type { LandingSignals } from "@/lib/types";
+import { formatNumber } from "@/lib/format";
 
 /**
  * Which proof numbers are worth printing, and how they read.
@@ -12,10 +13,10 @@ import type { LandingSignals } from "@/lib/types";
 export function landingSignalLabels(signals: LandingSignals): string[] {
   const labels: string[] = [];
   if (signals.completedOrders > 0) {
-    labels.push(`${signals.completedOrders.toLocaleString("id-ID")} order selesai`);
+    labels.push(`${formatNumber(signals.completedOrders)} order selesai`);
   }
   if (signals.verifiedSellers > 0) {
-    labels.push(`${signals.verifiedSellers.toLocaleString("id-ID")} penjual terverifikasi KYC`);
+    labels.push(`${formatNumber(signals.verifiedSellers)} penjual terverifikasi KYC`);
   }
   return labels;
 }

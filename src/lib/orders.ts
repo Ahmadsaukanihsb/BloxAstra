@@ -326,8 +326,10 @@ function summarizeOrders(
     .filter((order) => ESCROW_ORDER_STATES.includes(order.state))
     .reduce((sum, order) => sum + order.total, 0);
   const activeCount = orders.filter((order) => ACTIVE_ORDER_STATES.includes(order.state)).length;
+  // Money that actually left the buyer: excludes unpaid bills and reversed
+  // orders, the same definition the buyer profile's "total belanja" uses.
   const lifetimeTotal = orders
-    .filter((order) => !["cancelled", "refunded"].includes(order.state))
+    .filter((order) => !["pending_payment", "cancelled", "refunded"].includes(order.state))
     .reduce((sum, order) => sum + order.total, 0);
 
   return { orders, heldTotal, activeCount, lifetimeTotal };

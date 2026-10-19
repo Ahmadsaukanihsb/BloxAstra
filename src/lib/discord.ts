@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "@/lib/db";
 import { absoluteUrl } from "@/lib/site";
+import { formatNumber } from "@/lib/format";
 
 const TIMEOUT_MS = 8_000;
 const MAX_URL_LENGTH = 500;
@@ -70,12 +71,12 @@ function poolEmbed(order: PoolAlertOrder) {
           { name: "Jenis", value: order.kindLabel, inline: true },
           {
             name: "Robux",
-            value: order.robuxAmount ? `${order.robuxAmount.toLocaleString("id-ID")} R$` : "Premium",
+            value: order.robuxAmount ? `${formatNumber(order.robuxAmount)} R$` : "Premium",
             inline: true,
           },
           {
             name: "Total",
-            value: `Rp${order.total.toLocaleString("id-ID")}`,
+            value: `Rp${formatNumber(order.total)}`,
             inline: true,
           },
         ],

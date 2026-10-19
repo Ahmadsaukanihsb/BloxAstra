@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { startOrderProcessing } from "@/app/actions/room";
@@ -41,27 +41,22 @@ export function RobuxPoolBoard({
   locked?: boolean;
 }) {
   const router = useRouter();
-  const [orders, setOrders] = useState(initialOrders);
+  // Codes this seller already claimed/took — never resurrect them on sync.
+  // Held as state (not a ref) so the visible board is a pure derivation: the
+  // server props minus what this tab already acted on. Nothing has to sync in
+  // an effect, and a ref is never read during render.
+  const [gone, setGone] = useState<string[]>([]);
+  const orders = useMemo(
+    () => initialOrders.filter((item) => !gone.includes(item.code)),
+    [initialOrders, gone],
+  );
   const [flash, setFlash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [claiming, setClaiming] = useState<string | null>(null);
-  // Codes this seller already claimed/took — never resurrect them on sync.
-  const goneRef = useRef<Set<string>>(new Set());
 
   function forget(code: string) {
-    goneRef.current.add(code);
-    setOrders((prev) => prev.filter((item) => item.code !== code));
+    setGone((prev) => (prev.includes(code) ? prev : [...prev, code]));
   }
-
-  // Merge server updates (polling) without resurrecting locally-claimed rows.
-  useEffect(() => {
-    setOrders((prev) => {
-      const next = initialOrders.filter((item) => !goneRef.current.has(item.code));
-      const same =
-        next.length === prev.length && next.every((item, index) => item.code === prev[index]?.code);
-      return same ? prev : next;
-    });
-  }, [initialOrders]);
 
   // Push channel: a new pool order or another seller's claim lands here the
   // second it happens; the 25s poll below stays as the blocked-stream net.

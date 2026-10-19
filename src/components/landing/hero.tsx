@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { formatIDR } from "@/lib/format";
+import { formatIDR, formatNumber } from "@/lib/format";
 import {
   clampRobuxAmount,
   robuxOrderConfig,
@@ -185,7 +185,7 @@ export function Hero() {
                               : "bg-paper text-ink-dim outline-line hover:text-ink",
                           )}
                         >
-                          {pack.toLocaleString("id-ID")}
+                          {formatNumber(pack)}
                         </button>
                       );
                     })}
@@ -207,8 +207,8 @@ export function Hero() {
                     <span className="shrink-0 text-[11px] font-bold text-ink-mute">Robux</span>
                   </label>
                   <span className="num text-[10px] text-ink-mute">
-                    Min {config.minRobux.toLocaleString("id-ID")} · maks{" "}
-                    {config.maxRobux.toLocaleString("id-ID")} Robux
+                    Min {formatNumber(config.minRobux)} · maks{" "}
+                    {formatNumber(config.maxRobux)} Robux
                   </span>
                 </div>
 
