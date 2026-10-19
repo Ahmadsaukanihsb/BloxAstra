@@ -171,6 +171,14 @@ export function OrderRoom({
     if (nearBottom) node.scrollTop = node.scrollHeight;
   }, [messages.length]);
 
+  // The review prompt sits at the end of the chat; land the conversation at
+  // the bottom so a buyer who just confirmed sees it without hunting.
+  useEffect(() => {
+    if (!(isBuyer && order.state === "completed" && !review)) return;
+    const node = chatRef.current;
+    if (node) node.scrollTop = node.scrollHeight;
+  }, [isBuyer, order.state, review]);
+
   // Opening the room (or a new message landing while it is open) advances the
   // read cursor, which is exactly what clears the list badges and nav count.
   useEffect(() => {
@@ -464,8 +472,8 @@ export function OrderRoom({
                       : null;
                 const rising = index >= mountCount;
 
-                // System notices are the room talking, not a person: a chip in
-                // the middle. Scam warnings earn the attention hue.
+                // System notices are the room talking, not a person: a red chip
+                // in the middle, so they can never be mistaken for user text.
                 if (system) {
                   const isWarning = message.text.startsWith("Peringatan sistem");
                   return (
@@ -474,17 +482,12 @@ export function OrderRoom({
                         <DayDivider label={formatChatDay(message.at, now)} />
                       ) : null}
                       <div className={cx("my-1 flex justify-center", rising && "animate-rise")}>
-                        <div
-                          className={cx(
-                            "flex max-w-[92%] items-start gap-2 rounded-well px-3.5 py-2.5 text-[11.5px] leading-relaxed outline outline-1 -outline-offset-1",
-                            isWarning
-                              ? "bg-robux/[0.07] text-ink-dim outline-robux/25"
-                              : "bg-paper text-ink-mute outline-line",
-                          )}
-                        >
+                        <div className="flex max-w-[92%] items-start gap-2 rounded-well bg-danger/[0.07] px-3.5 py-2.5 text-[11.5px] leading-relaxed text-danger outline outline-1 -outline-offset-1 outline-danger/25">
                           {isWarning ? (
-                            <IconAlert size={14} className="mt-0.5 shrink-0 text-robux" />
-                          ) : null}
+                            <IconAlert size={14} className="mt-0.5 shrink-0 text-danger" />
+                          ) : (
+                            <IconInfo size={14} className="mt-0.5 shrink-0 text-danger" />
+                          )}
                           <span className="break-words whitespace-pre-wrap">{message.text}</span>
                         </div>
                       </div>
@@ -575,6 +578,19 @@ export function OrderRoom({
                 );
               })
             )}
+
+            {/* The review prompt lives at the end of the chat, right after the
+                closing system message — the action cards further down the page
+                are too easy for buyers to miss. */}
+            {isBuyer && order.state === "completed" ? (
+              <div className="mx-auto mt-4 w-full max-w-[26rem]">
+                {review ? (
+                  <ReviewCard review={review} />
+                ) : (
+                  <ReviewForm orderCode={order.code} sellerName={order.sellerStoreName} />
+                )}
+              </div>
+            ) : null}
           </div>
 
           {chatClosed ? (
@@ -1018,11 +1034,6 @@ export function OrderRoom({
                   Terima kasih! Dana sudah dicairkan ke dompet penjual.
                 </Notice>
               ) : null}
-
-              {order.state === "completed" && isBuyer && !review ? (
-                <ReviewForm orderCode={order.code} sellerName={order.sellerStoreName} />
-              ) : null}
-              {order.state === "completed" && review ? <ReviewCard review={review} /> : null}
 
               {order.canCancelAfk && !locked ? (
                 <Button

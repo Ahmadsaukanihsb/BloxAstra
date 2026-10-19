@@ -412,17 +412,16 @@ export async function getOrderRoom(
   const viewerRole: OrderViewerRole = viewer.role === "admin" && !isBuyer && !isSeller ? "admin" : isBuyer ? "buyer" : "seller";
 
   // Buyer avatars are data URLs (up to 500KB), so they stay out of the shared
-  // list include and are fetched only for the side that renders them — the
-  // buyer never sees their own photo in the room.
+  // list include and are fetched here only. The seller/admin side renders the
+  // buyer's photo (counterpart + messages); the buyer side renders it on their
+  // own messages — so it is fetched for every viewer.
   const buyerImage =
-    viewerRole === "buyer"
-      ? null
-      : ((
-          await db.user.findUnique({
-            where: { id: row.buyerId },
-            select: { avatarImage: true },
-          })
-        )?.avatarImage ?? null);
+    (
+      await db.user.findUnique({
+        where: { id: row.buyerId },
+        select: { avatarImage: true },
+      })
+    )?.avatarImage ?? null;
 
   let credentials: OrderDetail["credentials"] = null;
   if (row.credentialsEnc) {
