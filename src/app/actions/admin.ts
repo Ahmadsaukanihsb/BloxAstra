@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { headers } from "next/headers";
 import { revalidatePath, updateTag } from "next/cache";
@@ -32,17 +32,13 @@ import {
 import { LANDING_SECTION_KEY, parseLandingLayout } from "@/lib/landing-sections";
 import {
   BLOG_CONTENT_MAX,
-  BLOG_COVER_MAX_BYTES,
   BLOG_EXCERPT_MAX,
   BLOG_SLUG_MAX,
   BLOG_TITLE_MAX,
   blogPostLocalPath,
-  isValidBlogSlug,
-  parseBlogTags,
-  serializeBlogTags,
-  slugifyBlogTitle,
 } from "@/lib/blog";
-import { isDecidableDispute, ACTIVE_ORDER_STATES } from "@/lib/order-meta";
+import { ACTIVE_ORDER_STATES, isDecidableDispute } from "@/lib/order-meta";
+import { saveBlogPostCore } from "@/lib/blog-write";
 import { appendLedger, isUniqueCollision } from "@/lib/ledger";
 import {
   SERVICE_ART_KEY,
@@ -2058,72 +2054,26 @@ export async function saveBlogPost(rawInput: unknown): Promise<BlogActionResult>
   const parsed = blogPostSchema.safeParse(rawInput);
   if (!parsed.success) return { ok: false, error: "Input tidak valid." };
 
-  const slug = slugifyBlogTitle(parsed.data.slug.trim() || parsed.data.title);
-  if (!isValidBlogSlug(slug)) {
-    return { ok: false, error: "Slug kosong/tidak valid — isi judul atau slug dengan huruf biasa." };
-  }
-  if (parsed.data.status === "published" && !parsed.data.content.trim()) {
-    return { ok: false, error: "Artikel perlu isi sebelum diterbitkan." };
-  }
+  // One writer for both doors: the panel and /api/blog/posts share
+  // `saveBlogPostCore`, so validators, the audit row and cache invalidation
+  // cannot drift between them.
+  const result = await saveBlogPostCore(
+    {
+      id: parsed.data.id ?? null,
+      title: parsed.data.title,
+      slug: parsed.data.slug.trim(),
+      excerpt: parsed.data.excerpt,
+      content: parsed.data.content,
+      coverImage: parsed.data.coverImage ?? null,
+      tags: parsed.data.tags,
+      status: parsed.data.status,
+    },
+    user.email,
+    { ip: await clientIp() },
+  );
 
-  const cover = parsed.data.coverImage ?? null;
-  if (cover !== null && cover !== "" && !normalizeImageInput(cover, BLOG_COVER_MAX_BYTES)) {
-    return {
-      ok: false,
-      error: `Sampul harus PNG/JPEG/GIF/WebP di bawah ${Math.round(BLOG_COVER_MAX_BYTES / 1000)}KB, atau URL https yang valid.`,
-    };
-  }
-
-  const existing = parsed.data.id
-    ? await db.blogPost.findUnique({ where: { id: parsed.data.id } })
-    : null;
-  if (parsed.data.id && !existing) return { ok: false, error: "Artikel tidak ditemukan." };
-
-  const slugOwner = await db.blogPost.findUnique({ where: { slug }, select: { id: true } });
-  if (slugOwner && slugOwner.id !== existing?.id) {
-    return { ok: false, error: `Slug "${slug}" sudah dipakai artikel lain.` };
-  }
-
-  const publishedAt =
-    existing?.publishedAt ?? (parsed.data.status === "published" ? new Date() : null);
-  const data = {
-    slug,
-    title: parsed.data.title,
-    excerpt: parsed.data.excerpt.trim(),
-    content: parsed.data.content,
-    coverImage: cover || null,
-    tags: serializeBlogTags(parseBlogTags(parsed.data.tags)),
-    status: parsed.data.status,
-    publishedAt,
-    authorEmail: user.email,
-  };
-
-  const ip = await clientIp();
-  const post = await db.$transaction(async (tx) => {
-    const saved = existing
-      ? await tx.blogPost.update({ where: { id: existing.id }, data })
-      : await tx.blogPost.create({ data });
-    await tx.adminAuditLog.create({
-      data: {
-        actionType: existing ? "blog_post.update" : "blog_post.create",
-        targetResource: "blog",
-        targetId: saved.id,
-        diffPayload: JSON.stringify({
-          slug: saved.slug,
-          judul: saved.title,
-          status: saved.status,
-        }),
-        ipAddress: ip,
-        actor: user.email,
-      },
-    });
-    return saved;
-  });
-
-  // Renames leave the old URL as a 404 — invalidate it too so the cached page
-  // disappears immediately instead of after its next revalidation.
-  revalidateBlog([post.slug, existing?.slug ?? ""]);
-  return { ok: true, id: post.id, slug: post.slug };
+  if (!result.ok) return { ok: false, error: result.error };
+  return { ok: true, id: result.id, slug: result.slug };
 }
 
 /** Hapus permanen satu artikel (draf maupun terbit) + catat di jejak audit. */

@@ -8,7 +8,7 @@ import type { LandingSignals, Product, Seller } from "@/lib/types";
 
 /**
  * A single calm grid. Leaderboards and vendor lists live on the catalog and
- * dashboard where people actually shop â€” the home page only needs the shelf.
+ * dashboard where people actually shop — the home page only needs the shelf.
  * Featured items are flagged in the DB (`Product.featured`) so curation is a
  * data change, not a code change.
  */
@@ -31,10 +31,10 @@ export function FeaturedListings({
     return (
       <ShelfEmpty
         title="Listing pilihan minggu ini"
-        description="Kurasi manual dari stok yang aktif â€” belum ada listing yang bisa dipilih minggu ini."
+        description="Kurasi manual dari stok yang aktif — belum ada listing yang bisa dipilih minggu ini."
         action={{ href: "/katalog", label: "Jelajahi katalog" }}
         label="Rak pilihan masih kosong"
-        body="Top up Robux lewat username, login, atau gamepass tetap bisa dibeli sekarang â€” jalur itu tidak menunggu stok penjual."
+        body="Top up Robux lewat username, login, atau gamepass tetap bisa dibeli sekarang — jalur itu tidak menunggu stok penjual."
         icon={<IconStar size={17} />}
         signals={signals}
         secondary={{ href: "/dashboard/penjual", label: "Jual listing pertamamu" }}

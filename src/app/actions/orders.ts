@@ -53,15 +53,15 @@ const catalogOrderSchema = z.object({
 
 const robuxOrderSchema = z.object({
   kind: z.enum(["username", "login", "gamepass", "premium"]),
-  // Monthly term (1â€“12) for premium, Robux amount for the other flows â€” the
+  // Monthly term (1–12) for premium, Robux amount for the other flows — the
   // per-kind bounds below do the real validation.
   robuxAmount: z.number().int().min(1).max(50_000),
   robloxUsername: z.string().trim().min(3).max(100),
   password: z.string().trim().min(4).max(128).optional(),
   parentalPin: z.string().trim().min(4).max(8).optional(),
-  /** optional 2FA backup codes (premium/login) â€” sanitized below, never raw */
+  /** optional 2FA backup codes (premium/login) — sanitized below, never raw */
   twoFactorBackupCodes: z.string().trim().max(500).optional(),
-  /** gamepass only â€” who swallows Roblox's 30% cut. Defaults to cover. */
+  /** gamepass only — who swallows Roblox's 30% cut. Defaults to cover. */
   taxMode: z.enum(["cover", "no_cover"]).optional(),
   gamepassUrl: z
     .string()
@@ -186,7 +186,7 @@ async function persistOrder(input: {
             buyerId: input.buyerId,
             productId: input.productId,
             sellerId: input.sellerId,
-            // Robux & premium flows have no assigned seller â€” they enter the
+            // Robux & premium flows have no assigned seller — they enter the
             // shared pool so every seller can fight for them once paid.
             isPoolOrder: !input.productId && !input.sellerId,
             quantity: input.quantity,
@@ -249,14 +249,14 @@ async function persistOrder(input: {
         updateTag("catalog");
         return { ok: true, checkoutUrl: checkout.redirectUrl, orderCode: order.code };
       } catch (snapError) {
-        // Gateway unreachable â€” release the reservation and report cleanly.
+        // Gateway unreachable — release the reservation and report cleanly.
         await restoreCancelledOrder(order.id);
         if (
           snapError instanceof Error &&
           (/Midtrans Snap 4\d\d:/.test(snapError.message) ||
             /Tripay create (4\d\d|ditolak)/.test(snapError.message))
         ) {
-          // Deterministic client error (bad payload / key / channel) â€” a
+          // Deterministic client error (bad payload / key / channel) — a
           // fresh order code cannot fix it, so fail fast instead of retrying.
           console.error("persistOrder failed", snapError);
           return {
@@ -275,7 +275,7 @@ async function persistOrder(input: {
       if (error instanceof PromoExhaustedError) {
         return { ok: false, code: "INVALID", error: "Kode promo baru saja habis dipakai orang lain." };
       }
-      // Unique-code collision â€” retry with a fresh code.
+      // Unique-code collision — retry with a fresh code.
       if (isUniqueCollision(error)) {
         lastError = error;
         continue;
@@ -302,7 +302,7 @@ class PromoExhaustedError extends Error { }
 
 /**
  * Wallet-balance checkout: reserve stock, debit the buyer's ledger, and flip
- * the order straight to `paid` inside ONE transaction â€” no gateway involved.
+ * the order straight to `paid` inside ONE transaction — no gateway involved.
  * The balance is re-read inside the transaction so two concurrent checkouts
  * can never both spend the same rupiah.
  */
@@ -452,7 +452,7 @@ async function persistWalletOrder(input: {
       }
       if (error instanceof InsufficientBalanceError) {
         // The whole transaction rolled back, so the stock reservation never
-        // persisted â€” nothing to restore.
+        // persisted — nothing to restore.
         return {
           ok: false,
           code: "INSUFFICIENT",
@@ -485,7 +485,7 @@ async function restoreCancelledOrder(orderId: string) {
   });
   if (!order) return;
   // Guarded: a settlement that landed between order creation and this restore
-  // wins â€” we must not clobber a paid order back to cancelled.
+  // wins — we must not clobber a paid order back to cancelled.
   await db.$transaction(async (tx) => {
     const cancelled = await tx.order.updateMany({
       where: { id: order.id, status: "pending_payment" },
@@ -498,7 +498,7 @@ async function restoreCancelledOrder(orderId: string) {
         data: { stock: { increment: order.quantity } },
       });
     }
-    // Give back the promo redemption consumed at creation â€” the buyer never
+    // Give back the promo redemption consumed at creation — the buyer never
     // got an order for it (gateway failure path only).
     if (order.promoCode) {
       await tx.promoCode.updateMany({
@@ -582,7 +582,7 @@ export async function createCatalogOrder(rawInput: unknown): Promise<OrderAction
     promoCut = cut;
   }
 
-  // Commission is charged on the DISCOUNTED subtotal â€” platform promos are
+  // Commission is charged on the DISCOUNTED subtotal — platform promos are
   // funded by the platform (lower commission), never silently by the seller.
   const discounted = Math.max(0, subtotal - promoCut);
   const commission = Math.round((discounted * product.category.commissionPercent) / 100);
@@ -662,7 +662,7 @@ export async function createRobuxOrder(rawInput: unknown): Promise<OrderActionRe
     return {
       ok: false,
       code: "INVALID",
-      error: `Jumlah Robux harus kelipatan ${bounds.step} antara ${bounds.minRobux}â€“${bounds.maxRobux}.`,
+      error: `Jumlah Robux harus kelipatan ${bounds.step} antara ${bounds.minRobux}–${bounds.maxRobux}.`,
     };
   }
 
@@ -672,7 +672,7 @@ export async function createRobuxOrder(rawInput: unknown): Promise<OrderActionRe
       return {
         ok: false,
         code: "INVALID",
-        error: `Nominal harus kelipatan ${bounds.step} antara ${bounds.minRobux}â€“${bounds.maxRobux}.`,
+        error: `Nominal harus kelipatan ${bounds.step} antara ${bounds.minRobux}–${bounds.maxRobux}.`,
       };
     }
   }
@@ -690,7 +690,7 @@ export async function createRobuxOrder(rawInput: unknown): Promise<OrderActionRe
   if (input.kind !== "login" && !usernamePattern.test(input.robloxUsername)) {
     return { ok: false, code: "INVALID", error: "Username Roblox tidak valid." };
   }
-  // Login flows accept an email identifier â€” only real usernames are checked.
+  // Login flows accept an email identifier — only real usernames are checked.
   if (input.kind !== "login") {
     const unknownUser = await rejectUnknownRobloxUser(input.robloxUsername);
     if (unknownUser) {
@@ -713,7 +713,7 @@ export async function createRobuxOrder(rawInput: unknown): Promise<OrderActionRe
       return {
         ok: false,
         code: "INVALID",
-        error: "Format kode cadangan 2FA tidak valid (4â€“16 karakter alfanumerik per kode).",
+        error: "Format kode cadangan 2FA tidak valid (4–16 karakter alfanumerik per kode).",
       };
     }
     backupCodes = codes.join(" ");
@@ -741,7 +741,7 @@ export async function createRobuxOrder(rawInput: unknown): Promise<OrderActionRe
   }
 
   const rates = await getActiveOrderRates();
-  // The gamepass rate depends on who swallows Roblox's 30% cut â€” the same
+  // The gamepass rate depends on who swallows Roblox's 30% cut — the same
   // tax mode the client quoted with, chosen server-side from the raw input.
   const config = robuxOrderConfig(input.kind, rates, taxMode);
   const subtotal = gamepass
@@ -813,7 +813,7 @@ export async function settleSimPayment(orderCode: string): Promise<
     return { ok: false, error: "Silakan masuk terlebih dahulu." };
   }
 
-  // Wallet top-ups settle through the same sim screen â€” they are not orders,
+  // Wallet top-ups settle through the same sim screen — they are not orders,
   // so they credit the ledger directly instead of the order state machine.
   if (typeof orderCode === "string" && orderCode.startsWith("TU-")) {
     const topUp = await db.topUp.findUnique({
@@ -882,7 +882,7 @@ export async function settleSimPayment(orderCode: string): Promise<
 /**
  * Buyer-triggered rescue when the gateway webhook never arrived: query the
  * gateway Status API directly and funnel the answer through the same payment
- * state machine webhooks use. Safe to spam â€” settled/cancelled orders no-op.
+ * state machine webhooks use. Safe to spam — settled/cancelled orders no-op.
  */
 export async function reconcilePaymentStatus(orderCode: string): Promise<
   { ok: true; paid: boolean } | { ok: false; error: string }
@@ -895,7 +895,7 @@ export async function reconcilePaymentStatus(orderCode: string): Promise<
   if (!user) {
     return { ok: false, error: "Silakan masuk terlebih dahulu." };
   }
-  // Each check hits the gateway Status API â€” throttle per buyer so a loop
+  // Each check hits the gateway Status API — throttle per buyer so a loop
   // cannot burn gateway quota.
   if (!checkThrottle(`reconcile:${user.id}`, 10000)) {
     return { ok: false, error: "Terlalu cepat. Tunggu 10 detik sebelum cek lagi." };

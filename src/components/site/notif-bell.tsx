@@ -14,7 +14,7 @@ import { cx } from "@/lib/cx";
 import { IconBell, IconCheck } from "@/components/ui/icons";
 
 /**
- * Bell with a floating inbox panel â€” sellers read notifications without
+ * Bell with a floating inbox panel — sellers read notifications without
  * leaving the dashboard. The /notifikasi page stays as the full archive
  * (linked from the panel footer + sidebar).
  */
@@ -31,7 +31,7 @@ export function NotifBell() {
     void loadItems({ quiet: true });
   });
 
-  // Fallback loop for a blocked or buffered stream â€” and the safety net that
+  // Fallback loop for a blocked or buffered stream — and the safety net that
   // re-checks the moment this tab comes back to the foreground.
   useLiveRevision({
     read: fetchInboxRevision,
@@ -137,7 +137,7 @@ export function NotifBell() {
                 className="flex items-center gap-1 text-[11px] font-bold text-ink-dim transition-colors hover:text-astra-ink disabled:opacity-40"
               >
                 <IconCheck size={13} />
-                {marking ? "Menandaiâ€¦" : "Tandai dibaca"}
+                {marking ? "Menandai…" : "Tandai dibaca"}
               </button>
             </div>
 

@@ -32,7 +32,7 @@ export function ActiveOrderRow({ order }: { order: OrderListItem }) {
           {order.productTitle}
         </span>
         <span className="num text-[10px] text-ink-mute">
-          {order.code} Â· @{order.robloxUsername ?? "â€”"}
+          {order.code} · @{order.robloxUsername ?? "—"}
         </span>
         {sla !== null ? (
           <span
@@ -43,11 +43,11 @@ export function ActiveOrderRow({ order }: { order: OrderListItem }) {
           >
             <IconTimer size={11} />
             {expired ? (
-              <>SLA lewat{order.slaLabel ? ` Â· ${order.slaLabel}` : null}</>
+              <>SLA lewat{order.slaLabel ? ` · ${order.slaLabel}` : null}</>
             ) : (
               <>
                 <Countdown seconds={sla} className="text-[10px]" />
-                {order.slaLabel ? <span>Â· {order.slaLabel}</span> : null}
+                {order.slaLabel ? <span>· {order.slaLabel}</span> : null}
               </>
             )}
           </span>
@@ -133,7 +133,7 @@ export function SellerHistory({
               <span className="min-w-0 flex-1 truncate text-[12px] text-ink">
                 {order.productTitle}
                 {order.robloxUsername ? (
-                  <span className="num text-ink-mute"> Â· @{order.robloxUsername}</span>
+                  <span className="num text-ink-mute"> · @{order.robloxUsername}</span>
                 ) : null}
               </span>
               <span className="num text-[12px] font-extrabold text-ink">

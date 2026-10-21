@@ -25,7 +25,7 @@ import type { ServiceArt } from "@/lib/service-art-slots";
 
 type BadgeTone = "diskon" | "populer" | "terlaris" | "limited" | "premium" | "kilat" | "habis";
 
-/* Only two of these fills carry meaning â€” brand red for a price cut, gold for
+/* Only two of these fills carry meaning — brand red for a price cut, gold for
    the best seller. Everything else is a quiet neutral chip. Six coloured pills
    on one shelf turned four entry points into four competing tribes; a shelf
    reads as one shelf. */
@@ -41,7 +41,7 @@ const BADGES: Record<BadgeTone, { label: string; className: string }> = {
   habis: { label: "Habis", className: "bg-canvas text-ink-mute outline-line-strong" },
 };
 
-/** Icon per product category â€” purely presentational, not data. */
+/** Icon per product category — purely presentational, not data. */
 const CATEGORY_ICONS: Record<string, (props: { size?: number }) => ReactNode> = {
   gamepass: IconHexCoin,
   item: IconPackage,
@@ -119,7 +119,7 @@ export function ServiceRail({
         };
       });
 
-    // Fixed flow entries quote live from the rate card â€” no catalog rows needed.
+    // Fixed flow entries quote live from the rate card — no catalog rows needed.
     const methodCards: ServiceCard[] = METHOD_ENTRIES.map((entry) => {
       if (entry.kind === "premium") {
         return {
@@ -158,7 +158,7 @@ export function ServiceRail({
           <div className="flex flex-col gap-2">
             <h2 className="text-title font-extrabold text-ink">Top up instan Blox Astra</h2>
             <p className="text-[13px] text-ink-dim md:text-sm">
-              Dijalankan platform, dikerjakan penjual terverifikasi â€” dana tetap ditahan sampai
+              Dijalankan platform, dikerjakan penjual terverifikasi — dana tetap ditahan sampai
               Robux masuk. Butuh paket stok toko? Lanjut ke rak di bawah.
             </p>
           </div>
@@ -169,7 +169,7 @@ export function ServiceRail({
 
             `pt-2 -mt-2` is load-bearing, not spacing. `overflow-x-auto` makes
             the vertical axis clip too, so the 3px `lift` on each tile was
-            being shaved off at the container's top edge on hover â€” the tile's
+            being shaved off at the container's top edge on hover — the tile's
             top looked like it collapsed. The padding gives the lift somewhere
             to go; the negative margin cancels the shift it would otherwise
             add, so the row sits exactly where it did before. */}
@@ -191,7 +191,7 @@ export function ServiceRail({
                   className={cx(
                     // `min-w` keeps the row scrollable once it overflows, while
                     // `flex-1` lets four tiles fill the shelf instead of leaving
-                    // half the row empty â€” the same rail either way.
+                    // half the row empty — the same rail either way.
                     "group lift relative flex h-full min-w-[180px] flex-1 shrink-0 snap-start flex-col gap-3 rounded-card bg-paper p-3.5 outline outline-1 -outline-offset-1 outline-line transition-[outline-color,transform] duration-300 ease-[var(--ease-astra)] sm:min-w-[196px]",
                     soldOut ? "pointer-events-none" : "hover:outline-astra/50",
                   )}

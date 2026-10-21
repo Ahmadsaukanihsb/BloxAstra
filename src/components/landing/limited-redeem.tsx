@@ -12,7 +12,7 @@ import { EmptyRow } from "@/components/landing/shelf-empty";
 /**
  * Two side-by-side shelves. Both are DB-driven: the "Limited" side reads
  * products whose `shelf` is "limited", the "Redeem" side reads `shelf` "redeem".
- * Nothing is hardcoded â€” curate by flipping the shelf column on a product.
+ * Nothing is hardcoded — curate by flipping the shelf column on a product.
  */
 export function LimitedRedeem({ products }: { products: Product[] }) {
   const { limited, redeem } = useMemo(() => {
@@ -27,7 +27,7 @@ export function LimitedRedeem({ products }: { products: Product[] }) {
 
   // Both columns always render. A shelf with nothing in it keeps its heading and
   // swaps the grid for a status line, so the pair stays balanced when only one
-  // side has stock â€” which is the common case, not the exception.
+  // side has stock — which is the common case, not the exception.
   return (
     <section className="px-4 py-10 md:px-8 md:py-14">
       <div className="mx-auto grid max-w-[1180px] grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-8">
@@ -87,7 +87,7 @@ export function LimitedRedeem({ products }: { products: Product[] }) {
             <Reveal>
               <EmptyRow
                 label="Belum ada kode redeem"
-                body="Kode Robux dan hadiah dari penjual tampil di sini begitu dipasang â€” pembeli melihat sisa kodenya langsung."
+                body="Kode Robux dan hadiah dari penjual tampil di sini begitu dipasang — pembeli melihat sisa kodenya langsung."
                 icon={<IconGift size={17} />}
               />
             </Reveal>

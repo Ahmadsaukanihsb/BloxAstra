@@ -77,7 +77,7 @@ async function OverviewContent() {
           </Notice>
         ) : (
           <Notice tone="info" icon={<IconStorefront size={15} />} title="Belum jadi penjual">
-            Akun ini masih pembeli. Ajukan penjual dari halaman profil â€” unggah KTP dan selfie,
+            Akun ini masih pembeli. Ajukan penjual dari halaman profil — unggah KTP dan selfie,
             lalu tunggu verifikasi admin. Setelah disetujui, dashboard ini terbuka penuh.
             <span className="mt-3 block">
               <ButtonLink href="/profil" size="sm" trailingIcon={<IconArrowRight size={14} />}>
@@ -219,7 +219,7 @@ async function OverviewContent() {
                           {order.productTitle}
                         </span>
                         <span className="num text-[10px] text-ink-mute">
-                          {order.code} Â· @{order.robloxUsername ?? "â€”"}
+                          {order.code} · @{order.robloxUsername ?? "—"}
                         </span>
                       </div>
                       <StatusPill state={order.state} />
